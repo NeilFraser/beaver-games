@@ -1,0 +1,94 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Repeat</title>
+    <style>
+      body {
+        color: #444;
+        font-family: sans-serif;
+      }
+      h1 {
+        font-weight: normal;
+      }
+      #controls button {
+        border: 1px solid #fff;
+        border-radius: 5px;
+        color: #fff;
+        font-size: large;
+        height: 40px;
+        margin: 3px;
+        outline: none;
+        width: 50px;
+      }
+      #b1 {
+        background: #D02E2B;
+      }
+      #b2 {
+        background: #2E5FFF;
+      }
+      #b3 {
+        background: #F0A609;
+      }
+      #b4 {
+        background: #178F47;
+      }
+      #controls:not(.disabled)  button:hover {
+        border: 1px solid #000;
+      }
+      #controls button.highlight {
+        opacity: 0.7;
+      }
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 20px 0 0 30px;
+        padding: 20px;
+        position: fixed;
+        width: 123px;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #levelDiv {
+        font-size: 150%;
+        padding-left: 5em;
+      }
+    </style>
+    <script src="index.js"></script>
+  </head>
+
+  <body>
+    <h1>Beaver Games : Repeat</h1>
+
+    <table style="width: 100%">
+      <tr>
+        <td style="width: 33%">
+          <div id="levelDiv">Level: <span id="level">-</span></div>
+        </td>
+        <td>
+          <button id="start">Start</button>
+          <table id="controls">
+            <tr>
+              <td></td>
+              <td><button id="b1">&uarr;</button></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><button id="b2">&larr;</button></td>
+              <td><button id="b3">&darr;</button></td>
+              <td><button id="b4">&rarr;</button></td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <audio id="a1" src="C4.mp3"></audio>
+    <audio id="a2" src="G3.mp3"></audio>
+    <audio id="a3" src="E3.mp3"></audio>
+    <audio id="a4" src="C3.mp3"></audio>
+    <audio id="fail" src="fail.mp3"></audio>
+
+  </body>
+</html>
