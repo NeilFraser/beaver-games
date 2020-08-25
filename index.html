@@ -1,0 +1,56 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games</title>
+    <link rel="stylesheet" href="common.css">
+    <style>
+      td {
+        padding: 1em;
+      }
+      td>div {
+        font-weight: bold;
+      }
+      td>div>a {
+        text-decoration: none;
+      }
+      a>img:hover {
+        opacity: 0.8;
+      }
+    </style>
+    <script>
+function init() {
+  // Change links to
+  var isLocal = location.protocol === 'file:';
+  if (isLocal) {
+    var links = document.getElementsByTagName('a');
+    for (var i = 0, link; (link = links[i]); i++) {
+      if (link.href.endsWith('/')) {
+        link.href += 'index.html';
+      }
+    }
+  }
+}
+window.addEventListener('load', init);
+
+    </script>
+  </head>
+
+  <body>
+    <h1>Beaver Games</h1>
+
+    <p><i>Simple games for young children.</i></p>
+
+    <table>
+      <tr>
+        <td>
+          <a href="repeat/"><img src="index/repeat.png" width="100"></a>
+        </td>
+        <td>
+          <div><a href="repeat/">Repeat</a></div>
+          <p>Remember a pattern.</p>
+        </td>
+      </tr>
+    </table>
+
+  </body>
+</html>

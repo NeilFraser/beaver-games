@@ -2,14 +2,8 @@
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <title>Beaver Games : Repeat</title>
+    <link rel="stylesheet" href="../common.css">
     <style>
-      body {
-        color: #444;
-        font-family: sans-serif;
-      }
-      h1 {
-        font-weight: normal;
-      }
       #controls {
         margin-left:auto;
         margin-right:auto;
@@ -73,7 +67,7 @@
         fill: #fff;
       }
       circle.now {
-        fill: #aaa;
+        fill: #ccc;
       }
       circle.done {
         fill: #444;
@@ -81,12 +75,20 @@
       #levelDiv {
         margin-left: 5%;
       }
+      #difficulty {
+        float: right;
+      }
     </style>
     <script src="index.js"></script>
   </head>
 
   <body>
-    <h1>Beaver Games : Repeat</h1>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Repeat</h1>
 
     <div id="startDiv">
       <button id="start">Start</button>

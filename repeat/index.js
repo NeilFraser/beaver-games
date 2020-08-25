@@ -14,13 +14,29 @@ var modes = {
 };
 var mode =  modes.START;
 
-var LEVELS = 8;
+var LEVELS;
 var levelCircles = [];
 
 var winTune = [4, 3, 2, 1, 2, 3, 4];
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
+  var isLocal = location.protocol === 'file:';
+  if (isLocal) {
+    var links = document.getElementsByTagName('a');
+    for (var i = 0, link; (link = links[i]); i++) {
+      if (link.href.endsWith('/')) {
+        link.href += 'index.html';
+      }
+    }
+  }
+
+  var m = document.cookie.match(/difficulty=([012])/);
+  var difficultyIndex = m ? m[1] : 0;
+  LEVELS = [8, 16, 32][difficultyIndex];
+  var difficultySelect = document.getElementById('difficulty');
+  difficultySelect.selectedIndex = difficultyIndex;
+  difficultySelect.addEventListener('change', setDifficulty);
   for (var i = 1; i <= 4; i++) {
     var button = document.getElementById('b' + i);
     button.addEventListener('mousedown', buttonStart.bind(button, i));
@@ -37,6 +53,14 @@ function init() {
   initTimeline();
 }
 window.addEventListener('load', init);
+
+// Change the difficulty level.
+function setDifficulty() {
+  var difficultySelect = document.getElementById('difficulty');
+  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
+  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
+  location.reload();
+}
 
 // Draw level locations on the timeline.
 function initTimeline() {
@@ -74,6 +98,7 @@ function startGame() {
   pattern.length = 0;
   for (var circle, i = 0; (circle = levelCircles[i]); i++) {
     circle.setAttribute('class', 'notDone');
+    circle.setAttribute('r', 5);
   }
   startComputer();
 }
@@ -85,6 +110,7 @@ function startComputer() {
   document.getElementById('level').textContent = pattern.length;
   if (pattern.length) {
     levelCircles[pattern.length - 1].setAttribute('class', 'done');
+    levelCircles[pattern.length - 1].setAttribute('r', 5);
   }
   if (pattern.length === LEVELS) {
     // The human has reached the maximum level.
@@ -94,6 +120,7 @@ function startComputer() {
     return;
   }
   levelCircles[pattern.length].setAttribute('class', 'now');
+  levelCircles[pattern.length].setAttribute('r', 7);
   pattern.push(Math.floor(Math.random() * 4) + 1);
   setTimeout(playStep, 1000);
 }
