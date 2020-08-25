@@ -14,6 +14,11 @@ var modes = {
 };
 var mode =  modes.START;
 
+var LEVELS = 8;
+var levelCircles = [];
+
+var winTune = [4, 3, 2, 1, 2, 3, 4];
+
 // On page load, initialize the event handlers and show the start button.
 function init() {
   for (var i = 1; i <= 4; i++) {
@@ -29,8 +34,27 @@ function init() {
 
   document.getElementById('start').addEventListener('click', startGame);
   showStart();
+  initTimeline();
 }
 window.addEventListener('load', init);
+
+// Draw level locations on the timeline.
+function initTimeline() {
+  var svg = document.getElementById('timeline');
+  var svgNS = svg.namespaceURI;
+  // <circle cx="5%" cy=10 r=5 class="notDone"></circle>
+  for (var i = 0; i < LEVELS; i++) {
+    var x = (90 / (LEVELS - 1) * i) + 5;
+    var circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', x + '%');
+    circle.setAttribute('cy', 10);
+    circle.setAttribute('r', 5);
+    circle.setAttribute('class', 'notDone');
+    svg.appendChild(circle);
+    levelCircles[i] = circle;
+  }
+  document.getElementById('levelMax').textContent = LEVELS;
+}
 
 // Show the start button and disable the controls.
 function showStart() {
@@ -48,6 +72,9 @@ function startGame() {
   var table = document.getElementById('controls');
   table.classList.remove('disabled');
   pattern.length = 0;
+  for (var circle, i = 0; (circle = levelCircles[i]); i++) {
+    circle.setAttribute('class', 'notDone');
+  }
   startComputer();
 }
 
@@ -56,9 +83,34 @@ function startComputer() {
   mode = modes.COMPUTER;  // Computer
   index = 0;
   document.getElementById('level').textContent = pattern.length;
+  if (pattern.length) {
+    levelCircles[pattern.length - 1].setAttribute('class', 'done');
+  }
+  if (pattern.length === LEVELS) {
+    // The human has reached the maximum level.
+    mode = modes.START;
+    index = 0;
+    setTimeout(playWinTune, 1000);
+    return;
+  }
+  levelCircles[pattern.length].setAttribute('class', 'now');
   pattern.push(Math.floor(Math.random() * 4) + 1);
   setTimeout(playStep, 1000);
 }
+
+// Play the next note in the win tune.
+function playWinTune() {
+  var note = winTune[index];
+  if (note === undefined) {
+    setTimeout(showStart, 500);
+    return;
+  }
+  noteStart(note);
+  setTimeout(noteStop.bind(this, note), 200);
+  index++;
+  setTimeout(playWinTune, 250);
+}
+
 
 // Play the next note in the computer's turn.
 function playStep() {
@@ -167,7 +219,7 @@ function buttonStop(i) {
   }
 }
 
-// Human or comupter starts a note playing.
+// Human or computer starts a note playing.
 function noteStart(i) {
   if (currentAudio) {
     currentAudio.pause();
@@ -179,7 +231,7 @@ function noteStart(i) {
   currentAudio.play();
 }
 
-// Human or comupter stops a note playing.
+// Human or computer stops a note playing.
 function noteStop(i) {
   var button = document.getElementById('b' + i);
   button.classList.remove('highlight');
