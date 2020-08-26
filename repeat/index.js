@@ -82,6 +82,7 @@ function initTimeline() {
 
 // Show the start button and disable the controls.
 function showStart() {
+  document.body.className = '';
   var startButton = document.getElementById('start');
   startButton.style.display = '';
   var table = document.getElementById('controls');
@@ -160,6 +161,7 @@ function startHuman() {
 
 // Human pressed the wrong note.  End game, show start button.
 function fail() {
+  document.body.className = 'fail';
   document.getElementById('fail').play();
   mode = modes.START;
   setTimeout(showStart, 1000);
