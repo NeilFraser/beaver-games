@@ -21,15 +21,7 @@ var winTune = [4, 3, 2, 1, 2, 3, 4];
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
-  var isLocal = location.protocol === 'file:';
-  if (isLocal) {
-    var links = document.getElementsByTagName('a');
-    for (var i = 0, link; (link = links[i]); i++) {
-      if (link.href.endsWith('/')) {
-        link.href += 'index.html';
-      }
-    }
-  }
+  fixLinks();
 
   var m = document.cookie.match(/difficulty=([012])/);
   var difficultyIndex = m ? m[1] : 0;

@@ -20,21 +20,12 @@
         opacity: 0.8;
       }
     </style>
+    <script src="common.js"></script>
     <script>
 function init() {
-  // Change links to
-  var isLocal = location.protocol === 'file:';
-  if (isLocal) {
-    var links = document.getElementsByTagName('a');
-    for (var i = 0, link; (link = links[i]); i++) {
-      if (link.href.endsWith('/')) {
-        link.href += 'index.html';
-      }
-    }
-  }
+  fixLinks();
 }
 window.addEventListener('load', init);
-
     </script>
   </head>
 
@@ -53,8 +44,20 @@ window.addEventListener('load', init);
           <p>Remember a pattern.</p>
         </td>
       </tr>
+      <tr>
+        <td>
+          <a href="snake/"><img src="index/snake.png" width="100"></a>
+        </td>
+        <td>
+          <div><a href="snake/">Snake</a></div>
+          <p>Grow your snake.</p>
+        </td>
+      </tr>
     </table>
     <hr>
-    All code is <a href="https://github.com/NeilFraser/beaver-games">open source</a>.
+    <p>
+      By <a href="https://neil.fraser.name/">Neil Fraser</a>.
+      All code is <a href="https://github.com/NeilFraser/beaver-games">open source</a>.
+    </p>
   </body>
 </html>
