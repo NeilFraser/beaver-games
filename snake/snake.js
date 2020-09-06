@@ -1,9 +1,26 @@
-var WIDTH = 30;
+/**
+ * @license
+ * Copyright 2020 Neil Fraser
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Snake game.
+ * @author root@neil.fraser.name (Neil Fraser)
+ */
+'use strict';
+
+
+// Height and width of playing board.
 var HEIGHT = 20;
+var WIDTH = 30;
 
+// X/Y location of player's head.
 var headXY = [];
-var directionStack = [];
+// Queue of pending keystrokes for direction changes.
+var directionQueue = [];
 
+// Enum of directions.  The integer values map into the 'deltas' array.
 var directions = {
   LEFT: 0,
   RIGHT: 1,
@@ -11,6 +28,7 @@ var directions = {
   DOWN: 3
 };
 
+// X/Y deltas for each direction.
 var deltas = [
   [-1, 0],
   [1, 0],
@@ -18,32 +36,50 @@ var deltas = [
   [0, 1]
 ];
 
+// Enum of results for a move.
 var moveResult = {
   FREE: 0,
   FOOD: 1,
   CRASH: 2
 };
 
-var SPEED = 200;
+// Milliseconds between each step.
+var SPEED;
 
-var playerDirection = directions.RIGHT;
+// Current direction of player.
+var playerDirection;
 
+// Array of X/Y coordinates for the player's snake.
+// The head is the last element.  The tail is the first (0).
 var snakeCoordinates = [];
 
+// Running task for executing steps.
+var pid;
+
+// Is the human's snake alive?
+var isHumanAlive = false;
+
+// On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
 
+  var m = document.cookie.match(/difficulty=([012])/);
+  var difficultyIndex = m ? m[1] : 0;
+  SPEED = [400, 200, 100][difficultyIndex];
+  var difficultySelect = document.getElementById('difficulty');
+  difficultySelect.selectedIndex = difficultyIndex;
+  difficultySelect.addEventListener('change', setDifficulty);
+
   injectTable();
   initBorders();
-  setHead(Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2));
-  step(true);
-  step(true);
-  addFood();
-  addFood();
-  document.addEventListener('keydown', keydown);
-  step();
-}
+  document.getElementById('start').addEventListener('click', startGame);
 
+  document.addEventListener('keydown', keydown);
+  document.addEventListener('keypress', keyPress);
+}
+window.addEventListener('load', init);
+
+// Create the DOM for the playing board.  Only done one.
 function injectTable() {
   var count = 0;
   var table = document.getElementById('grid');
@@ -59,8 +95,8 @@ function injectTable() {
     table.appendChild(tr);
   }
 }
-window.addEventListener('load', init);
 
+// Create the borders.  Only done once.
 function initBorders() {
   var doorWidth = 3;  // Approximately one half the width of the door.
   for (var x = 0; x < WIDTH; x++) {
@@ -79,6 +115,60 @@ function initBorders() {
   }
 }
 
+// Change the difficulty level.
+function setDifficulty() {
+  var difficultySelect = document.getElementById('difficulty');
+  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
+  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
+  location.reload();
+}
+
+// Clear any existing data, and configure a new game.
+function resetGame() {
+  for (var y = 0; y < HEIGHT; y++) {
+    for (var x = 0; x < WIDTH; x++) {
+      var td = getCell(x, y);
+      td.classList.remove('head');
+      td.classList.remove('snake');
+      td.classList.remove('food');
+    }
+  }
+  playerDirection = directions.RIGHT;
+  snakeCoordinates.length = 0;
+  setHead(Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2));
+  // Start snake with a length of three (one head, plus two steps),
+  step(true);
+  step(true);
+  // Start with two foods on the board.
+  addFood();
+  addFood();
+}
+
+// Human pressed space or enter to start game.
+function keyPress(e) {
+  if (!isHumanAlive && (e.key === 'Enter' || e.key === ' ')) {
+    startGame();
+    e.preventDefault();
+  }
+}
+
+// Show the start button and disable the controls.
+function showStart() {
+  document.body.className = '';
+  var startButton = document.getElementById('start');
+  startButton.style.display = '';
+}
+
+// Hide the start button, and start the interval.
+function startGame() {
+  resetGame();
+  var startButton = document.getElementById('start');
+  startButton.style.display = 'none';
+  isHumanAlive = true;
+  pid = setInterval(step, SPEED);
+}
+
+// Add an new food square somewhere randomly on the board.
 function addFood() {
   do {
     var x = Math.floor(Math.random() * WIDTH);
@@ -87,9 +177,12 @@ function addFood() {
   } while (cell.classList.contains('border') ||
            cell.classList.contains('snake') ||
            cell.classList.contains('food'));
+  // Note: the game will crash if there are zero free squares.
   cell.classList.add('food');
 }
 
+// Set the snake's head to the given coordinates.
+// Returns the result of this move (crash, food or free).
 function setHead(x, y) {
   var newHead = getCell(x, y);
   if (newHead.classList.contains('border') ||
@@ -111,6 +204,8 @@ function setHead(x, y) {
   return moveResult.FREE;
 }
 
+// Move the head in the given direction.
+// Returns the result of this move (crash, food or free).
 function moveHead(dxy) {
   var x = headXY[0] + dxy[0];
   var y = headXY[1] + dxy[1];
@@ -127,32 +222,43 @@ function moveHead(dxy) {
   return setHead(x, y);
 }
 
+// User has crashed, end the game.
+function crash() {
+  clearInterval(pid);
+  isHumanAlive = false;
+  document.body.className = 'shake';
+  document.getElementById('crash').play();
+  setTimeout(showStart, 1000);
+}
+
+// Get the TD element for the given coordinates.
 function getCell(x, y) {
   return document.getElementById(x + '_' + y);
 }
 
+// Execute a single step.
+// If 'initialGrow' is present and true, let the snake grow by one.
 function step(initialGrow) {
-   var newDirection = directionStack.shift();
-   if (newDirection !== undefined) {
-     playerDirection = newDirection;
-   }
-   var result = moveHead(deltas[playerDirection]);
-   if (result == moveResult.CRASH) {
-     return;
-   } else if (result == moveResult.FOOD) {
-    addFood();
-   } else if (result == moveResult.FREE && !initialGrow) {
-     var tail = snakeCoordinates.shift();
-     var tailCell = getCell(tail[0], tail[1]);
-     tailCell.classList.remove('snake');
-   }
-   if (!initialGrow) {
-     setTimeout(step, SPEED);
-   }
+  var newDirection = directionQueue.shift();
+  if (newDirection !== undefined) {
+    playerDirection = newDirection;
+  }
+  var result = moveHead(deltas[playerDirection]);
+  if (result == moveResult.CRASH) {
+    crash();
+    return;
+  } else if (result == moveResult.FOOD) {
+   addFood();
+  } else if (result == moveResult.FREE && !initialGrow) {
+    var tail = snakeCoordinates.shift();
+    var tailCell = getCell(tail[0], tail[1]);
+    tailCell.classList.remove('snake');
+  }
 }
 
+// Player is changing directions using the keyboard.
 function keydown(e) {
-  if (e.repeat) {
+  if (e.repeat || !isHumanAlive) {
     return;
   }
   switch (e.key) {
@@ -171,10 +277,12 @@ function keydown(e) {
     default:
       return;
   }
+  e.preventDefault();
 }
 
+// Add the player's new direction to the queue of direction changes.
 function pushDirection(newDirection) {
-  var last = directionStack[directionStack.length - 1];
+  var last = directionQueue[directionQueue.length - 1];
   if (last === undefined) {
     last = playerDirection;
   }
@@ -187,6 +295,6 @@ function pushDirection(newDirection) {
   }
   // Only schedule changes.
   if (last !== newDirection) {
-    directionStack.push(newDirection);
+    directionQueue.push(newDirection);
   }
 }

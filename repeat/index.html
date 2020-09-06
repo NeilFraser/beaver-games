@@ -2,7 +2,7 @@
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <title>Beaver Games : Repeat</title>
-    <link rel="stylesheet" href="../common.css">
+    <link rel="stylesheet" href="../common/style.css">
     <style>
       #controls {
         margin-left:auto;
@@ -78,27 +78,8 @@
       #difficulty {
         float: right;
       }
-
-      body.fail {
-        animation: shake 0.82s cubic-bezier(.36,.07,.19,.97) both;
-        transform: translate(0, 0);
-      }
-      @keyframes shake {
-        10%, 90% {
-          transform: translate(-1px, 0);
-        }
-        20%, 80% {
-          transform: translate(2px, -2px);
-        }
-        30%, 50%, 70% {
-          transform: translate(-4px, 0);
-        }
-        40%, 60% {
-          transform: translate(4px, 2px);
-        }
-      }
     </style>
-    <script src="../common.js"></script>
+    <script src="../common/utils.js"></script>
     <script src="repeat.js"></script>
   </head>
 
@@ -137,7 +118,7 @@
     <audio id="a2" src="G3.mp3"></audio>
     <audio id="a3" src="E3.mp3"></audio>
     <audio id="a4" src="C3.mp3"></audio>
-    <audio id="fail" src="fail.mp3"></audio>
+    <audio id="crash" src="../common/crash.mp3"></audio>
 
   </body>
 </html>

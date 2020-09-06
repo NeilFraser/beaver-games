@@ -2,10 +2,27 @@
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <title>Beaver Games : Snake</title>
-    <link rel="stylesheet" href="../common.css">
-    <script src="../common.js"></script>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
     <script src="snake.js"></script>
     <style>
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 125px 210px;
+        padding: 20px;
+        width: 123px;
+        display: block;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: fixed;
+        width: 100%;
+      }
       #grid {
         border-collapse: collapse;
       }
@@ -31,10 +48,22 @@
       #grid .border {
         background: #888;
       }
+      #difficulty {
+        float: right;
+      }
     </style>
   </head>
   <body>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
     <h1><a href="../">Beaver Games</a> : Snake</h1>
+    <div id="startDiv">
+      <button id="start">Start</button>
+    </div>
     <table id="grid"></table>
+    <audio id="crash" src="../common/crash.mp3"></audio>
   </body>
 </html>

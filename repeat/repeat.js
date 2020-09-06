@@ -1,3 +1,16 @@
+/**
+ * @license
+ * Copyright 2020 Neil Fraser
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Repeat game.
+ * @author root@neil.fraser.name (Neil Fraser)
+ */
+'use strict';
+
+
 // Keep track of currently playing audio so it may be terminated.
 var currentAudio = null;
 
@@ -36,9 +49,9 @@ function init() {
     button.addEventListener('mouseout', buttonStop.bind(button, i));
   }
 
-  document.body.addEventListener('keydown', keyDown);
-  document.body.addEventListener('keyup', keyUp);
-  document.body.addEventListener('keypress', keyPress);
+  document.addEventListener('keydown', keyDown);
+  document.addEventListener('keyup', keyUp);
+  document.addEventListener('keypress', keyPress);
 
   document.getElementById('start').addEventListener('click', startGame);
   showStart();
@@ -153,8 +166,8 @@ function startHuman() {
 
 // Human pressed the wrong note.  End game, show start button.
 function fail() {
-  document.body.className = 'fail';
-  document.getElementById('fail').play();
+  document.body.className = 'shake';
+  document.getElementById('crash').play();
   mode = modes.START;
   setTimeout(showStart, 1000);
 }
@@ -219,7 +232,7 @@ function buttonStart(i) {
   if (mode !== modes.HUMAN) {
     return;
   }
-  expectedNote = pattern[index];
+  var expectedNote = pattern[index];
   index++;
   if (expectedNote == i) {
     noteStart(i);
