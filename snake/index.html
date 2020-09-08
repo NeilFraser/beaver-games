@@ -10,7 +10,7 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: large;
-        margin: 125px 210px;
+        margin: 180px 256px;
         padding: 20px;
         width: 123px;
         display: block;
@@ -27,26 +27,72 @@
         border-collapse: collapse;
       }
       #grid td {
-        height: 15px;
-        width: 15px;
+        background-image: url('sprites.png');
+        background-position: -60px 0;
+        height: 20px;
+        margin: 0;
+        padding: 0;
+        width: 20px;
       }
       #grid .even {
-        background: #2ea922;
+        background-color: #2ea922;
       }
       #grid .odd {
-        background: #2e9f22;
+        background-color: #2e9f22;
       }
-      #grid .snake {
-        background: #F0A609;
+      #grid .head.dir-0 {
+        background-position: 0 -20px;
       }
-      #grid .head {
-        background: #FFBF2F;
+      #grid .head.dir-1 {
+        background-position: -20px -20px;
+      }
+      #grid .head.dir-2 {
+        background-position: 0 -40px;
+      }
+      #grid .head.dir-3 {
+        background-position: 0 -60px;
+      }
+      #grid .body.dir-0,
+      #grid .body.dir-1 {
+        background-position: -40px -20px;
+      }
+      #grid .body.dir-2,
+      #grid .body.dir-3 {
+        background-position: -40px 0;
+      }
+      #grid .tail.dir-0 {
+        background-position: -20px 0;
+      }
+      #grid .tail.dir-1 {
+        background-position: 0 0;
+      }
+      #grid .tail.dir-2 {
+        background-position: -20px -60px;
+      }
+      #grid .tail.dir-3 {
+        background-position: -20px -40px;
+      }
+      #grid .turn-ccw.dir-0,
+      #grid .turn-cw.dir-3 {
+        background-position: -60px -40px;
+      }
+      #grid .turn-ccw.dir-1,
+      #grid .turn-cw.dir-2 {
+        background-position: -40px -60px;
+      }
+      #grid .turn-ccw.dir-2,
+      #grid .turn-cw.dir-0 {
+        background-position: -60px -60px;
+      }
+      #grid .turn-ccw.dir-3,
+      #grid .turn-cw.dir-1 {
+        background-position: -40px -40px;
       }
       #grid .food {
-        background: #D02E2B;
-      }
+        background-position: -60px -20px;
+       }
       #grid .border {
-        background: #888;
+        background-color: #888;
       }
       #difficulty {
         float: right;

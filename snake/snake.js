@@ -15,8 +15,6 @@
 var HEIGHT = 20;
 var WIDTH = 30;
 
-// X/Y location of player's head.
-var headXY = [];
 // Queue of pending keystrokes for direction changes.
 var directionQueue = [];
 
@@ -103,15 +101,15 @@ function initBorders() {
     if (Math.abs(x - WIDTH / 2) < doorWidth) {
       continue;
     }
-    getCell(x, 0).className = 'border';
-    getCell(x, HEIGHT - 1).className = 'border';
+    getCell([x, 0]).className = 'border';
+    getCell([x, HEIGHT - 1]).className = 'border';
   }
   for (var y = 1; y < HEIGHT - 1; y++) {
     if (Math.abs(y - HEIGHT / 2) < doorWidth) {
       continue;
     }
-    getCell(WIDTH - 1, y).className = 'border';
-    getCell(0, y).className = 'border';
+    getCell([WIDTH - 1, y]).className = 'border';
+    getCell([0, y]).className = 'border';
   }
 }
 
@@ -123,22 +121,31 @@ function setDifficulty() {
   location.reload();
 }
 
+// Clear temporary CSS classes (e.g. snake, food) from a cell.
+// Preserve permanent CSS classes (e.g. even/odd, border).
+function clearCell(td) {
+  var classes = ['food', 'snake',
+    'dir-0', 'dir-1', 'dir-2', 'dir-3',
+    'head', 'body', 'turn-ccw', 'turn-cw', 'tail'];
+  for (var i = 0; i < classes.length; i++) {
+    td.classList.remove(classes[i]);
+  }
+}
+
 // Clear any existing data, and configure a new game.
 function resetGame() {
   for (var y = 0; y < HEIGHT; y++) {
     for (var x = 0; x < WIDTH; x++) {
-      var td = getCell(x, y);
-      td.classList.remove('head');
-      td.classList.remove('snake');
-      td.classList.remove('food');
+      clearCell(getCell([x, y]));
     }
   }
   playerDirection = directions.RIGHT;
   snakeCoordinates.length = 0;
-  setHead(Math.floor(WIDTH / 2), Math.floor(HEIGHT / 2));
+  setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2));
   // Start snake with a length of three (one head, plus two steps),
   step(true);
   step(true);
+  step(false);
   // Start with two foods on the board.
   addFood();
   addFood();
@@ -146,9 +153,11 @@ function resetGame() {
 
 // Human pressed space or enter to start game.
 function keyPress(e) {
-  if (!isHumanAlive && (e.key === 'Enter' || e.key === ' ')) {
-    startGame();
-    e.preventDefault();
+  if (e.key === 'Enter' || e.key === ' ') {
+    if (document.getElementById('start').style.display !== 'none') {
+      startGame();
+      e.preventDefault();
+    }
   }
 }
 
@@ -173,7 +182,7 @@ function addFood() {
   do {
     var x = Math.floor(Math.random() * WIDTH);
     var y = Math.floor(Math.random() * HEIGHT);
-    var cell = getCell(x, y);
+    var cell = getCell([x, y]);
   } while (cell.classList.contains('border') ||
            cell.classList.contains('snake') ||
            cell.classList.contains('food'));
@@ -184,16 +193,18 @@ function addFood() {
 // Set the snake's head to the given coordinates.
 // Returns the result of this move (crash, food or free).
 function setHead(x, y) {
-  var newHead = getCell(x, y);
+  var newHead = getCell([x, y]);
   if (newHead.classList.contains('border') ||
       newHead.classList.contains('snake')) {
     return moveResult.CRASH;
   }
-  if (headXY.length) {
-    var oldHead = getCell(headXY[0], headXY[1]);
+  if (snakeCoordinates.length) {
+    var oldHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
+    var oldHead = getCell(oldHeadXY);
     oldHead.classList.remove('head');
+    oldHead.classList.add('body');
   }
-  headXY = [x, y];
+  newHead.classList.add('dir-' + playerDirection);
   newHead.classList.add('head');
   newHead.classList.add('snake');
   snakeCoordinates.push([x, y]);
@@ -207,6 +218,7 @@ function setHead(x, y) {
 // Move the head in the given direction.
 // Returns the result of this move (crash, food or free).
 function moveHead(dxy) {
+  var headXY = snakeCoordinates[snakeCoordinates.length - 1];
   var x = headXY[0] + dxy[0];
   var y = headXY[1] + dxy[1];
   if (x < 0) {
@@ -232,27 +244,54 @@ function crash() {
 }
 
 // Get the TD element for the given coordinates.
-function getCell(x, y) {
-  return document.getElementById(x + '_' + y);
+function getCell(xy) {
+  return document.getElementById(xy[0] + '_' + xy[1]);
 }
 
 // Execute a single step.
 // If 'initialGrow' is present and true, let the snake grow by one.
 function step(initialGrow) {
+  var ccw = undefined;
   var newDirection = directionQueue.shift();
-  if (newDirection !== undefined) {
+  if (newDirection !== undefined && newDirection !== playerDirection) {
+    ccw =
+        (playerDirection === directions.LEFT && newDirection === directions.DOWN) ||
+        (playerDirection === directions.DOWN && newDirection === directions.RIGHT) ||
+        (playerDirection === directions.RIGHT && newDirection === directions.UP) ||
+        (playerDirection === directions.UP && newDirection === directions.LEFT);
     playerDirection = newDirection;
   }
+  var oldHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
+  var oldHeadCell = getCell(oldHeadXY);
   var result = moveHead(deltas[playerDirection]);
   if (result == moveResult.CRASH) {
     crash();
     return;
   } else if (result == moveResult.FOOD) {
-   addFood();
+    addFood();
   } else if (result == moveResult.FREE && !initialGrow) {
-    var tail = snakeCoordinates.shift();
-    var tailCell = getCell(tail[0], tail[1]);
-    tailCell.classList.remove('snake');
+    var oldTail = snakeCoordinates.shift();
+    var oldTailCell = getCell(oldTail);
+    clearCell(oldTailCell);
+    var newTail = snakeCoordinates[0];
+    var newTailCell = getCell(newTail);
+    newTailCell.classList.remove('body');
+    newTailCell.classList.remove('turn-ccw');
+    newTailCell.classList.remove('turn-cw');
+    newTailCell.classList.add('tail');
+  }
+  if (ccw !== undefined) {
+    oldHeadCell.classList.remove('body');
+    oldHeadCell.classList.add(ccw ? 'turn-ccw' : 'turn-cw');
+    // Turn the direction of this cell, to match the head.
+    var newHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
+    var newHeadXY = getCell(newHeadXY);
+    for (var d = 0; d < 4; d++) {
+      oldHeadCell.classList.remove('dir-' + d);
+      if (newHeadXY.classList.contains('dir-' + d)) {
+        oldHeadCell.classList.add('dir-' + d);
+      }
+    }
   }
 }
 

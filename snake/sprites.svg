@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   inkscape:export-ydpi="96"
+   inkscape:export-xdpi="96"
+   inkscape:export-filename="/Users/fraser/Code/beaver-games/snake/sprites.png"
+   width="80"
+   height="80"
+   viewBox="0 0 80 80"
+   version="1.1"
+   id="svg957"
+   inkscape:version="1.0 (4035a4f, 2020-05-01)"
+   sodipodi:docname="sprites.svg">
+  <defs
+     id="defs951" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="7.4875"
+     inkscape:cx="39.298096"
+     inkscape:cy="40"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     inkscape:document-rotation="0"
+     showgrid="false"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     units="px"
+     inkscape:window-width="1252"
+     inkscape:window-height="807"
+     inkscape:window-x="59"
+     inkscape:window-y="23"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata954">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0.05,0.05)">
+    <rect
+       style="fill:#f0a609;stroke:none;stroke-width:0.1;fill-opacity:1"
+       id="body1"
+       width="15"
+       height="20"
+       x="42.5"
+       y="0" />
+    <rect
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.0996656"
+       id="body2"
+       width="19.866444"
+       height="15"
+       x="40"
+       y="22.5" />
+    <path
+       sodipodi:nodetypes="czczc"
+       d="M 40,10 C 40,10 27.120003,2.5 20,2.5 12.879997,2.5 0,10 0,10 c 0,0 12.879997,7.5 20,7.5 7.120003,0 20,-7.5 20,-7.5 z"
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.1"
+       id="tail2" />
+    <path
+       sodipodi:nodetypes="szszs"
+       d="m 0,30 c 0,-7.120003 12.879997,-7.5 20,-7.5 7.120003,0 20,0.379997 20,7.5 0,7.120003 -12.879997,7.5 -20,7.5 C 12.879997,37.5 0,37.120003 0,30 Z"
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.1"
+       id="path849" />
+    <path
+       id="path857"
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.1"
+       d="m 30,80 c 0,0 7.5,-12.879997 7.5,-20 0,-7.120003 -7.5,-20 -7.5,-20 0,0 -7.5,12.879997 -7.5,20 0,7.120003 7.5,20 7.5,20 z"
+       sodipodi:nodetypes="czczc" />
+    <path
+       id="path859"
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.1"
+       d="m 10,40 c 7.120003,0 7.5,12.879997 7.5,20 0,7.120003 -0.379997,20 -7.5,20 C 2.879997,80 2.5,67.120003 2.5,60 2.5,52.879997 2.879997,40 10,40 Z"
+       sodipodi:nodetypes="szszs" />
+    <circle
+       r="7.5"
+       cy="30"
+       cx="70"
+       id="apple"
+       style="fill:#d02e2b;fill-opacity:1;stroke:none;stroke-width:0.377953" />
+    <path
+       transform="translate(-0.05,-0.05)"
+       d="M 60 42.550781 A 17.5 17.5 0 0 0 42.550781 60.050781 A 17.5 17.5 0 0 0 60.050781 77.550781 A 17.5 17.5 0 0 0 77.550781 60.050781 A 17.5 17.5 0 0 0 60.050781 42.550781 A 17.5 17.5 0 0 0 60 42.550781 z M 59.978516 57.550781 A 2.5 2.5 0 0 1 60.050781 57.550781 A 2.5 2.5 0 0 1 62.550781 60.050781 A 2.5 2.5 0 0 1 60.050781 62.550781 A 2.5 2.5 0 0 1 57.550781 60.050781 A 2.5 2.5 0 0 1 59.978516 57.550781 z "
+       style="fill:#f0a609;fill-opacity:1;stroke:none;stroke-width:0.377953"
+       id="path884" />
+  </g>
+</svg>
