@@ -268,6 +268,7 @@ function step(initialGrow) {
     crash();
     return;
   } else if (result == moveResult.FOOD) {
+    document.getElementById('apple').play();
     addFood();
   } else if (result == moveResult.FREE && !initialGrow) {
     var oldTail = snakeCoordinates.shift();
