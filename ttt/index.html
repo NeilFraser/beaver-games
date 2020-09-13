@@ -6,23 +6,6 @@
     <script src="../common/utils.js"></script>
     <script src="ttt.js"></script>
     <style>
-      #start {
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        font-size: large;
-        margin: 285px 410px;
-        padding: 20px;
-        width: 123px;
-        display: block;
-      }
-      #start:hover {
-        border: 1px solid #000;
-      }
-      #startDiv {
-        margin-left: -8px;
-        position: fixed;
-        width: 100%;
-      }
       #difficulty {
         float: right;
       }
@@ -43,10 +26,16 @@
         stroke-linecap: round;
         stroke-width: 2%;
       }
+      .human {
+        stroke: #F0A609;
+      }
+      .cpu {
+        stroke: #2E5FFF;
+      }
       #win {
         display: none;
         opacity: 0.9;
-        stroke: #f88;
+        stroke: #D02E2B;
         stroke-linecap: round;
         stroke-width: 5%;
       }
@@ -78,18 +67,18 @@
       <option value=2>Hard</option>
     </select>
     <h1><a href="../">Beaver Games</a> : Tic Tac Toe</h1>
-    <!--
-    <div id="startDiv">
-      <button id="start">Start</button>
-    </div>
-    -->
     <svg id="ttt" height="400" width="400" xmlns:xlink="http://www.w3.org/1999/xlink">
       <defs>
-        <g id="generic-x" class="x">
+        <g id="generic-x-cpu" class="x cpu">
           <line x1="7%" y1="7%" x2="26.4%" y2="26.4%" />
           <line x1="7%" y1="26.4%" x2="26.4%" y2="7%" />
         </g>
-        <circle id="generic-o" class="o" cx="16.7%" cy="16.7%" r="10%" />
+        <circle id="generic-o-cpu" class="o cpu" cx="16.7%" cy="16.7%" r="10%" />
+        <g id="generic-x-human" class="x human">
+          <line x1="7%" y1="7%" x2="26.4%" y2="26.4%" />
+          <line x1="7%" y1="26.4%" x2="26.4%" y2="7%" />
+        </g>
+        <circle id="generic-o-human" class="o human" cx="16.7%" cy="16.7%" r="10%" />
         <rect id="generic-square" class="square" height="33.3%" width="33.3%" />
       </defs>
 

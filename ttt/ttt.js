@@ -11,11 +11,17 @@ var board;
 // Whose turn, X or O?
 var turn;
 
-// Human goes first on first game.
-var humanFirst = true;
+// Human goes first on first game (but this is negated at the start).
+var cpuFirst = true;
 
 // Is the human allowed to click?
 var enabled;
+
+// One of three difficulty levels (0, 1, 2).
+// 0: always play a move that wins.
+// 1: failing a win, play a blocking move.
+// 2: play a perfect game.
+var DIFFICULTY;
 
 // SVG namespace.
 var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -40,9 +46,21 @@ function squareClick(e) {
   }
 }
 
+// Return a random element from a list.
+function randomElement(list) {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 // Computer moves.
 function computerPlay() {
-  draw(dream(turn, board)[0]);
+  var result;
+  if (DIFFICULTY === 2) {
+    // Solve the game.
+    result = dream(turn, board)[0];
+  } else {
+    result = lookAhead();
+  }
+  draw(result);
   enabled = true;
   drawScore();
 }
@@ -51,8 +69,9 @@ function computerPlay() {
 function draw(i) {
   var oldUse = document.querySelector('#svg' + i + '>use');
   var newUse = document.createElementNS(SVG_NS, 'use');
-  newUse.setAttributeNS(XLINK_NS, 'href',
-      turn == X_VALUE ? '#generic-x' : '#generic-o');
+  newUse.setAttributeNS(XLINK_NS, 'href', '#generic-' +
+      (turn == X_VALUE ? 'x' : 'o') + '-' +
+      ((cpuFirst ? turn === X_VALUE : turn === O_VALUE)  ? 'cpu' : 'human'));
   oldUse.parentNode.replaceChild(newUse, oldUse);
 
   // Update the internal board, and toggle whose turn it is.
@@ -60,6 +79,7 @@ function draw(i) {
   turn = invert(turn);
 }
 
+// Search all future moves.  Perfect game.
 // Here be recursive dragons.
 // Return a tuple: where to move, and expected result.
 function dream(x_o, board) {
@@ -85,11 +105,46 @@ function dream(x_o, board) {
     }
   }
   if (wins.length > 0) {
-    return [wins[Math.floor(Math.random() * wins.length)], x_o];
+    return [randomElement(wins), x_o];
   } else if (ties.length > 0) {
-    return [ties[Math.floor(Math.random() * ties.length)], TIE];
+    return [randomElement(ties), TIE];
   }
-  return [losses[Math.floor(Math.random() * losses.length)], invert(x_o)];
+  return [randomElement(losses), invert(x_o)];
+}
+
+// Look for a winning move, and optionally a blocking move.
+function lookAhead() {
+  var wins = [];
+  var blocks = [];
+  var empty = [];
+  var nextTurn = invert(turn);
+  for (var i = 0; i < 9; i++) {
+    if (board[i] === EMPTY) {
+      empty.push(i);
+      var dreamBoard = board.slice();
+      dreamBoard[i] = turn;
+      var state = boardState(dreamBoard);
+      if (state === turn) {
+        // Winning move found.
+        wins.push(i);
+      }
+      if (DIFFICULTY === 1) {
+        dreamBoard = board.slice();
+        dreamBoard[i] = nextTurn;
+        var state = boardState(dreamBoard);
+        if (state === nextTurn) {
+          // Blocking move found.
+          blocks.push(i);
+        }
+      }
+    }
+  }
+  if (wins.length > 0) {
+    return randomElement(wins);
+  } else if (blocks.length > 0) {
+    return randomElement(blocks);
+  }
+  return randomElement(empty);
 }
 
 // Return the opposite of X_VALUE or O_VALUE.
@@ -215,21 +270,36 @@ function reset() {
 
   // Initialize the board.
   board = [EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY, EMPTY];
+  // Computer goes first on even games.  Humans on odd games.
+  cpuFirst = !cpuFirst;
   // X goes first.
   turn = X_VALUE;
-  if (!humanFirst) {
+  if (cpuFirst) {
     // Computer's first move is random.
     draw(Math.floor(Math.random() * 9));
   }
   enabled = true;
-  // Computer goes first on even games.  Humans on odd games.
-  humanFirst = !humanFirst;
 }
 
 function init() {
   fixLinks();
 
+  var m = document.cookie.match(/difficulty=([012])/);
+  DIFFICULTY = Number(m ? m[1] : 0);
+  var difficultySelect = document.getElementById('difficulty');
+  difficultySelect.selectedIndex = DIFFICULTY;
+  difficultySelect.addEventListener('change', setDifficulty);
+
   document.getElementById('shield').addEventListener('click', reset);
   reset(null);
 }
 window.addEventListener('load', init);
+
+// Change the difficulty level.
+function setDifficulty() {
+  var difficultySelect = document.getElementById('difficulty');
+  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
+  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
+  location.reload();
+}
+
