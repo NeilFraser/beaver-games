@@ -152,7 +152,7 @@ function invert(x_o) {
   return x_o == X_VALUE ? O_VALUE : X_VALUE;
 }
 
-// Given a board, has X or O won (X_VALUE and Y_VALUE),
+// Given a board, has X or O won (X_VALUE and O_VALUE),
 // or is in full (TIE), or still playable (EMPTY)?
 function boardState(board) {
   for (var i = 0; i < 3; i++) {
@@ -185,9 +185,9 @@ function drawScore() {
   var state = boardState(board);
   var text = '';
   if (state === X_VALUE) {
-    text = 'X wins.';
+    text = cpuFirst ? 'Computer wins.' : 'You win!';
   } else if (state === O_VALUE) {
-    text = 'O wins.';
+    text = cpuFirst ? 'You win!' : 'Computer wins.';
   } else if (state === TIE) {
     text = 'It is a tie.';
   }
