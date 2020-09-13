@@ -21,14 +21,32 @@
       #b1 {
         background: #D02E2B;
       }
+      #b1>div {
+        background-position: 0 0;
+      }
       #b2 {
         background: #2E5FFF;
+      }
+      #b2>div {
+        background-position: -20px 0;
       }
       #b3 {
         background: #F0A609;
       }
+      #b3>div {
+        background-position: -40px 0;
+      }
       #b4 {
         background: #178F47;
+      }
+      #b4>div {
+        background-position: -60px 0;
+      }
+      #controls button>div {
+        background-image: url('arrows.png');
+        display: inline-block;
+        height: 20px;
+        width: 20px;
       }
       #controls:not(.disabled)  button:hover {
         border: 1px solid #000;
@@ -98,13 +116,13 @@
     <table id="controls">
       <tr>
         <td></td>
-        <td><button id="b1">&uarr;</button></td>
+        <td><button id="b1"><div></div></button></td>
         <td></td>
       </tr>
       <tr>
-        <td><button id="b2">&larr;</button></td>
-        <td><button id="b3">&darr;</button></td>
-        <td><button id="b4">&rarr;</button></td>
+        <td><button id="b2"><div></div></button></td>
+        <td><button id="b3"><div></div></button></td>
+        <td><button id="b4"><div></div></button></td>
       </tr>
     </table>
 
