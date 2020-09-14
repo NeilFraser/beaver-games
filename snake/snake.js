@@ -113,14 +113,6 @@ function initBorders() {
   }
 }
 
-// Change the difficulty level.
-function setDifficulty() {
-  var difficultySelect = document.getElementById('difficulty');
-  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
-  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
-  location.reload();
-}
-
 // Clear temporary CSS classes (e.g. snake, food) from a cell.
 // Preserve permanent CSS classes (e.g. even/odd, border).
 function clearCell(td) {

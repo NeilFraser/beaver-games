@@ -1,3 +1,16 @@
+/**
+ * @license
+ * Copyright 2020 Neil Fraser
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/**
+ * @fileoverview Tic Tac Toe.
+ * @author root@neil.fraser.name (Neil Fraser)
+ */
+'use strict';
+
+
 var X_VALUE = -1;
 var EMPTY = 0;
 var O_VALUE = 1;
@@ -294,12 +307,3 @@ function init() {
   reset(null);
 }
 window.addEventListener('load', init);
-
-// Change the difficulty level.
-function setDifficulty() {
-  var difficultySelect = document.getElementById('difficulty');
-  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
-  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
-  location.reload();
-}
-

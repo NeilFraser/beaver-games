@@ -59,14 +59,6 @@ function init() {
 }
 window.addEventListener('load', init);
 
-// Change the difficulty level.
-function setDifficulty() {
-  var difficultySelect = document.getElementById('difficulty');
-  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
-  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
-  location.reload();
-}
-
 // Draw level locations on the timeline.
 function initTimeline() {
   var svg = document.getElementById('timeline');
