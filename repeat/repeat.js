@@ -19,13 +19,15 @@ var pattern = [];
 // The player's (computer or human) location in the pattern.
 var index = 0;
 
-// The game has three modes: Waiting on start button, computer and human turns.
+// The game has four modes: Waiting on start button, computer and human turns,
+// and stopped (the period between fail and start).
 var modes = {
   START: -1,
   COMPUTER: 0,
-  HUMAN: 1
+  HUMAN: 1,
+  STOPPED: 2
 };
-var mode =  modes.START;
+var mode = modes.START;
 
 var LEVELS;
 var levelCircles = [];
@@ -160,7 +162,7 @@ function startHuman() {
 function fail() {
   document.body.className = 'shake';
   document.getElementById('crash').play();
-  mode = modes.START;
+  mode = modes.STOPPED;
   setTimeout(showStart, 1000);
 }
 
