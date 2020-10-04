@@ -114,7 +114,7 @@ function startComputer() {
   }
   if (pattern.length === LEVELS) {
     // The human has reached the maximum level.
-    mode = modes.START;
+    mode = modes.STOPPED;
     index = 0;
     setTimeout(playWinTune, 1000);
     return;

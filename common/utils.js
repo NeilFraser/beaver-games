@@ -30,5 +30,8 @@ function setDifficulty() {
   var difficultySelect = document.getElementById('difficulty');
   var value = difficultySelect.options[difficultySelect.selectedIndex].value;
   document.cookie = 'difficulty=' + value + '; SameSite=Strict';
+  if (!document.cookie) {
+    alert('Can\'t set cookie.\nKnown issue with Chrome on file:// URLs.');
+  }
   location.reload();
 }

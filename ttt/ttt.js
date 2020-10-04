@@ -49,6 +49,10 @@ function squareClick(e) {
   // Extract the ID from the parent SVG.
   var svg = e.target.parentNode;
   var i = Number(svg.id.substring(3));
+  humanPlay(i);
+}
+
+function humanPlay(i) {
   draw(i);
   drawScore();
 
@@ -294,6 +298,24 @@ function reset() {
   enabled = true;
 }
 
+// Key presses to clear shield, or play.
+function keyPress(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    if (document.getElementById('shield').style.display === 'block') {
+      reset();
+    }
+    e.preventDefault();
+  }
+  if (e.code >= 'Numpad1' && e.code <= 'Numpad9') {
+    var i = Number(e.code.slice(-1));
+    // Convert from 789/456/123 layout to 0-8.
+    i = [null, 6, 7, 8, 3, 4, 5, 0, 1, 2][i];
+    if (enabled && board[i] === EMPTY) {
+      humanPlay(i);
+    }
+  }
+}
+
 function init() {
   fixLinks();
 
@@ -303,7 +325,8 @@ function init() {
   difficultySelect.selectedIndex = DIFFICULTY;
   difficultySelect.addEventListener('change', setDifficulty);
 
+  document.addEventListener('keypress', keyPress);
   document.getElementById('shield').addEventListener('click', reset);
-  reset(null);
+  reset();
 }
 window.addEventListener('load', init);
