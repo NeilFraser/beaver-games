@@ -1,0 +1,70 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Dino</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <style>
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 20px auto;
+        padding: 20px;
+        width: 123px;
+        display: block;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: fixed;
+        width: 100%;
+      }
+
+      h1 {
+        margin-bottom: 2em;
+      }
+      #difficulty {
+        float: right;
+      }
+      #landscape {
+        display: block;
+        margin: auto;
+      }
+      line {
+        stroke: #444;
+      }
+      .dinosaur {
+        fill: #F0A609;
+      }
+      .obstacle {
+        fill: #178F47;
+      }
+    </style>
+    <script src="../common/utils.js"></script>
+    <script src="dino.js"></script>
+  </head>
+
+  <body>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Dino</h1>
+
+    <div id="startDiv">
+      <button id="start">Start</button>
+    </div>
+
+    <svg id="landscape" height="150" width="800" xmlns="http://www.w3.org/2000/svg">
+      <g id="ground">
+        <line x1="10" y1=140 x2="990" y2=140></line>
+      </g>
+    </svg>
+
+    <audio id="crash" src="../common/crash.mp3"></audio>
+
+  </body>
+</html>

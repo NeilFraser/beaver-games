@@ -299,7 +299,7 @@ function reset() {
 }
 
 // Key presses to clear shield, or play.
-function keyPress(e) {
+function keyDown(e) {
   if (e.key === 'Enter' || e.key === ' ') {
     if (document.getElementById('shield').style.display === 'block') {
       reset();
@@ -325,7 +325,7 @@ function init() {
   difficultySelect.selectedIndex = DIFFICULTY;
   difficultySelect.addEventListener('change', setDifficulty);
 
-  document.addEventListener('keypress', keyPress);
+  document.addEventListener('keydown', keyDown);
   document.getElementById('shield').addEventListener('click', reset);
   reset();
 }
