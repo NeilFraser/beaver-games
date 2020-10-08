@@ -77,6 +77,7 @@ function Obstacle(type) {
 
   var svg = document.getElementById('landscape');
   var svgNS = svg.namespaceURI;
+  var g = document.getElementById('obstacles');
   // <rect class="obstacle"></rect>
   var element = document.createElementNS(svgNS, 'rect');
   element.setAttribute('x', this.x);
@@ -86,7 +87,7 @@ function Obstacle(type) {
   element.setAttribute('class', 'obstacle');
   element.setAttribute('rx', 5);
   element.setAttribute('ry', 5);
-  svg.appendChild(element);
+  g.appendChild(element);
   this.element = element;
 }
 
@@ -119,6 +120,7 @@ window.addEventListener('load', init);
 function initLandscape() {
   var svg = document.getElementById('landscape');
   var svgNS = svg.namespaceURI;
+  var g = document.getElementById('dino');
   // <rect id="dinosaur"></rect>
   var element = document.createElementNS(svgNS, 'rect');
   element.setAttribute('x', DINO_CENTER_X - STAND_WIDTH / 2);
@@ -128,8 +130,17 @@ function initLandscape() {
   element.setAttribute('rx', 5);
   element.setAttribute('ry', 5);
   element.setAttribute('class', 'dinosaur');
-  svg.appendChild(element);
+  g.appendChild(element);
   dino.element = element;
+
+  var g = document.getElementById('ground');
+  // <line x1="10" y1=140 x2="990" y2=140></line>
+  var line = document.createElementNS(svgNS, 'line');
+  line.setAttribute('x1', 0);
+  line.setAttribute('x2', LANDSCAPE_WIDTH);
+  line.setAttribute('y1', GROUND_LEVEL);
+  line.setAttribute('y2', GROUND_LEVEL);
+  g.appendChild(line);
 }
 
 // Show the start button and disable the controls.

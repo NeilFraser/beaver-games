@@ -59,9 +59,23 @@
     </div>
 
     <svg id="landscape" height="150" width="800" xmlns="http://www.w3.org/2000/svg">
-      <g id="ground">
-        <line x1="10" y1=140 x2="990" y2=140></line>
-      </g>
+      <defs>
+         <linearGradient id="leftCurtain">
+           <stop offset="0%" style="stop-color: #fff; stop-opacity: 1"/>
+           <stop offset="100%" style="stop-color: #fff; stop-opacity: 0"/>
+         </linearGradient>
+         <linearGradient id="rightCurtain">
+           <stop offset="0%" style="stop-color: #fff; stop-opacity: 0"/>
+           <stop offset="100%" style="stop-color: #fff; stop-opacity: 1"/>
+         </linearGradient>
+       </defs>
+      <g id="dino"></g>
+      <g id="obstacles"></g>
+      <g id="ground"></g>
+      <rect x="-1" y="0" width="50" height="139.5"
+          style="fill: url(#leftCurtain);"></rect>
+      <rect x="751" y="0" width="50" height="139.5"
+          style="fill: url(#rightCurtain);"></rect>
     </svg>
 
     <audio id="crash" src="../common/crash.mp3"></audio>
