@@ -28,27 +28,38 @@ var SPEED = 1;
 // Number of ms per pixel.
 var SCROLL_SPEED = 6;
 
+// Number of ms from ground to apogee.
 var HALF_JUMP_DURATION = 500;
 
+// Min and max times between obstacles.
 var MIN_OBSTACLE_INTERVAL = 1000;
 var MAX_OBSTACLE_INTERVAL = 2000;
 
+// Vertical (y) location of ground.
 var GROUND_LEVEL = 140;
 
+// Height of dinosaur when standing.
 var STAND_HEIGHT = 40;
 
+// Height of dinosaur when crouching.
 var CROUCH_HEIGHT = 20;
 
+// Width of dinosaur when standing.
 var STAND_WIDTH = 20;
 
+// Width of dinosaur when crouching.
 var CROUCH_WIDTH = 30;
 
+// Horizontal (x) location of center of dinosaur.
 var DINO_CENTER_X = 80;
 
-var LANDSCAPE_MARGIN = 50;
-
+// Width of visible screen.
 var LANDSCAPE_WIDTH = 800;
 
+// How far landscape extends beyond the end of each side of the visible screen.
+var LANDSCAPE_MARGIN = 50;
+
+// Current state of dinosaur.
 var dino = {
   element: null,
   jumpStart: undefined,
@@ -56,11 +67,15 @@ var dino = {
   rotation: 0
 };
 
+var SVG_NS = 'http://www.w3.org/2000/svg';
+
 var animationPid = undefined;
 var obstaclePid = undefined;
 
+// List of all obstacles currently on the landscape.
 var obstacles = [];
 
+// Object class for an obstacle.
 function Obstacle(type) {
   if (type == 1) {
     this.height = 30;
@@ -75,11 +90,9 @@ function Obstacle(type) {
   this.x = LANDSCAPE_WIDTH + LANDSCAPE_MARGIN;
   this.y = GROUND_LEVEL - this.height;
 
-  var svg = document.getElementById('landscape');
-  var svgNS = svg.namespaceURI;
   var g = document.getElementById('obstacles');
   // <rect class="obstacle"></rect>
-  var element = document.createElementNS(svgNS, 'rect');
+  var element = document.createElementNS(SVG_NS, 'rect');
   element.setAttribute('x', this.x);
   element.setAttribute('y', GROUND_LEVEL - this.height - this.altitude);
   element.setAttribute('height', this.height);
@@ -91,6 +104,7 @@ function Obstacle(type) {
   this.element = element;
 }
 
+// Destroy this obstacle.
 Obstacle.prototype.destroy = function() {
   this.element.parentNode.removeChild(this.element);
   this.element = null;
@@ -117,12 +131,12 @@ function init() {
 }
 window.addEventListener('load', init);
 
+// Initial setup of the landscape.
 function initLandscape() {
-  var svg = document.getElementById('landscape');
-  var svgNS = svg.namespaceURI;
-  var g = document.getElementById('dino');
+  // Create dinosaur.
   // <rect id="dinosaur"></rect>
-  var element = document.createElementNS(svgNS, 'rect');
+  var g = document.getElementById('dino');
+  var element = document.createElementNS(SVG_NS, 'rect');
   element.setAttribute('x', DINO_CENTER_X - STAND_WIDTH / 2);
   element.setAttribute('y', GROUND_LEVEL - STAND_HEIGHT);
   element.setAttribute('height', STAND_HEIGHT);
@@ -133,17 +147,12 @@ function initLandscape() {
   g.appendChild(element);
   dino.element = element;
 
+  // Create temporary ground line.
   var g = document.getElementById('ground');
-  // <line x1="10" y1=140 x2="990" y2=140></line>
-  var line = document.createElementNS(svgNS, 'line');
-  line.setAttribute('x1', 0);
-  line.setAttribute('x2', LANDSCAPE_WIDTH);
-  line.setAttribute('y1', GROUND_LEVEL);
-  line.setAttribute('y2', GROUND_LEVEL);
-  g.appendChild(line);
+  makeGroundLine(g, 0, LANDSCAPE_WIDTH);
 }
 
-// Show the start button and disable the controls.
+// Show the start button.
 function showStart() {
   document.body.className = '';
   var startButton = document.getElementById('start');
@@ -151,7 +160,7 @@ function showStart() {
   mode = modes.START;
 }
 
-// Hide the start button, and start the computer's turn.
+// Hide the start button, and start the game.
 function startGame() {
   var startButton = document.getElementById('start');
   startButton.style.display = 'none';
@@ -164,6 +173,8 @@ function startGame() {
   createObstacle();
 }
 
+// Update the display.
+// This involves updating the dinosaur, obstacles and ground.
 function drawFrame(timestamp) {
   // Update dinosaur.
   if (dino.jumpStart === 0) {
@@ -231,10 +242,35 @@ function drawFrame(timestamp) {
     }
   }
 
+  // Update ground.
+  var groundScroll = timestamp / SCROLL_SPEED * SPEED;
+  var g = document.getElementById('ground');
+  while (g.firstChild) {
+    g.removeChild(g.firstChild);
+  }
+  var GROUND_GAP = 30;
+  for (var i = 0; i < 4; i++) {
+    var ground = groundScroll % GROUND_GAP + GROUND_GAP * i;
+    makeGroundLine(g, LANDSCAPE_WIDTH - ground / 1.5, LANDSCAPE_WIDTH - ground);
+    var ground = -groundScroll % GROUND_GAP + GROUND_GAP * i;
+    makeGroundLine(g, ground / 1.5, ground);
+  }
+
   animationPid = requestAnimationFrame(drawFrame);
 }
 
-// Human pressed the wrong note.  End game, show start button.
+// Draw one line that makes up the ground.
+function makeGroundLine(parent, start, end) {
+  // <line x1="?" y1=140 x2="?" y2=140></line>
+  var line = document.createElementNS(SVG_NS, 'line');
+  line.setAttribute('x1', start);
+  line.setAttribute('x2', end);
+  line.setAttribute('y1', GROUND_LEVEL);
+  line.setAttribute('y2', GROUND_LEVEL);
+  parent.appendChild(line);
+}
+
+// Dinosaur crashed into obstacle.  End game, show start button.
 function fail() {
   cancelAnimationFrame(animationPid);
   clearTimeout(obstaclePid);
@@ -244,7 +280,7 @@ function fail() {
   setTimeout(showStart, 1000);
 }
 
-// Human pressed space or enter to start game.
+// User pressed space or enter to start game.
 function keyPress(e) {
   if (mode === modes.START && (e.key === 'Enter' || e.key === ' ')) {
     startGame();
@@ -252,6 +288,7 @@ function keyPress(e) {
   }
 }
 
+// Create a new random obstacle and add it to the list of obstacles.
 function createObstacle() {
   var type = Math.random() < 0.75 ? 1 : 2;
   obstacles.push(new Obstacle(type));
@@ -259,14 +296,14 @@ function createObstacle() {
   obstaclePid = setTimeout(createObstacle, (MIN_OBSTACLE_INTERVAL + randomInterval) / SPEED);
 }
 
-// Human pressed a cursor key down to start a note playing.
-// Map this onto an HTML button push.
+// User pressed a key to start a jump, or start crouching.
 function keyDown(e) {
   if (e.repeat) {
     return;
   }
   switch (e.key) {
     case('ArrowUp'):
+    case(' '):
       jump();
       break;
     case('ArrowDown'):
@@ -278,8 +315,7 @@ function keyDown(e) {
   e.preventDefault();
 }
 
-// Human pressed a cursor key down to start a note playing.
-// Map this onto an HTML button push.
+// User releases a key to stop crouching.
 function keyUp(e) {
   if (e.repeat) {
     return;
@@ -294,6 +330,7 @@ function keyUp(e) {
   e.preventDefault();
 }
 
+// Start a jump right now.
 function jump() {
   if (dino.jumpStart === undefined) {
     dino.jumpStart = 0;
