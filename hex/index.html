@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Hex</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <style>
+      h1 {
+        margin-bottom: 2em;
+      }
+      #difficulty {
+        float: right;
+      }
+      #landscape {
+        display: block;
+        margin: auto;
+      }
+      .grid {
+        fill: #ccc;
+        stroke: #888;
+      }
+      .grid:hover {
+        fill: #ddd;
+      }
+    </style>
+    <script src="../common/utils.js"></script>
+    <script src="hex.js"></script>
+  </head>
+
+  <body>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Hex</h1>
+
+    <svg id="landscape" height="600" width="800" xmlns="http://www.w3.org/2000/svg">
+      <g id="grid"></g>
+    </svg>
+  </body>
+</html>
