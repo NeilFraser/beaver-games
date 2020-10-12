@@ -4,9 +4,6 @@
     <title>Beaver Games : Hex</title>
     <link rel="stylesheet" href="../common/style.css">
     <style>
-      h1 {
-        margin-bottom: 2em;
-      }
       #difficulty {
         float: right;
       }
@@ -14,12 +11,16 @@
         display: block;
         margin: auto;
       }
-      .grid {
-        fill: #ccc;
-        stroke: #888;
+      .tank {
+        fill: #F0A609;
+        stroke: none;
       }
-      .grid:hover {
-        fill: #ddd;
+      .grid {
+        fill: #000;
+        stroke: #444;
+      }
+      .gridWall {
+        fill: #444;
       }
     </style>
     <script src="../common/utils.js"></script>
@@ -34,7 +35,7 @@
     </select>
     <h1><a href="../">Beaver Games</a> : Hex</h1>
 
-    <svg id="landscape" height="600" width="800" xmlns="http://www.w3.org/2000/svg">
+    <svg id="landscape" height="540" width="814" xmlns="http://www.w3.org/2000/svg">
       <g id="grid"></g>
     </svg>
   </body>
