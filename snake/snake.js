@@ -15,9 +15,6 @@
 var HEIGHT = 20;
 var WIDTH = 30;
 
-// Queue of pending keystrokes for direction changes.
-var directionQueue = [];
-
 // Enum of directions.  The integer values map into the 'deltas' array.
 var directions = {
   LEFT: 0,
@@ -44,12 +41,7 @@ var moveResult = {
 // Milliseconds between each step.
 var SPEED;
 
-// Current direction of player.
-var playerDirection;
-
-// Array of X/Y coordinates for the player's snake.
-// The head is the last element.  The tail is the first (0).
-var snakeCoordinates = [];
+var snakes = [];
 
 // Running task for executing steps.
 var pid;
@@ -131,13 +123,14 @@ function resetGame() {
       clearCell(getCell([x, y]));
     }
   }
-  playerDirection = directions.RIGHT;
-  snakeCoordinates.length = 0;
-  setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2));
+  var playerSnake = new Snake();
+  snakes.length = 0;
+  snakes.push(playerSnake);
+  playerSnake.setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2));
   // Start snake with a length of three (one head, plus two steps),
-  step(true);
-  step(true);
-  step(false);
+  playerSnake.step(true);
+  playerSnake.step(true);
+  playerSnake.step(false);
   // Start with two foods on the board.
   addFood();
   addFood();
@@ -166,7 +159,7 @@ function startGame() {
   var startButton = document.getElementById('start');
   startButton.style.display = 'none';
   isHumanAlive = true;
-  pid = setInterval(step, SPEED);
+  pid = setInterval(Snake.prototype.step.bind(snakes[0]), SPEED);
 }
 
 // Add an new food square somewhere randomly on the board.
@@ -180,50 +173,6 @@ function addFood() {
            cell.classList.contains('food'));
   // Note: the game will crash if there are zero free squares.
   cell.classList.add('food');
-}
-
-// Set the snake's head to the given coordinates.
-// Returns the result of this move (crash, food or free).
-function setHead(x, y) {
-  var newHead = getCell([x, y]);
-  if (newHead.classList.contains('border') ||
-      newHead.classList.contains('snake')) {
-    return moveResult.CRASH;
-  }
-  if (snakeCoordinates.length) {
-    var oldHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
-    var oldHead = getCell(oldHeadXY);
-    oldHead.classList.remove('head');
-    oldHead.classList.add('body');
-  }
-  newHead.classList.add('dir-' + playerDirection);
-  newHead.classList.add('head');
-  newHead.classList.add('snake');
-  snakeCoordinates.push([x, y]);
-  if (newHead.classList.contains('food')) {
-    newHead.classList.remove('food');
-    return moveResult.FOOD;
-  }
-  return moveResult.FREE;
-}
-
-// Move the head in the given direction.
-// Returns the result of this move (crash, food or free).
-function moveHead(dxy) {
-  var headXY = snakeCoordinates[snakeCoordinates.length - 1];
-  var x = headXY[0] + dxy[0];
-  var y = headXY[1] + dxy[1];
-  if (x < 0) {
-    x += WIDTH;
-  } else if (x >= WIDTH) {
-    x -= WIDTH;
-  }
-  if (y < 0) {
-    y += HEIGHT;
-  } else if (y >= HEIGHT) {
-    y -= HEIGHT;
-  }
-  return setHead(x, y);
 }
 
 // User has crashed, end the game.
@@ -240,22 +189,100 @@ function getCell(xy) {
   return document.getElementById(xy[0] + '_' + xy[1]);
 }
 
+// Player is changing directions using the keyboard.
+function keydown(e) {
+  if (e.repeat || !isHumanAlive) {
+    return;
+  }
+  switch (e.key) {
+    case 'ArrowLeft':
+      snakes[0].pushDirection(directions.LEFT);
+      break;
+    case 'ArrowRight':
+      snakes[0].pushDirection(directions.RIGHT);
+      break;
+    case 'ArrowUp':
+      snakes[0].pushDirection(directions.UP);
+      break;
+    case 'ArrowDown':
+      snakes[0].pushDirection(directions.DOWN);
+      break;
+    default:
+      return;
+  }
+  e.preventDefault();
+}
+
+function Snake() {
+  // Array of X/Y coordinates for the snake.
+  // The head is the last element.  The tail is the first (0).
+  this.coordinates = [];
+  // Current direction of snake (0-3).
+  this.direction = directions.RIGHT;
+  // Queue of pending keystrokes for direction changes (for human players).
+  this.directionQueue = [];
+}
+
+// Set the snake's head to the given coordinates.
+// Returns the result of this move (crash, food or free).
+Snake.prototype.setHead = function(x, y) {
+  var newHead = getCell([x, y]);
+  if (newHead.classList.contains('border') ||
+      newHead.classList.contains('snake')) {
+    return moveResult.CRASH;
+  }
+  if (this.coordinates.length) {
+    var oldHeadXY = this.coordinates[this.coordinates.length - 1];
+    var oldHead = getCell(oldHeadXY);
+    oldHead.classList.remove('head');
+    oldHead.classList.add('body');
+  }
+  newHead.classList.add('dir-' + this.direction);
+  newHead.classList.add('head');
+  newHead.classList.add('snake');
+  this.coordinates.push([x, y]);
+  if (newHead.classList.contains('food')) {
+    newHead.classList.remove('food');
+    return moveResult.FOOD;
+  }
+  return moveResult.FREE;
+};
+
+// Move the head in the given direction.
+// Returns the result of this move (crash, food or free).
+Snake.prototype.moveHead = function(dxy) {
+  var headXY = this.coordinates[this.coordinates.length - 1];
+  var x = headXY[0] + dxy[0];
+  var y = headXY[1] + dxy[1];
+  if (x < 0) {
+    x += WIDTH;
+  } else if (x >= WIDTH) {
+    x -= WIDTH;
+  }
+  if (y < 0) {
+    y += HEIGHT;
+  } else if (y >= HEIGHT) {
+    y -= HEIGHT;
+  }
+  return this.setHead(x, y);
+};
+
 // Execute a single step.
 // If 'initialGrow' is present and true, let the snake grow by one.
-function step(initialGrow) {
+Snake.prototype.step = function(initialGrow) {
   var ccw = undefined;
-  var newDirection = directionQueue.shift();
-  if (newDirection !== undefined && newDirection !== playerDirection) {
+  var newDirection = this.directionQueue.shift();
+  if (newDirection !== undefined && newDirection !== this.direction) {
     ccw =
-        (playerDirection === directions.LEFT && newDirection === directions.DOWN) ||
-        (playerDirection === directions.DOWN && newDirection === directions.RIGHT) ||
-        (playerDirection === directions.RIGHT && newDirection === directions.UP) ||
-        (playerDirection === directions.UP && newDirection === directions.LEFT);
-    playerDirection = newDirection;
+        (this.direction === directions.LEFT && newDirection === directions.DOWN) ||
+        (this.direction === directions.DOWN && newDirection === directions.RIGHT) ||
+        (this.direction === directions.RIGHT && newDirection === directions.UP) ||
+        (this.direction === directions.UP && newDirection === directions.LEFT);
+    this.direction = newDirection;
   }
-  var oldHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
+  var oldHeadXY = this.coordinates[this.coordinates.length - 1];
   var oldHeadCell = getCell(oldHeadXY);
-  var result = moveHead(deltas[playerDirection]);
+  var result = this.moveHead(deltas[this.direction]);
   if (result == moveResult.CRASH) {
     crash();
     return;
@@ -263,10 +290,10 @@ function step(initialGrow) {
     document.getElementById('apple').play();
     addFood();
   } else if (result == moveResult.FREE && !initialGrow) {
-    var oldTail = snakeCoordinates.shift();
+    var oldTail = this.coordinates.shift();
     var oldTailCell = getCell(oldTail);
     clearCell(oldTailCell);
-    var newTail = snakeCoordinates[0];
+    var newTail = this.coordinates[0];
     var newTailCell = getCell(newTail);
     newTailCell.classList.remove('body');
     newTailCell.classList.remove('turn-ccw');
@@ -277,7 +304,7 @@ function step(initialGrow) {
     oldHeadCell.classList.remove('body');
     oldHeadCell.classList.add(ccw ? 'turn-ccw' : 'turn-cw');
     // Turn the direction of this cell, to match the head.
-    var newHeadXY = snakeCoordinates[snakeCoordinates.length - 1];
+    var newHeadXY = this.coordinates[this.coordinates.length - 1];
     var newHeadXY = getCell(newHeadXY);
     for (var d = 0; d < 4; d++) {
       oldHeadCell.classList.remove('dir-' + d);
@@ -286,37 +313,13 @@ function step(initialGrow) {
       }
     }
   }
-}
-
-// Player is changing directions using the keyboard.
-function keydown(e) {
-  if (e.repeat || !isHumanAlive) {
-    return;
-  }
-  switch (e.key) {
-    case 'ArrowLeft':
-      pushDirection(directions.LEFT);
-      break;
-    case 'ArrowRight':
-      pushDirection(directions.RIGHT);
-      break;
-    case 'ArrowUp':
-      pushDirection(directions.UP);
-      break;
-    case 'ArrowDown':
-      pushDirection(directions.DOWN);
-      break;
-    default:
-      return;
-  }
-  e.preventDefault();
-}
+};
 
 // Add the player's new direction to the queue of direction changes.
-function pushDirection(newDirection) {
-  var last = directionQueue[directionQueue.length - 1];
+Snake.prototype.pushDirection = function(newDirection) {
+  var last = this.directionQueue[this.directionQueue.length - 1];
   if (last === undefined) {
-    last = playerDirection;
+    last = this.direction;
   }
   // Discard fatal 180 degree reversals.
   if ((last === directions.LEFT && newDirection === directions.RIGHT) ||
@@ -327,6 +330,6 @@ function pushDirection(newDirection) {
   }
   // Only schedule changes.
   if (last !== newDirection) {
-    directionQueue.push(newDirection);
+    this.directionQueue.push(newDirection);
   }
-}
+};

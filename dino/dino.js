@@ -51,7 +51,7 @@ var STAND_WIDTH = 20;
 var CROUCH_WIDTH = 30;
 
 // Horizontal (x) location of center of dinosaur.
-var DINO_CENTER_X = 80;
+var DINO_CENTER_X = 100;
 
 // Width of visible screen.
 var LANDSCAPE_WIDTH = 800;
