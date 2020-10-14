@@ -31,7 +31,7 @@ var cpuFirst = true;
 var enabled;
 
 // One of three difficulty levels (0, 1, 2).
-// 0: always play a move that wins.
+// 0: always play a move that wins.  -- Disabled (doesn't force player to think)
 // 1: failing a win, play a blocking move.
 // 2: play a perfect game.
 var DIFFICULTY;
@@ -319,10 +319,10 @@ function keyDown(e) {
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
-  DIFFICULTY = Number(m ? m[1] : 0);
+  var m = document.cookie.match(/difficulty=([12])/);
+  DIFFICULTY = Number(m ? m[1] : 1);
   var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = DIFFICULTY;
+  difficultySelect.selectedIndex = DIFFICULTY - 1;
   difficultySelect.addEventListener('change', setDifficulty);
 
   document.addEventListener('keydown', keyDown);
