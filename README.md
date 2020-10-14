@@ -3,7 +3,7 @@
 Try them out:  https://beaver.games/
 
 A collection of simple games for young children.  Specifically, these are games
-written for my daughter to play.  The principles are:
+written for my daughter to play.  The general principles are:
 
 * Free:  No ads.  No personal data collection.  No micro-payments.
 * Simple graphics:  Minimize addiction by not using flashy animations.

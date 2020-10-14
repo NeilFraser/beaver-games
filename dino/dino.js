@@ -23,7 +23,19 @@ var mode = modes.START;
 var JUMP_HEIGHT = 40;
 
 // Master speed multiplier.  1 is normal, smaller is slower, larger is faster.
-var SPEED = 1;
+var SPEED = NaN;
+
+// Speed multipliers for easy, normal and hard modes.
+var SPEEDS = [0.7, 1, 2];
+
+// Number of obstacles left to clear.
+var obstacleCountdown = NaN;
+
+// Number of obstacles to clear for easy, normal and hard modes.
+var OBSTACLE_COUNTS = [10, 20, 30];
+
+// Difficulty level (0,1,2).
+var difficultyIndex = NaN;
 
 // Number of ms per pixel.
 var SCROLL_SPEED = 6;
@@ -77,32 +89,61 @@ var obstacles = [];
 
 // Object class for an obstacle.
 function Obstacle(type) {
-  if (type == 1) {
-    this.height = 30;
+  if (type === 0) {
+    this.height = 50;
     this.altitude = 0;
-  } else if (type === 2) {
-    this.height = 30;
-    this.altitude = 30;
+    this.width = 60;
+  } else {
+    if (type === 1) {
+      this.height = 30;
+      this.altitude = 0;
+    } else if (type === 2) {
+      this.height = 30;
+      this.altitude = 30;
+    }
+    this.width = 20;
   }
-  this.width = 20;
 
   this.startTime = undefined;
   this.x = LANDSCAPE_WIDTH + LANDSCAPE_MARGIN;
   this.y = GROUND_LEVEL - this.height;
 
-  var g = document.getElementById('obstacles');
-  // <rect class="obstacle"></rect>
+  var container = document.getElementById('obstacles');
+  // <g><rect class="obstacle"></rect></g>
+  var g = document.createElementNS(SVG_NS, 'g');
   var element = document.createElementNS(SVG_NS, 'rect');
-  element.setAttribute('x', this.x);
   element.setAttribute('y', GROUND_LEVEL - this.height - this.altitude);
   element.setAttribute('height', this.height);
   element.setAttribute('width', this.width);
-  element.setAttribute('class', 'obstacle');
+  element.setAttribute('class', type === 0 ? 'home' : 'obstacle');
   element.setAttribute('rx', 5);
   element.setAttribute('ry', 5);
   g.appendChild(element);
-  this.element = element;
+  if (type === 0) {
+    // Roof of house.
+    var element = document.createElementNS(SVG_NS, 'rect');
+    var y = GROUND_LEVEL - this.height * 1.5;
+    var side = this.width * 0.85;
+    var roofOffset = (this.width - side) / 2;
+    element.setAttribute('x', roofOffset);
+    element.setAttribute('y', y);
+    element.setAttribute('height', side);
+    element.setAttribute('width', side);
+    element.setAttribute('class', 'home');
+    element.setAttribute('transform',
+        'rotate(45, ' + ((side / 2) + (roofOffset / 2)) + ',' + (y + side / 2) + ')');
+    element.setAttribute('rx', 5);
+    element.setAttribute('ry', 5);
+    g.appendChild(element);
+    this.height = 100;  // No jumping over the house.
+    this.home = true;
+  }
+
+  container.appendChild(g);
+  this.element = g;
 }
+
+Obstacle.prototype.home = false;
 
 // Destroy this obstacle.
 Obstacle.prototype.destroy = function() {
@@ -115,8 +156,8 @@ function init() {
   fixLinks();
 
   var m = document.cookie.match(/difficulty=([012])/);
-  var difficultyIndex = m ? m[1] : 0;
-  SPEED = [0.7, 1, 2][difficultyIndex];
+  difficultyIndex = m ? m[1] : 0;
+  SPEED = SPEEDS[difficultyIndex];
   var difficultySelect = document.getElementById('difficulty');
   difficultySelect.selectedIndex = difficultyIndex;
   difficultySelect.addEventListener('change', setDifficulty);
@@ -164,6 +205,7 @@ function showStart() {
 function startGame() {
   var startButton = document.getElementById('start');
   startButton.style.display = 'none';
+  obstacleCountdown = OBSTACLE_COUNTS[difficultyIndex];
   mode = modes.PLAYING;
   for (var i = 0, obstacle; (obstacle = obstacles[i]); i++) {
     obstacle.destroy();
@@ -224,7 +266,7 @@ function drawFrame(timestamp) {
       obstacles.splice(i, 1);
       obstacle.destroy();
     } else {
-      obstacle.element.setAttribute('x', x);
+      obstacle.element.setAttribute('transform', 'translate(' + x + ', 0)');
       // Collision detection.  Very forgiving of minor clipping.
       if (DINO_CENTER_X > x && DINO_CENTER_X < x + obstacle.width) {
         // X axis overlap.  Check y.
@@ -235,7 +277,11 @@ function drawFrame(timestamp) {
         if ((dinoTop >= obstacleTop && dinoTop <= obstacleBottom) ||
             (dinoBottom >= obstacleTop && dinoBottom <= obstacleBottom) ||
             (dinoTop <= obstacleTop && dinoBottom >= obstacleBottom)) {
-          fail();
+          if (obstacle.home) {
+            win();
+          } else {
+            fail();
+          }
           return;
         }
       }
@@ -280,6 +326,15 @@ function fail() {
   setTimeout(showStart, 1000);
 }
 
+// Dinosaur arrived at her home.  End game, show start button.
+function win() {
+  cancelAnimationFrame(animationPid);
+  clearTimeout(obstaclePid);
+  document.getElementById('win').play();
+  mode = modes.STOPPED;
+  setTimeout(showStart, 1000);
+}
+
 // User pressed space or enter to start game.
 function keyPress(e) {
   if (mode === modes.START && (e.key === 'Enter' || e.key === ' ')) {
@@ -290,10 +345,13 @@ function keyPress(e) {
 
 // Create a new random obstacle and add it to the list of obstacles.
 function createObstacle() {
-  var type = Math.random() < 0.75 ? 1 : 2;
+  var type = obstacleCountdown === 0 ? 0 : (Math.random() < 0.75 ? 1 : 2);
   obstacles.push(new Obstacle(type));
-  var randomInterval = Math.random() * (MAX_OBSTACLE_INTERVAL - MIN_OBSTACLE_INTERVAL);
-  obstaclePid = setTimeout(createObstacle, (MIN_OBSTACLE_INTERVAL + randomInterval) / SPEED);
+  if (obstacleCountdown > 0) {
+    var randomInterval = Math.random() * (MAX_OBSTACLE_INTERVAL - MIN_OBSTACLE_INTERVAL);
+    obstaclePid = setTimeout(createObstacle, (MIN_OBSTACLE_INTERVAL + randomInterval) / SPEED);
+  }
+  obstacleCountdown--;
 }
 
 // User pressed a key to start a jump, or start crouching.
