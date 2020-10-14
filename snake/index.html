@@ -41,46 +41,89 @@
       #grid .odd {
         background-color: #2e9f22;
       }
-      #grid .head.dir-0,
-      #grid .tail.dir-1 {
+
+      #grid .player1.head.dir-0,
+      #grid .player1.tail.dir-1 {
         background-position: 0 0;
       }
-      #grid .head.dir-1,
-      #grid .tail.dir-0 {
+      #grid .player1.head.dir-1,
+      #grid .player1.tail.dir-0 {
         background-position: -60px 0;
       }
-      #grid .head.dir-2,
-      #grid .tail.dir-3 {
+      #grid .player1.head.dir-2,
+      #grid .player1.tail.dir-3 {
         background-position: 0 -30px;
       }
-      #grid .head.dir-3,
-      #grid .tail.dir-2 {
+      #grid .player1.head.dir-3,
+      #grid .player1.tail.dir-2 {
         background-position: 0 -90px;
       }
-      #grid .body.dir-0,
-      #grid .body.dir-1 {
+      #grid .player1.body.dir-0,
+      #grid .player1.body.dir-1 {
         background-position: -30px 0;
       }
-      #grid .body.dir-2,
-      #grid .body.dir-3 {
+      #grid .player1.body.dir-2,
+      #grid .player1.body.dir-3 {
         background-position: 0 -60px;
       }
-      #grid .turn-ccw.dir-0,
-      #grid .turn-cw.dir-3 {
+      #grid .player1.turn-ccw.dir-0,
+      #grid .player1.turn-cw.dir-3 {
         background-position: -60px -30px;
       }
-      #grid .turn-ccw.dir-1,
-      #grid .turn-cw.dir-2 {
+      #grid .player1.turn-ccw.dir-1,
+      #grid .player1.turn-cw.dir-2 {
         background-position: -30px -60px;
       }
-      #grid .turn-ccw.dir-2,
-      #grid .turn-cw.dir-0 {
+      #grid .player1.turn-ccw.dir-2,
+      #grid .player1.turn-cw.dir-0 {
         background-position: -60px -60px;
       }
-      #grid .turn-ccw.dir-3,
-      #grid .turn-cw.dir-1 {
+      #grid .player1.turn-ccw.dir-3,
+      #grid .player1.turn-cw.dir-1 {
         background-position: -30px -30px;
       }
+
+      #grid .player2.head.dir-0,
+      #grid .player2.tail.dir-1 {
+        background-position: -90px 0;
+      }
+      #grid .player2.head.dir-1,
+      #grid .player2.tail.dir-0 {
+        background-position: -150px 0;
+      }
+      #grid .player2.head.dir-2,
+      #grid .player2.tail.dir-3 {
+        background-position: -150px -30px;
+      }
+      #grid .player2.head.dir-3,
+      #grid .player2.tail.dir-2 {
+        background-position: -150px -90px;
+      }
+      #grid .player2.body.dir-0,
+      #grid .player2.body.dir-1 {
+        background-position: -120px 0;
+      }
+      #grid .player2.body.dir-2,
+      #grid .player2.body.dir-3 {
+        background-position: -150px -60px;
+      }
+      #grid .player2.turn-ccw.dir-0,
+      #grid .player2.turn-cw.dir-3 {
+        background-position: -120px -30px;
+      }
+      #grid .player2.turn-ccw.dir-1,
+      #grid .player2.turn-cw.dir-2 {
+        background-position: -90px -60px;
+      }
+      #grid .player2.turn-ccw.dir-2,
+      #grid .player2.turn-cw.dir-0 {
+        background-position: -120px -60px;
+      }
+      #grid .player2.turn-ccw.dir-3,
+      #grid .player2.turn-cw.dir-1 {
+        background-position: -90px -30px;
+      }
+
       #grid .food {
         background-position: -30px -90px;
        }
@@ -94,9 +137,12 @@
   </head>
   <body>
     <select id="difficulty">
-      <option value=0>Easy</option>
-      <option value=1>Normal</option>
-      <option value=2>Hard</option>
+      <option value=0>1 Player - Easy</option>
+      <option value=1>1 Player - Normal</option>
+      <option value=2>1 Player - Hard</option>
+      <option value=3>2 Players - Easy</option>
+      <option value=4>2 Players - Normal</option>
+      <option value=5>2 Players - Hard</option>
     </select>
     <h1><a href="../">Beaver Games</a> : Snake</h1>
     <div id="startDiv">

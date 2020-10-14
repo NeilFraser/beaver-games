@@ -41,21 +41,29 @@ var moveResult = {
 // Milliseconds between each step.
 var SPEED;
 
+// Array of snake objects.
 var snakes = [];
+
+// Currently running snake.
+var snakeIndex = 0;
 
 // Running task for executing steps.
 var pid;
 
-// Is the human's snake alive?
-var isHumanAlive = false;
+// Is the game running?
+var isRunning = false;
+
+// Is there a second player?
+var player2 = false;
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
+  var m = document.cookie.match(/difficulty=([012345])/);
   var difficultyIndex = m ? m[1] : 0;
-  SPEED = [400, 200, 100][difficultyIndex];
+  SPEED = [400, 200, 100][difficultyIndex % 3];
+  player2 = difficultyIndex >= 3;
   var difficultySelect = document.getElementById('difficulty');
   difficultySelect.selectedIndex = difficultyIndex;
   difficultySelect.addEventListener('change', setDifficulty);
@@ -108,7 +116,7 @@ function initBorders() {
 // Clear temporary CSS classes (e.g. snake, food) from a cell.
 // Preserve permanent CSS classes (e.g. even/odd, border).
 function clearCell(td) {
-  var classes = ['food', 'snake',
+  var classes = ['food', 'snake', 'player1', 'player2',
     'dir-0', 'dir-1', 'dir-2', 'dir-3',
     'head', 'body', 'turn-ccw', 'turn-cw', 'tail'];
   for (var i = 0; i < classes.length; i++) {
@@ -123,14 +131,24 @@ function resetGame() {
       clearCell(getCell([x, y]));
     }
   }
-  var playerSnake = new Snake();
   snakes.length = 0;
-  snakes.push(playerSnake);
-  playerSnake.setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2));
+  var snake = new Snake(1);
+  snake.direction = directions.RIGHT;
+  snakes.push(snake);
+  snake.setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2) - 1);
+
+  if (player2) {
+    snake = new Snake(2);
+    snake.direction = directions.LEFT;
+    snakes.push(snake);
+    snake.setHead(Math.floor(WIDTH / 2) + 2, Math.floor(HEIGHT / 2) + 1);
+  }
   // Start snake with a length of three (one head, plus two steps),
-  playerSnake.step(true);
-  playerSnake.step(true);
-  playerSnake.step(false);
+  for (var i = 0; i < snakes.length; i++) {
+    snakes[i].step(true);
+    snakes[i].step(true);
+    snakes[i].step(false);
+  }
   // Start with two foods on the board.
   addFood();
   addFood();
@@ -158,8 +176,17 @@ function startGame() {
   resetGame();
   var startButton = document.getElementById('start');
   startButton.style.display = 'none';
-  isHumanAlive = true;
-  pid = setInterval(Snake.prototype.step.bind(snakes[0]), SPEED);
+  isRunning = true;
+  pid = setInterval(step, SPEED / snakes.length);
+}
+
+// Step the next snake.
+function step() {
+  snakeIndex++;
+  if (snakeIndex >= snakes.length) {
+    snakeIndex = 0;
+  }
+  snakes[snakeIndex].step();
 }
 
 // Add an new food square somewhere randomly on the board.
@@ -178,7 +205,7 @@ function addFood() {
 // User has crashed, end the game.
 function crash() {
   clearInterval(pid);
-  isHumanAlive = false;
+  isRunning = false;
   document.body.className = 'shake';
   document.getElementById('crash').play();
   setTimeout(showStart, 1000);
@@ -191,7 +218,7 @@ function getCell(xy) {
 
 // Player is changing directions using the keyboard.
 function keydown(e) {
-  if (e.repeat || !isHumanAlive) {
+  if (e.repeat || !isRunning) {
     return;
   }
   switch (e.key) {
@@ -207,20 +234,52 @@ function keydown(e) {
     case 'ArrowDown':
       snakes[0].pushDirection(directions.DOWN);
       break;
+    case 'a':
+    case 'A':
+      if (player2) {
+        snakes[1].pushDirection(directions.LEFT);
+      }
+      break;
+    case 'd': // Qwerty
+    case 'D':
+    case 'e': // Dvorak
+    case 'E':
+      if (player2) {
+        snakes[1].pushDirection(directions.RIGHT);
+      }
+      break;
+    case 'w': // Qwerty
+    case 'W':
+    case ',': // Dvorak
+    case '<':
+      if (player2) {
+        snakes[1].pushDirection(directions.UP);
+      }
+      break;
+    case 's': // Qwerty
+    case 'S':
+    case 'o': // Dvorak
+    case 'O':
+      if (player2) {
+        snakes[1].pushDirection(directions.DOWN);
+      }
+      break;
     default:
       return;
   }
   e.preventDefault();
 }
 
-function Snake() {
+function Snake(playerNumber) {
   // Array of X/Y coordinates for the snake.
   // The head is the last element.  The tail is the first (0).
   this.coordinates = [];
   // Current direction of snake (0-3).
-  this.direction = directions.RIGHT;
+  this.direction = directions.UP;
   // Queue of pending keystrokes for direction changes (for human players).
   this.directionQueue = [];
+  // Yellow or blue snake.
+  this.playerClass = 'player' + playerNumber;
 }
 
 // Set the snake's head to the given coordinates.
@@ -240,6 +299,7 @@ Snake.prototype.setHead = function(x, y) {
   newHead.classList.add('dir-' + this.direction);
   newHead.classList.add('head');
   newHead.classList.add('snake');
+  newHead.classList.add(this.playerClass);
   this.coordinates.push([x, y]);
   if (newHead.classList.contains('food')) {
     newHead.classList.remove('food');
