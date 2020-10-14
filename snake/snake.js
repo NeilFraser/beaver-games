@@ -208,7 +208,18 @@ function crash() {
   isRunning = false;
   document.body.className = 'shake';
   document.getElementById('crash').play();
-  setTimeout(showStart, 1000);
+  setTimeout(disolveSnake, 100);
+}
+
+// Animate the destruction of the current snake.
+function disolveSnake() {
+  var snake = snakes[snakeIndex];
+  if (snake.coordinates.length > 2) {
+    snake.shrink();
+    setTimeout(disolveSnake, 100);
+  } else {
+    setTimeout(showStart, 1000);
+  }
 }
 
 // Get the TD element for the given coordinates.
@@ -350,15 +361,7 @@ Snake.prototype.step = function(initialGrow) {
     document.getElementById('apple').play();
     addFood();
   } else if (result == moveResult.FREE && !initialGrow) {
-    var oldTail = this.coordinates.shift();
-    var oldTailCell = getCell(oldTail);
-    clearCell(oldTailCell);
-    var newTail = this.coordinates[0];
-    var newTailCell = getCell(newTail);
-    newTailCell.classList.remove('body');
-    newTailCell.classList.remove('turn-ccw');
-    newTailCell.classList.remove('turn-cw');
-    newTailCell.classList.add('tail');
+    this.shrink();
   }
   if (ccw !== undefined) {
     oldHeadCell.classList.remove('body');
@@ -373,6 +376,19 @@ Snake.prototype.step = function(initialGrow) {
       }
     }
   }
+};
+
+// Delete the tail by one square.  Used when moving forward, or dissolving.
+Snake.prototype.shrink = function() {
+  var oldTail = this.coordinates.shift();
+  var oldTailCell = getCell(oldTail);
+  clearCell(oldTailCell);
+  var newTail = this.coordinates[0];
+  var newTailCell = getCell(newTail);
+  newTailCell.classList.remove('body');
+  newTailCell.classList.remove('turn-ccw');
+  newTailCell.classList.remove('turn-cw');
+  newTailCell.classList.add('tail');
 };
 
 // Add the player's new direction to the queue of direction changes.
