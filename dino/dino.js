@@ -311,8 +311,8 @@ function makeGroundLine(parent, start, end) {
   var line = document.createElementNS(SVG_NS, 'line');
   line.setAttribute('x1', start);
   line.setAttribute('x2', end);
-  line.setAttribute('y1', GROUND_LEVEL);
-  line.setAttribute('y2', GROUND_LEVEL);
+  line.setAttribute('y1', GROUND_LEVEL + 0.5);
+  line.setAttribute('y2', GROUND_LEVEL + 0.5);
   parent.appendChild(line);
 }
 

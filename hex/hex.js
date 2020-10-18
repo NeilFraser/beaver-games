@@ -11,17 +11,23 @@
 'use strict';
 
 
+// Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
 
-// From center to point.
+// Distance from hexagon's center to any point.
 var HEX_SIZE = 20;
 
+// Width of a pointy-top hexagon.
 var HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
+// Height of a pointy-top hexagon.
 var HEX_HEIGHT = 2 * HEX_SIZE;
 
+// Number of hexagon rows on playing field.
 var GRID_HEIGHT = 19;  // Odd is better.
+// Number of hexagon columns on playing field.
 var GRID_WIDTH = 25;
 
+// Current state of the keyboard.
 var keyStatus = {
   '1': false,
   '2': false,
@@ -31,11 +37,15 @@ var keyStatus = {
   '0': false
 };
 
+// Array of Tank objects (players).
 var tanks = [];
+// Incrementing index into 'tanks' array specifying whose turn it is.
 var turn = 0;
 
+// 2D axial grid of hexagons.
 var grid = [];
 
+// Number of milliseconds between two turns of a player.
 var SPEED = 500;
 
 // On page load, initialize the event handlers and draw the grid.
@@ -78,6 +88,7 @@ function initGrid() {
   }
 }
 
+// Handle a tank's turn.
 function clock() {
   var tank = tanks[turn];
   if (turn === 0) {
@@ -97,6 +108,7 @@ function clock() {
       tank.turn(1);
     }
   }
+  // Increment the turn, wrapping to 0 as needed.
   turn++;
   if (turn >= tanks.length) {
     turn = 0;
@@ -116,6 +128,8 @@ function dirToDelta(dir) {
   return dirToDelta.TABLE[dir];
 }
 
+// Lookup table to convert forwards movement in a direction (0-5)
+// to axial XY deltas.
 dirToDelta.TABLE = [
   {x: 1, y: 0},
   {x: 0, y: 1},
@@ -139,7 +153,7 @@ function keyUp(e) {
   }
 }
 
-// Create a single hexagon centered on the given coordinates.
+// Constructor for a single hexagon centered on the given coordinates.
 function Hex(hexX, hexY) {
   // <polygon points="100,60 134.6,80 134.6,120 100,140 65.3,120 65.3,80" class="grid"></polygon>
   var xy = hexToScreen(hexX, hexY);
@@ -153,7 +167,6 @@ function Hex(hexX, hexY) {
   points[5] = (xy.x - HEX_WIDTH / 2) + ',' + (xy.y - HEX_HEIGHT / 4);
   element.setAttribute('points', points.join(' '));
   element.setAttribute('class', 'grid');
-  element.setAttribute('title', hexX + ',' + hexY);
   var g = document.getElementById('grid');
   g.appendChild(element);
 
@@ -161,11 +174,14 @@ function Hex(hexX, hexY) {
   this.empty = true;
 }
 
+// Convert this hexagon into a wall.
 Hex.prototype.setWall = function() {
   this.empty = false;
   this.element.classList.add('gridWall');
 };
 
+// Constructor for a new tank.
+// Player number should be 1-3 and determines tank's colour.
 function Tank(playerNumber) {
   var element = document.createElementNS(SVG_NS, 'polygon');
   element.setAttribute('points', this.PATH);
@@ -189,10 +205,12 @@ function Tank(playerNumber) {
   this.render(false);
 }
 
+// Path for drawing a tank's shape.  Centered on 0,0.
 Tank.prototype.PATH = '0,-2 2,2 0,1 -2,2';
-
+// Size to visually scale a tank.
 Tank.prototype.SCALE = 5;
 
+// Draw the tank on the playing field.
 Tank.prototype.render = function(animate) {
   if (animate) {
     this.translateXStart = this.translateXFinal;
@@ -218,6 +236,7 @@ Tank.prototype.render = function(animate) {
   }
 };
 
+// Set the SVG transforms for a tank.
 Tank.prototype.setTransforms = function() {
   var translate = 'translate(' + this.translateXNow + ',' + this.translateYNow + ')';
   var rotate = 'rotate(' + this.rotateNow + ')';
@@ -225,6 +244,8 @@ Tank.prototype.setTransforms = function() {
   this.element.setAttribute('transform', translate + ' ' + rotate + ' ' + scale);
 };
 
+// Animate one frame of movement of the tank from where it is towards its
+// final position.
 Tank.prototype.animate = function(timestamp) {
   if (this.animateStart === undefined) {
     this.animateStart = timestamp;
@@ -244,6 +265,7 @@ Tank.prototype.animate = function(timestamp) {
   }
 };
 
+// Update the tank's coordinates to move forwards.
 Tank.prototype.move = function() {
   var dxy = dirToDelta(this.direction);
   var newX = this.hexX + dxy.x;
@@ -259,6 +281,7 @@ Tank.prototype.move = function() {
   this.render(true);
 };
 
+// Update the tank's direction to move clockwise or counter-clockwise.
 Tank.prototype.turn = function(dir) {
   this.direction += dir;
   if (this.direction < 0) {

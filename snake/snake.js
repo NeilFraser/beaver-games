@@ -218,7 +218,7 @@ function disolveSnake() {
     snake.shrink();
     setTimeout(disolveSnake, 100);
   } else {
-    setTimeout(showStart, 1000);
+    setTimeout(showStart, SPEED / 10);
   }
 }
 
