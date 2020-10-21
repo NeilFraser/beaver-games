@@ -12,6 +12,10 @@ h1 a {
   text-decoration: none;
 }
 
+a {
+  outline: none;
+}
+
 a:hover {
   color: #f00;
 }
