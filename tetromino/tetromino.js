@@ -32,34 +32,63 @@ var SVG_NS = 'http://www.w3.org/2000/svg';
 // Length of time that the move/rotate animations play (milliseconds).
 var ANIMATION_DURATION = 100;
 
+var standardKicks = {
+  '0>1': [[-1, 0], [-1, 1], [0,-2], [-1,-2]],
+  '1>0': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
+  '1>2': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
+  '2>1': [[-1, 0], [-1, 1], [0,-2], [-1,-2]],
+  '2>3': [[ 1, 0], [ 1, 1], [0,-2], [ 1,-2]],
+  '3>2': [[-1, 0], [-1,-1], [0, 2], [-1, 2]],
+  '3>0': [[-1, 0], [-1,-1], [0, 2], [-1, 2]],
+  '0>3': [[ 1, 0], [ 1, 1], [0,-2], [ 1,-2]]
+};
+
+var iKicks = {
+  '0>1': [[-2, 0], [ 1, 0], [-2,-1], [ 1, 2]],
+  '1>0': [[ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
+  '1>2': [[-1, 0], [ 2, 0], [-1, 2], [ 2,-1]],
+  '2>1': [[ 1, 0], [-2, 0], [ 1,-2], [-2, 1]],
+  '2>3': [[ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
+  '3>2': [[-1, 0], [ 1, 0], [-2,-1], [ 1, 2]],
+  '3>0': [[ 1, 0], [-2, 0], [ 1,-2], [-2, 1]],
+  '0>3': [[-1, 0], [ 2, 0], [-1, 2], [ 2,-1]]
+};
+
 var shapes = {
   'O': {
     coords: [[0, 0], [1, 0], [0, 1], [1, 1]],
-    rotation: [0.5, 0.5]
+    rotation: [0.5, 0.5],
+    kicks: null
   },
   'I': {
     coords: [[0, 1], [1, 1], [2, 1], [3, 1]],
-    rotation: [1.5, 0.5]
+    rotation: [1.5, 1.5],
+    kicks: iKicks
   },
   'T': {
     coords: [[0, 1], [1, 1], [2, 1], [1, 0]],
-    rotation: [1, 1]
+    rotation: [1, 1],
+    kicks: standardKicks
   },
   'L': {
     coords: [[0, 1], [1, 1], [2, 1], [2, 0]],
-    rotation: [1, 1]
+    rotation: [1, 1],
+    kicks: standardKicks
   },
   'J': {
     coords: [[0, 1], [1, 1], [2, 1], [0, 0]],
-    rotation: [1, 1]
+    rotation: [1, 1],
+    kicks: standardKicks
   },
   'S': {
     coords: [[0, 1], [1, 1], [1, 0], [2, 0]],
-    rotation: [1, 1]
+    rotation: [1, 1],
+    kicks: standardKicks
   },
   'Z': {
     coords: [[0, 0], [1, 0], [1, 1], [2, 1]],
-    rotation: [1, 1]
+    rotation: [1, 1],
+    kicks: standardKicks
   }
 };
 
@@ -201,15 +230,15 @@ CurrentShape.prototype.addTransform = function(animate) {
 
   // Reverse/swap directions so that translations aren't affected by the sum of
   // prior rotations.
-  var quadrant = ((this.currentRotation % 4) + 4) % 4;
-  if (quadrant === 1) {
+  var quad = quadrant(this.currentRotation);
+  if (quad === 1) {
     var swap = newTransform.toX;
     newTransform.toX = newTransform.toY;
     newTransform.toY = -swap;
-  } else if (quadrant === 2) {
+  } else if (quad === 2) {
     newTransform.toX *= -1;
     newTransform.toY *= -1;
-  } else if (quadrant === 3) {
+  } else if (quad === 3) {
     var swap = newTransform.toX;
     newTransform.toX = -newTransform.toY;
     newTransform.toY = swap;
@@ -237,7 +266,8 @@ CurrentShape.prototype.setTransforms = function() {
   var transformStrings = [
     'translate(' + BORDER_WIDTH + ',' + (-2 * SQUARE_SIZE + TOP_ROW_HEIGHT) + ')'
   ];
-  for (var i = 0, transform; (transform = this.transforms[i]); i++) {
+  for (var i = 0; i < this.transforms.length; i++) {
+    var transform = this.transforms[i];
     if (typeof transform === 'string') {
       transformStrings.push(transform);
     } else {
@@ -255,7 +285,6 @@ CurrentShape.prototype.setTransforms = function() {
       if (transform.startTime === -Infinity) {
         // This transform is complete.  Replace with statically computed string.
         this.transforms[i] = transformString;
-        console.log(transformString)
       }
     }
   }
@@ -286,7 +315,8 @@ var TransformData = function() {
 };
 
 function animateStep(time) {
-  for (var i = 0, transform; (transform = currentShape.transforms[i]); i++) {
+  for (var i = 0; i < currentShape.transforms.length; i++) {
+    var transform = currentShape.transforms[i];
     if (typeof transform === 'string') {
       // This transform is complete and has been statically computed.
       continue;
@@ -365,23 +395,34 @@ function actionRotate(ccw) {
   var cy = currentShape.currentY - rotationPoint[1] + 1;
   currentShape.coords = rotateCoords(currentShape.coords, ccw, cx, cy);
   if (currentShape.isCollided()) {
-    // Simple rotation failed.
-    // Try shifting result left one square.
-    currentShape.coords = moveCoords(currentShape.coords, -1, 0);
-    currentShape.currentX -= 1;
-    console.log('Left?');
-    if (currentShape.isCollided()) {
-      // Try shifting result right one square.
-      currentShape.coords = moveCoords(currentShape.coords, 2, 0);
-      currentShape.currentX += 2;
-      console.log('Right?');
-      if (currentShape.isCollided()) {
-        console.log('Aborting rotation');
-        currentShape.currentRotation = oldRotation;
-        currentShape.coords = oldCoords;
-        currentShape.currentX = oldX;
-        currentShape.currentY = oldY;
+    // Simple rotation failed.  Try kicking the rotated shape around.
+    if (!currentShape.shape.kicks) throw Error('Kicks not found.');
+    var oldQuadrant = quadrant(currentShape.oldRotation);
+    var newQuadrant = quadrant(currentShape.currentRotation);
+    var kickList = currentShape.shape.kicks[oldQuadrant + '>' + newQuadrant];
+    if (!kickList) throw Error('Matching kick not found.');
+    var preKickCoords = currentShape.coords.slice();
+    var preKickX = currentShape.currentX;
+    var preKickY = currentShape.currentY;
+    for (var i = 0, kick; (kick = kickList[i]); i++) {
+      console.log('Kick: ' + kick);
+      currentShape.coords = moveCoords(currentShape.coords, kick[0], kick[1]);
+      currentShape.currentX += kick[0];
+      currentShape.currentY += kick[1];
+      if (!currentShape.isCollided()) {
+        break;
       }
+      currentShape.coords = preKickCoords;
+      currentShape.currentX = preKickX;
+      currentShape.currentY = preKickY;
+    }
+    if (currentShape.isCollided()) {
+      console.log('Rotation failed.');
+      // All kicks failed.  Aborting rotation.
+      currentShape.currentRotation = oldRotation;
+      currentShape.coords = oldCoords;
+      currentShape.currentX = oldX;
+      currentShape.currentY = oldY;
     }
   }
   currentShape.addTransform(true);
@@ -446,6 +487,15 @@ function moveCoords(coords, dx, dy) {
   return newCoords;
 }
 //console.log(moveCoords([[0, 1], [1, 1], [2, 1], [2, 0]], -2, 1));
+
+// Convert any integer into a 0-3 quadrant.
+function quadrant(n) {
+  return ((n % 4) + 4) % 4;
+}
+// console.log(quadrant(-1) === 3);
+// console.log(quadrant(0) === 0);
+// console.log(quadrant(3) === 3);
+// console.log(quadrant(4) === 0);
 
 function printDebug() {
   var table = [];
