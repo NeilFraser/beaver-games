@@ -11,7 +11,8 @@
 'use strict';
 
 
-var SPEED;
+// Level to jump to when starting a game.  Set by the difficulty dropdown.
+var START_LEVEL;
 
 // Height and width of a block.
 var SQUARE_SIZE = 20;
@@ -32,7 +33,8 @@ var SVG_NS = 'http://www.w3.org/2000/svg';
 // Length of time that the move/rotate animations play (milliseconds).
 var ANIMATION_DURATION = 100;
 
-var standardKicks = {
+// Directions to try kicking a rotated 'T/L/J/S/Z' shape that collides.
+var STANDARD_KICKS = {
   '0>1': [[-1, 0], [-1, 1], [0,-2], [-1,-2]],
   '1>0': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
   '1>2': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
@@ -43,7 +45,8 @@ var standardKicks = {
   '0>3': [[ 1, 0], [ 1, 1], [0,-2], [ 1,-2]]
 };
 
-var iKicks = {
+// Directions to try kicking a rotated 'I' shape that collides.
+var I_KICKS = {
   '0>1': [[-2, 0], [ 1, 0], [-2,-1], [ 1, 2]],
   '1>0': [[ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
   '1>2': [[-1, 0], [ 2, 0], [-1, 2], [ 2,-1]],
@@ -54,72 +57,96 @@ var iKicks = {
   '0>3': [[-1, 0], [ 2, 0], [-1, 2], [ 2,-1]]
 };
 
-var shapes = {
+// Describes all seven tetromino shapes.  Each shape has four X/Y coordinate
+// pairs, a centre of rotation, and optional rotation kicks.
+var SHAPES = {
   'O': {
     coords: [[0, 0], [1, 0], [0, 1], [1, 1]],
     rotation: [0.5, 0.5],
-    kicks: null
+    kicks: null  // 'O' can never collide when rotating.
   },
   'I': {
     coords: [[0, 1], [1, 1], [2, 1], [3, 1]],
     rotation: [1.5, 1.5],
-    kicks: iKicks
+    kicks: I_KICKS
   },
   'T': {
     coords: [[0, 1], [1, 1], [2, 1], [1, 0]],
     rotation: [1, 1],
-    kicks: standardKicks
+    kicks: STANDARD_KICKS
   },
   'L': {
     coords: [[0, 1], [1, 1], [2, 1], [2, 0]],
     rotation: [1, 1],
-    kicks: standardKicks
+    kicks: STANDARD_KICKS
   },
   'J': {
     coords: [[0, 1], [1, 1], [2, 1], [0, 0]],
     rotation: [1, 1],
-    kicks: standardKicks
+    kicks: STANDARD_KICKS
   },
   'S': {
     coords: [[0, 1], [1, 1], [1, 0], [2, 0]],
     rotation: [1, 1],
-    kicks: standardKicks
+    kicks: STANDARD_KICKS
   },
   'Z': {
     coords: [[0, 0], [1, 0], [1, 1], [2, 1]],
     rotation: [1, 1],
-    kicks: standardKicks
+    kicks: STANDARD_KICKS
   }
 };
 
 // Currently active O/I/T/L/J/S/Z shape.
 var currentShape = null;
 
+// Name of the next shape (O/I/T/L/J/S/Z).
+var nextShapeName = '';
+
+// 2D array of placed SVG blocks in the playing field.
 var grid = [];
 
+// PID of interval timer that periodically moves the current shape down.
+var fallPid = 0;
+
+// Number of completed lines that have been cleared so far.
+var lines = 0;
+
+// Compute the pause in milliseconds between move-down steps.
+function getSpeed() {
+  var level = Math.ceil((lines + 1) / 10);
+  level = Math.max(level, START_LEVEL);
+  return Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
+}
+
+// Initialize the board and start the game.
 function init() {
   fixLinks();
 
   var m = document.cookie.match(/difficulty=([012])/);
   var difficultyIndex = m ? m[1] : 0;
-  SPEED = [400, 200, 100][difficultyIndex];
+  // Starting level for easy, normal and hard modes.
+  START_LEVEL = [1, 4, 8][difficultyIndex];
   var difficultySelect = document.getElementById('difficulty');
   difficultySelect.selectedIndex = difficultyIndex;
   difficultySelect.addEventListener('change', setDifficulty);
 
-  var svg = document.getElementById('board');
   initSvgGrid();
   initDataGrid();
-  var types = Object.keys(shapes);
-  currentShape = new CurrentShape(types[Math.floor(Math.random() * types.length)]);
+  updateNextShape();
+  currentShape = new CurrentShape(randomShapeName());
+  var svg = document.getElementById('board');
   svg.appendChild(currentShape.g);
   currentShape.pid = requestAnimationFrame(animateStep);
+  fallPid = setInterval(actionDown, getSpeed());
 
   document.addEventListener('keydown', keyDown);
+  document.addEventListener('keyup', keyUp);
   printDebug();
 }
 window.addEventListener('load', init);
 
+// Draw the grid markers on the board.
 function initSvgGrid() {
   var grid = document.getElementById('grid');
   if (!grid) throw Error('No grid SVG element found.');
@@ -148,6 +175,7 @@ function initSvgGrid() {
   }
 }
 
+// Initialize the 2D data grid with nulls.
 function initDataGrid() {
   grid.length = 0;
   for (var y = 0; y < ROWS + 4; y++) {
@@ -161,15 +189,17 @@ function initDataGrid() {
 
 // Constructor for shape currently in play.
 var CurrentShape = function(type) {
-  this.shape = shapes[type];
+  this.shape = SHAPES[type];
   if (!this.shape) {
     throw new Error('Unknown type: ' + type);
   }
+  this.type = type;
   this.g = document.createElementNS(SVG_NS, 'g');
   this.transforms = [];
-  this.coords = this.shape.coords.slice();
+  this.coords = [];
   // Create a block at each of the four shape coordinates.
-  for (var i = 0, coord; (coord = this.coords[i]); i++) {
+  for (var i = 0, coord; (coord = this.shape.coords[i]); i++) {
+    this.coords[i] = [coord[0], coord[1]];
     var b = createBlock();
     b.setAttribute('x', SQUARE_SIZE * coord[0]);
     b.setAttribute('y', SQUARE_SIZE * coord[1]);
@@ -193,6 +223,7 @@ var CurrentShape = function(type) {
   this.addTransform(false);
 };
 
+// Compute width of shape.  Used for centering the shape when first created.
 CurrentShape.prototype.getWidth = function() {
   var left = Infinity;
   var right = -Infinity;
@@ -204,6 +235,8 @@ CurrentShape.prototype.getWidth = function() {
   return right - left + 1;
 };
 
+// Compute the bottom of shape.  Used for vertical positioning of the shape
+// when first created.
 CurrentShape.prototype.getBottom = function() {
   var bottom = Infinity;
   for (var i = 0; i < this.coords.length; i++) {
@@ -291,6 +324,7 @@ CurrentShape.prototype.setTransforms = function() {
   this.g.setAttribute('transform', transformStrings.join(' '));
 };
 
+// Does this shape intersect with any existing blocks on the board?
 CurrentShape.prototype.isCollided = function() {
   for (var i = 0, coord; (coord = this.coords[i]); i++) {
     var x = coord[0];
@@ -298,11 +332,95 @@ CurrentShape.prototype.isCollided = function() {
     if (y < 0 || x < 0 || x >= grid[y].length) {
       return true;  // Out of bounds.
     }
+    if (grid[y][x]) {
+      return true;  // Collided with existing block.
+    }
   }
   return false;
 };
 
-// Data for one shape transformation.
+// Delete the current shape from the board.
+CurrentShape.prototype.destroy = function() {
+  cancelAnimationFrame(currentShape.pid);
+  this.g.parentNode.removeChild(this.g);
+  currentShape = null;
+};
+
+// Freeze a falling shape in place.
+function lockDown() {
+  clearInterval(fallPid);
+  // Check for "lock out" game over condition (whole shape above skyline).
+  var below = false;
+  for (var i = 0, coord; (coord = currentShape.coords[i]); i++) {
+    if (coord[1] < ROWS) {
+      below = true;
+      break;
+    }
+  }
+  if (!below) {
+    fail();
+    return;
+  }
+  // Create static blocks which look identical to the fallen shape.
+  var g = document.getElementById('matrix');
+  for (var i = 0, coord; (coord = currentShape.coords[i]); i++) {
+    var x = coord[0];
+    var y = coord[1];
+    var b = createBlock();
+    b.setAttribute('x', SQUARE_SIZE * x + BORDER_WIDTH);
+    b.setAttribute('y', SQUARE_SIZE * (ROWS - y - 1) + TOP_ROW_HEIGHT);
+    b.classList.add('type_' + currentShape.type);
+    g.appendChild(b);
+    grid[y][x] = b;
+  }
+  // Destroy the fallen shape, then create a new one.
+  currentShape.destroy();
+  currentShape = new CurrentShape(nextShapeName);
+  var svg = document.getElementById('board');
+  svg.appendChild(currentShape.g);
+  currentShape.pid = requestAnimationFrame(animateStep);
+  updateNextShape();
+  printDebug();
+  // Check for "block out" game over condition (shape overlaps with blocks).
+  if (currentShape.isCollided()) {
+    fail();
+  }
+  // Reset the timer so that the first turn of the new shape is whole.
+  fallPid = setInterval(actionDown, getSpeed());
+}
+
+function fail() {
+  cancelAnimationFrame(currentShape.pid);
+  stopAutoRepeat();
+  console.log('fail');
+}
+
+// Return the name (O/I/T/L/J/S/Z) of a random shape.
+// Use a bag so that equal distributions are guaranteed.
+function randomShapeName() {
+  if (randomShapeName.bag_.length === 0) {
+    var types = Object.keys(SHAPES);
+    shuffleArray(types);
+    randomShapeName.bag_ = types;
+  }
+  return randomShapeName.bag_.pop();
+}
+randomShapeName.bag_ = [];
+
+// Replace the 'next shape' display with a new shape.
+function updateNextShape() {
+  var svg = document.getElementById('next');
+  // Delete existing shape.
+  while (svg.firstChild) {
+    svg.removeChild(svg.firstChild);
+  }
+  // Add the new shape.
+  nextShapeName = randomShapeName();
+  var shape = new CurrentShape(nextShapeName);
+  svg.appendChild(shape.g);
+}
+
+// Constructor for one shape transformation.
 var TransformData = function() {
   this.nowX = NaN;
   this.toX = NaN;
@@ -339,6 +457,8 @@ function animateStep(time) {
   currentShape.pid = requestAnimationFrame(animateStep);
 }
 
+// Create one SVG block.  Four of these in a group make up one falling shape.
+// The fixed blocks on the board are individual blocks.
 function createBlock() {
   var block = document.createElementNS(SVG_NS, 'rect');
   block.setAttribute('height', SQUARE_SIZE);
@@ -348,6 +468,7 @@ function createBlock() {
   return block;
 }
 
+// Move the current shape down one row.
 function actionDown() {
   currentShape.currentY--;
   var oldCoords = currentShape.coords;
@@ -358,8 +479,10 @@ function actionDown() {
     return;
   }
   currentShape.addTransform(true);
+  printDebug();
 }
 
+// Move the current shape right or left one column.
 function actionMove(right) {
   var dx = right ? 1 : -1;
   var oldCoords = currentShape.coords;
@@ -371,8 +494,10 @@ function actionMove(right) {
     return;
   }
   currentShape.addTransform(true);
+  printDebug();
 }
 
+// Drop the current shape to the bottom, and lock it in place.
 function actionDrop() {
   do {
     var oldCoords = currentShape.coords;
@@ -382,8 +507,10 @@ function actionDrop() {
   currentShape.coords = oldCoords;
   currentShape.currentY++;
   currentShape.addTransform(false);
+  lockDown();
 }
 
+// Rotate the current shape clockwise or counter-clockwise.
 function actionRotate(ccw) {
   var oldRotation = currentShape.currentRotation;
   var oldCoords = currentShape.coords;
@@ -401,11 +528,10 @@ function actionRotate(ccw) {
     var newQuadrant = quadrant(currentShape.currentRotation);
     var kickList = currentShape.shape.kicks[oldQuadrant + '>' + newQuadrant];
     if (!kickList) throw Error('Matching kick not found.');
-    var preKickCoords = currentShape.coords.slice();
+    var preKickCoords = currentShape.coords;
     var preKickX = currentShape.currentX;
     var preKickY = currentShape.currentY;
     for (var i = 0, kick; (kick = kickList[i]); i++) {
-      console.log('Kick: ' + kick);
       currentShape.coords = moveCoords(currentShape.coords, kick[0], kick[1]);
       currentShape.currentX += kick[0];
       currentShape.currentY += kick[1];
@@ -417,7 +543,6 @@ function actionRotate(ccw) {
       currentShape.currentY = preKickY;
     }
     if (currentShape.isCollided()) {
-      console.log('Rotation failed.');
       // All kicks failed.  Aborting rotation.
       currentShape.currentRotation = oldRotation;
       currentShape.coords = oldCoords;
@@ -426,11 +551,22 @@ function actionRotate(ccw) {
     }
   }
   currentShape.addTransform(true);
+  printDebug();
 }
 
+// Current state of the keyboard.
+var keyStatus = {
+  'ArrowLeft': false,
+  'ArrowRight': false
+};
+
+// User pressed a key to start an action.
 function keyDown(e) {
   if (e.repeat) {
     return;
+  }
+  if (keyStatus.hasOwnProperty(e.key)) {
+    keyStatus[e.key] = true;
   }
   switch (e.key) {
     case('ArrowUp'):
@@ -444,11 +580,14 @@ function keyDown(e) {
     case('ArrowLeft'):
       actionMove(false);
       break;
-    case('ArrowDown'):
-      actionDown();
-      break;
     case('ArrowRight'):
       actionMove(true);
+      break;
+    case('ArrowDown'):
+      // Move down one, and increase falling speed by 20x.
+      actionDown();
+      clearInterval(fallPid);
+      fallPid = setInterval(actionDown, getSpeed() / 20);
       break;
     case(' '):
       actionDrop();
@@ -456,12 +595,61 @@ function keyDown(e) {
     default:
       return;
   }
-  printDebug();
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+    stopAutoRepeat();
+    initAutoRepeat(e.key);
+  }
   e.preventDefault();
 }
 
+// User releases a key to stop an action.
+function keyUp(e) {
+  if (keyStatus.hasOwnProperty(e.key)) {
+    keyStatus[e.key] = false;
+  }
+  switch (e.key) {
+    case('ArrowLeft'):
+    case('ArrowRight'):
+      stopAutoRepeat();
+      if (keyStatus.ArrowLeft) {
+        initAutoRepeat('ArrowLeft');
+      } else if (keyStatus.ArrowRight) {
+        initAutoRepeat('ArrowRight');
+      }
+      break;
+    case('ArrowDown'):
+      // Return to normal falling speed.
+      clearInterval(fallPid);
+      fallPid = setInterval(actionDown, getSpeed());
+      break;
+  }
+}
+
+// Timeout PID for initial delay before an auto-repeat.
+var autoRepeatInitPid = 0;
+// Interval PID for executing an auto-repeat.
+var autoRepeatMovePid = 0;
+
+// Wait a third of a second, then start the auto-repeat.
+function initAutoRepeat(key) {
+  autoRepeatInitPid = setTimeout(startAutoRepeat.bind(null, key), 300);
+}
+
+// Start the auto-repeat.  Repeat the key to enable rapid movement.
+function startAutoRepeat(key) {
+  autoRepeatMovePid = setInterval(actionMove.bind(null, key === 'ArrowRight'), 50);
+}
+
+// Terminate the auto-repeat (user is no longer holding down the key).
+function stopAutoRepeat() {
+  clearTimeout(autoRepeatInitPid);
+  clearInterval(autoRepeatMovePid);
+}
+
+// Change the list of X/Y coordinates by rotating them 90 degrees around a point.
+// Returns a new list of coordinates, does not modify the original list.
 function rotateCoords(coords, ccw, cx, cy) {
-  var newCoords = [];
+  var newCoords = new Array(coords.length);
   for (var i = 0; i < coords.length; i++) {
     var oldX = coords[i][0] - cx;
     var oldY = coords[i][1] - cy;
@@ -479,8 +667,10 @@ function rotateCoords(coords, ccw, cx, cy) {
 }
 //console.log(rotateCoords([[0, 1], [1, 1], [2, 1], [2, 0]], false, 2, 1));
 
+// Change the list of X/Y coordinates by a horizontal and/or vertical offset.
+// Returns a new list of coordinates, does not modify the original list.
 function moveCoords(coords, dx, dy) {
-  var newCoords = [];
+  var newCoords = new Array(coords.length);
   for (var i = 0; i < coords.length; i++) {
     newCoords[i] = [coords[i][0] + dx, coords[i][1] + dy];
   }
@@ -492,10 +682,20 @@ function moveCoords(coords, dx, dy) {
 function quadrant(n) {
   return ((n % 4) + 4) % 4;
 }
-// console.log(quadrant(-1) === 3);
-// console.log(quadrant(0) === 0);
-// console.log(quadrant(3) === 3);
-// console.log(quadrant(4) === 0);
+//console.log(quadrant(-1) === 3);
+//console.log(quadrant(0) === 0);
+//console.log(quadrant(3) === 3);
+//console.log(quadrant(4) === 0);
+
+// Randomize array in-place using Durstenfeld shuffle algorithm.
+function shuffleArray(array) {
+  for (var i = array.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+  }
+}
 
 function printDebug() {
   var table = [];
@@ -515,4 +715,3 @@ function printDebug() {
   table.reverse();
   document.getElementById('debug').value = table.join('\n');
 }
-

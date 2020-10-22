@@ -7,6 +7,11 @@
       #difficulty {
         float: right;
       }
+      #next {
+        margin-left: 1em;
+        height: 40px;
+        width: 80px;
+      }
       #board {
         height: 415px;
         width: 220px;
@@ -44,6 +49,12 @@
       .type_Z {
         fill: #cc2929;  /* HSV: 0, 80, 80 */
       }
+      td {
+        padding: 0 1em;
+      }
+      body>table {
+        margin: auto;
+      }
     </style>
     <script src="../common/utils.js"></script>
     <script src="tetromino.js"></script>
@@ -57,19 +68,53 @@
     </select>
     <h1><a href="../">Beaver Games</a> : Tetromino</h1>
 
-<p style="float: right">
-  Use left/right/down arrows to move.  Use Space to drop.  Reload page for different random shape.
 
-  <br>
-  <textarea id="debug" cols=12 rows=25 style="font-face: monospace"></textarea>
-</p>
+    <table>
+      <tr>
+        <td>
+          <svg id="board" xmlns="http://www.w3.org/2000/svg">
+            <g id="grid"></g>
+            <g id="matrix"></g>
+            <line class="edge" x1="0" y1="0" x2="0" y2="100%"/>
+            <line class="edge" x1="0" y1="100%" x2="100%" y2="100%"/>
+            <line class="edge" x1="100%" y1="0" x2="100%" y2="100%"/>
+          </svg>
+        </td>
+        <td>
+          <h3>Next:</h3>
+          <svg id="next" xmlns="http://www.w3.org/2000/svg"></svg>
+          <h3>Lines: &nbsp; <span id="lines">0</span></h3>
+          <h3>Keys:</h3>
+          <table>
+            <tr>
+              <td>&larr; &rarr;</td>
+              <td>Move</td>
+            </tr>
+            <tr>
+              <td>&uarr; <i>or</i> x</td>
+              <td>Clockwise</td>
+            </tr>
+            <tr>
+              <td>Ctrl <i>or</i> z</td>
+              <td>Counter-clockwise</td>
+            </tr>
+            <tr>
+              <td>&darr;</td>
+              <td>Down</td>
+            </tr>
+            <tr>
+              <td><i>Space</i></td>
+              <td>Drop</td>
+            </tr>
+          </table>
+        </td>
+        <td>
+          Debug:<br>
+          <textarea id="debug" readonly=true cols=12 rows=25 style="font-face: monospace"></textarea>
+        </td>
+      </tr>
+    </table>
 
-    <svg id="board" xmlns="http://www.w3.org/2000/svg">
-      <g id="grid"></g>
-      <line class="edge" x1="0" y1="0" x2="0" y2="100%"/>
-      <line class="edge" x1="0" y1="100%" x2="100%" y2="100%"/>
-      <line class="edge" x1="100%" y1="0" x2="100%" y2="100%"/>
-    </svg>
     <audio id="crash" src="../common/crash.mp3"></audio>
 
   </body>

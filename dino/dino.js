@@ -356,7 +356,7 @@ function createObstacle() {
 
 // User pressed a key to start a jump, or start crouching.
 function keyDown(e) {
-  if (e.repeat) {
+  if (e.repeat || mode !== modes.PLAYING) {
     return;
   }
   switch (e.key) {
