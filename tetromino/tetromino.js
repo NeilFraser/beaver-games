@@ -11,6 +11,15 @@
 'use strict';
 
 
+// The game has three modes: Waiting on start button, interactive play,
+// and stopped.
+var modes = {
+  START: -1,
+  PLAYING: 0,
+  STOPPED: 1
+};
+var mode = modes.START;
+
 // Level to jump to when starting a game.  Set by the difficulty dropdown.
 var START_LEVEL;
 
@@ -97,6 +106,9 @@ var SHAPES = {
   }
 };
 
+// Animation frame PID for the current shape.
+var currentShapePid = 0;
+
 // Currently active O/I/T/L/J/S/Z shape.
 var currentShape = null;
 
@@ -132,19 +144,48 @@ function init() {
   difficultySelect.addEventListener('change', setDifficulty);
 
   initSvgGrid();
+
+  document.addEventListener('keydown', keyDown);
+  document.addEventListener('keyup', keyUp);
+  document.addEventListener('keypress', keyPress);
+  document.getElementById('start').addEventListener('click', startGame);
+  showStart();
+}
+window.addEventListener('load', init);
+
+// Show the start button.
+function showStart() {
+  cancelAnimationFrame(currentShapePid);
+  document.body.className = '';
+  var startButton = document.getElementById('start');
+  startButton.style.display = '';
+  mode = modes.START;
+}
+
+// Hide the start button, and start the game.
+function startGame() {
+  var startButton = document.getElementById('start');
+  startButton.style.display = 'none';
+  mode = modes.PLAYING;
+
+  lines = 0;
   initDataGrid();
+  // Delete any existing blocks.
+  if (currentShape) {
+    currentShape.destroy();
+  }
+  var matrix = document.getElementById('matrix');
+  while (matrix.firstChild) {
+    matrix.removeChild(matrix.firstChild);
+  }
   updateNextShape();
   currentShape = new CurrentShape(randomShapeName());
   var svg = document.getElementById('board');
   svg.appendChild(currentShape.g);
-  currentShape.pid = requestAnimationFrame(animateStep);
+  currentShapePid = requestAnimationFrame(animateStep);
   fallPid = setInterval(actionDown, getSpeed());
-
-  document.addEventListener('keydown', keyDown);
-  document.addEventListener('keyup', keyUp);
   printDebug();
 }
-window.addEventListener('load', init);
 
 // Draw the grid markers on the board.
 function initSvgGrid() {
@@ -341,7 +382,6 @@ CurrentShape.prototype.isCollided = function() {
 
 // Delete the current shape from the board.
 CurrentShape.prototype.destroy = function() {
-  cancelAnimationFrame(currentShape.pid);
   this.g.parentNode.removeChild(this.g);
   currentShape = null;
 };
@@ -358,6 +398,7 @@ function lockDown() {
     }
   }
   if (!below) {
+    console.log('Game over: Lock out.');
     fail();
     return;
   }
@@ -378,11 +419,11 @@ function lockDown() {
   currentShape = new CurrentShape(nextShapeName);
   var svg = document.getElementById('board');
   svg.appendChild(currentShape.g);
-  currentShape.pid = requestAnimationFrame(animateStep);
   updateNextShape();
   printDebug();
   // Check for "block out" game over condition (shape overlaps with blocks).
   if (currentShape.isCollided()) {
+    console.log('Game over: Block out.');
     fail();
   }
   // Reset the timer so that the first turn of the new shape is whole.
@@ -390,9 +431,11 @@ function lockDown() {
 }
 
 function fail() {
-  cancelAnimationFrame(currentShape.pid);
   stopAutoRepeat();
-  console.log('fail');
+  document.body.className = 'shake';
+  document.getElementById('crash').play();
+  mode = modes.STOPPED;
+  setTimeout(showStart, 1000);
 }
 
 // Return the name (O/I/T/L/J/S/Z) of a random shape.
@@ -433,6 +476,8 @@ var TransformData = function() {
 };
 
 function animateStep(time) {
+  currentShapePid = requestAnimationFrame(animateStep);
+  if (!currentShape) return;
   for (var i = 0; i < currentShape.transforms.length; i++) {
     var transform = currentShape.transforms[i];
     if (typeof transform === 'string') {
@@ -454,7 +499,6 @@ function animateStep(time) {
     }
   }
   currentShape.setTransforms();
-  currentShape.pid = requestAnimationFrame(animateStep);
 }
 
 // Create one SVG block.  Four of these in a group make up one falling shape.
@@ -562,11 +606,11 @@ var keyStatus = {
 
 // User pressed a key to start an action.
 function keyDown(e) {
-  if (e.repeat) {
-    return;
-  }
   if (keyStatus.hasOwnProperty(e.key)) {
     keyStatus[e.key] = true;
+  }
+  if (e.repeat || mode !== modes.PLAYING) {
+    return;
   }
   switch (e.key) {
     case('ArrowUp'):
@@ -607,6 +651,9 @@ function keyUp(e) {
   if (keyStatus.hasOwnProperty(e.key)) {
     keyStatus[e.key] = false;
   }
+  if (mode !== modes.PLAYING) {
+    return;
+  }
   switch (e.key) {
     case('ArrowLeft'):
     case('ArrowRight'):
@@ -622,6 +669,14 @@ function keyUp(e) {
       clearInterval(fallPid);
       fallPid = setInterval(actionDown, getSpeed());
       break;
+  }
+}
+
+// User pressed space or enter to start game.
+function keyPress(e) {
+  if (mode === modes.START && (e.key === 'Enter' || e.key === ' ')) {
+    startGame();
+    e.preventDefault();
   }
 }
 
