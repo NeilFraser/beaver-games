@@ -39,9 +39,6 @@ var TOP_ROW_HEIGHT = 5;
 // SVG namespace.
 var SVG_NS = 'http://www.w3.org/2000/svg';
 
-// Length of time that the move/rotate animations play (milliseconds).
-var ANIMATION_DURATION = 100;
-
 // Directions to try kicking a rotated 'T/L/J/S/Z' shape that collides.
 var STANDARD_KICKS = {
   '0>1': [[-1, 0], [-1, 1], [0,-2], [-1,-2]],
@@ -124,11 +121,14 @@ var fallPid = 0;
 // Number of completed lines that have been cleared so far.
 var lines = 0;
 
+// Milliseconds between move-down steps.
+var speed;
+
 // Compute the pause in milliseconds between move-down steps.
-function getSpeed() {
+function recalculateSpeed() {
   var level = Math.ceil((lines + 1) / 10);
   level = Math.max(level, START_LEVEL);
-  return Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
+  speed = Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
 }
 
 // Initialize the board and start the game.
@@ -166,9 +166,9 @@ function showStart() {
 function startGame() {
   var startButton = document.getElementById('start');
   startButton.style.display = 'none';
-  mode = modes.PLAYING;
 
   lines = 0;
+  recalculateSpeed();
   initDataGrid();
   // Delete any existing blocks.
   if (currentShape) {
@@ -178,13 +178,27 @@ function startGame() {
   while (matrix.firstChild) {
     matrix.removeChild(matrix.firstChild);
   }
-  updateNextShape();
-  currentShape = new CurrentShape(randomShapeName());
-  var svg = document.getElementById('board');
-  svg.appendChild(currentShape.g);
+  nextShapeName = randomShapeName();
+  createShape();
   currentShapePid = requestAnimationFrame(animateStep);
-  fallPid = setInterval(actionDown, getSpeed());
+}
+
+// Create new shape on the board.
+function createShape() {
+  currentShape = new CurrentShape(nextShapeName);
+  var svg = document.getElementById('shape');
+  svg.appendChild(currentShape.g);
+  updateNextShape();
+  mode = modes.PLAYING;
   printDebug();
+  // Check for "block out" game over condition (shape overlaps with blocks).
+  if (currentShape.isCollided()) {
+    console.log('Game over: Block out.');
+    fail();
+  }
+  // Reset the timer so that the first turn of the new shape is whole.
+  fallPid = setInterval(actionDown, speed);
+  mode = modes.PLAYING;
 }
 
 // Draw the grid markers on the board.
@@ -220,12 +234,16 @@ function initSvgGrid() {
 function initDataGrid() {
   grid.length = 0;
   for (var y = 0; y < ROWS + 4; y++) {
-    var row = [];
-    for (var x = 0; x < COLUMNS; x++) {
-      row[x] = null;
-    }
-    grid[y] = row;
+    grid[y] = newDataRow();
   }
+}
+
+function newDataRow() {
+  var row = [];
+  for (var x = 0; x < COLUMNS; x++) {
+    row[x] = null;
+  }
+  return row;
 }
 
 // Constructor for shape currently in play.
@@ -414,21 +432,97 @@ function lockDown() {
     g.appendChild(b);
     grid[y][x] = b;
   }
-  // Destroy the fallen shape, then create a new one.
+  // Destroy the fallen shape.
   currentShape.destroy();
-  currentShape = new CurrentShape(nextShapeName);
-  var svg = document.getElementById('board');
-  svg.appendChild(currentShape.g);
-  updateNextShape();
-  printDebug();
-  // Check for "block out" game over condition (shape overlaps with blocks).
-  if (currentShape.isCollided()) {
-    console.log('Game over: Block out.');
-    fail();
-  }
-  // Reset the timer so that the first turn of the new shape is whole.
-  fallPid = setInterval(actionDown, getSpeed());
+  identifyFullLines(createShape);
 }
+
+// Identify which lines are full.
+function identifyFullLines(callback) {
+  var fullLines = [];
+  for (var y = 0; y < grid.length; y++) {
+    if (grid[y].indexOf(null) === -1) {
+      fullLines.push(y);
+    }
+  }
+  if (fullLines.length === 0) {
+    // No full lines, finish early.
+    callback();
+    return;
+  }
+  mode = modes.STOPPED;
+  // Compile list of all blocks to delete.
+  var deleteBlocks = [];
+  for (var i = 0; i < fullLines.length; i++) {
+    var y = fullLines[i];
+    for (var x = 0; x < grid[y].length; x++) {
+      deleteBlocks.push(grid[y][x]);
+    }
+  }
+  // Highlight full lines.
+  deleteBlocks.map(function(block) {block.classList.add('fullLine');});
+  setTimeout(deleteFullLines.bind(null, fullLines, deleteBlocks, callback),
+             FULL_LINE_TIME);
+}
+
+function deleteFullLines(fullLines, deleteBlocks, callback) {
+  // Delete the SVG elements.
+  for (var i = 0, block; (block = deleteBlocks[i]); i++) {
+    block.parentNode.removeChild(block);
+  }
+  // Update display.
+  lines += fullLines.length;
+  document.getElementById('lines').textContent = lines;
+  // Mark start/end points on all moving blocks.
+  var dropHeight = 0;
+  for (var y = 0; y < grid.length; y++) {
+    if (fullLines.indexOf(y) !== -1) {
+      // This whole line will be deleted, increment the drop height and skip.
+      dropHeight++;
+      continue;
+    }
+    for (var x = 0; x < grid[y].length; x++) {
+      var block = grid[y][x];
+      if (block) {
+        if (dropHeight === 0) {
+          // Clear any previous move flags from this block.
+          delete block.dataset.startY;
+          delete block.dataset.endY;
+        } else {
+          // Flag this block to move.
+          var startY = Number(block.getAttribute('y'));
+          var endY = startY + (dropHeight * SQUARE_SIZE);
+          block.dataset.startY = startY;
+          block.dataset.endY = endY;
+          block.setAttribute('y', endY);
+        }
+      }
+    }
+  }
+  // Clear the lines in the grid.
+  for (var i = fullLines.length - 1; i >= 0; i--) {
+    grid.splice(fullLines[i], 1);
+    grid.push(newDataRow());
+  }
+  //animateFullLines();
+  setTimeout(callback, FULL_LINE_TIME);
+}
+
+var FULL_LINE_TIME = 500;
+
+function animateFullLines(time) {
+  if (animateFullLines.startTime === undefined) {
+    animateFullLines.startTime = time;
+  }
+  var elapsed = time - animateFullLines.startTime;
+  var ratio = Math.min(1, elapsed / FULL_LINE_TIME);
+  if (elapsed > FULL_LINE_TIME) {
+    animateFullLines.startTime = undefined;
+  } else {
+    requestAnimationFrame(animateFullLines);
+  }
+}
+animateFullLines.startTime = undefined;
 
 function fail() {
   stopAutoRepeat();
@@ -488,7 +582,8 @@ function animateStep(time) {
       // First frame for this transform.
       transform.startTime = time;
     }
-    var ratio = Math.min(1, (time - transform.startTime) / ANIMATION_DURATION);
+    var animationDuration = Math.min(speed * 0.8, 100);
+    var ratio = Math.min(1, (time - transform.startTime) / animationDuration);
     transform.nowX = ratio * transform.toX;
     transform.nowY = ratio * transform.toY;
     transform.nowRotation = ratio * transform.toRotation;
@@ -631,7 +726,7 @@ function keyDown(e) {
       // Move down one, and increase falling speed by 20x.
       actionDown();
       clearInterval(fallPid);
-      fallPid = setInterval(actionDown, getSpeed() / 20);
+      fallPid = setInterval(actionDown, speed / 20);
       break;
     case(' '):
       actionDrop();
@@ -667,7 +762,7 @@ function keyUp(e) {
     case('ArrowDown'):
       // Return to normal falling speed.
       clearInterval(fallPid);
-      fallPid = setInterval(actionDown, getSpeed());
+      fallPid = setInterval(actionDown, speed);
       break;
   }
 }
