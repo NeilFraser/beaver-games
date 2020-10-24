@@ -196,6 +196,9 @@ function createShape() {
     fail();
     return;
   }
+  if (!currentShape.isSurfaced()) {
+    actionDown();
+  }
   // Reset the timer so that the first turn of the new shape is whole.
   fallPid = setInterval(actionDown, speed);
   currentShape.checkSurfaced();
