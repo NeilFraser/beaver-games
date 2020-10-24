@@ -383,23 +383,60 @@ CurrentShape.prototype.setTransforms = function() {
   this.g.setAttribute('transform', transformStrings.join(' '));
 };
 
-// Does this shape intersect with any existing blocks on the board?
+// Does this shape intersect with any existing blocks on the board,
+// or extends beyond the board?
 CurrentShape.prototype.isCollided = function() {
   for (var i = 0, coord; (coord = this.coords[i]); i++) {
     var x = coord[0];
     var y = coord[1];
-    if (y < 0 || x < 0 || x >= grid[y].length) {
-      return true;  // Out of bounds.
+    if (y < 0) {
+      return true;  // Under the floor.
     }
-    if (grid[y][x]) {
-      return true;  // Collided with existing block.
+    if (grid[y][x] !== null) {
+      return true;  // Collided with existing block, or outside the edges.
     }
   }
   return false;
 };
 
+// Is this shape sitting on the bottom or on another block.
+CurrentShape.prototype.isSurfaced = function() {
+  for (var i = 0, coord; (coord = this.coords[i]); i++) {
+    var x = coord[0];
+    var y = coord[1] - 1;
+    if (y < 0) {
+      return true;  // On the bottom.
+    }
+    if (grid[y][x] !== null) {
+      return true;  // Sitting on existing block.
+    }
+  }
+  return false;
+};
+
+CurrentShape.prototype.lockDownPid = 0;
+CurrentShape.prototype.lockDownCount = 0;
+
+// If this shape is sitting on a surface, start the 0.5 second lockdown timer.
+CurrentShape.prototype.checkSurfaced = function() {
+  clearTimeout(this.lockDownPid);
+  if (currentShape.isSurfaced()) {
+    this.g.classList.add('surfaced');
+    this.lockDownCount++;
+    if (this.lockDownCount < 15) {
+      this.lockDownPid = setTimeout(lockDown, 500);
+    } else {
+      // Too many restarts of the timer.  Lock down now!
+      lockDown();
+    }
+  } else {
+    this.g.classList.remove('surfaced');
+  }
+};
+
 // Delete the current shape from the board.
 CurrentShape.prototype.destroy = function() {
+  clearTimeout(this.lockDownPid);
   this.g.parentNode.removeChild(this.g);
   currentShape = null;
 };
@@ -452,6 +489,7 @@ function identifyFullLines(callback) {
   }
   mode = modes.STOPPED;
   // Compile list of all blocks to delete.
+  recalculateSpeed();
   var deleteBlocks = [];
   for (var i = 0; i < fullLines.length; i++) {
     var y = fullLines[i];
@@ -494,7 +532,6 @@ function deleteFullLines(fullLines, deleteBlocks, callback) {
           var endY = startY + (dropHeight * SQUARE_SIZE);
           block.dataset.startY = startY;
           block.dataset.endY = endY;
-          block.setAttribute('y', endY);
         }
       }
     }
@@ -504,22 +541,33 @@ function deleteFullLines(fullLines, deleteBlocks, callback) {
     grid.splice(fullLines[i], 1);
     grid.push(newDataRow());
   }
-  //animateFullLines();
+  requestAnimationFrame(animateFullLines);
   setTimeout(callback, FULL_LINE_TIME);
 }
 
-var FULL_LINE_TIME = 500;
+var FULL_LINE_TIME = 250;
 
 function animateFullLines(time) {
   if (animateFullLines.startTime === undefined) {
     animateFullLines.startTime = time;
   }
   var elapsed = time - animateFullLines.startTime;
-  var ratio = Math.min(1, elapsed / FULL_LINE_TIME);
-  if (elapsed > FULL_LINE_TIME) {
+  var ratio = elapsed / FULL_LINE_TIME;
+  if (ratio >= 1) {
     animateFullLines.startTime = undefined;
+    ratio = 1;
   } else {
     requestAnimationFrame(animateFullLines);
+  }
+  for (var y = 0; y < grid.length; y++) {
+    for (var x = 0; x < grid[y].length; x++) {
+      var block = grid[y][x];
+      if (block && 'startY' in block.dataset) {
+        var startY = Number(block.dataset.startY);
+        var endY = Number(block.dataset.endY);
+        block.setAttribute('y', (endY - startY) * ratio + startY);
+      }
+    }
   }
 }
 animateFullLines.startTime = undefined;
@@ -618,6 +666,7 @@ function actionDown() {
     return;
   }
   currentShape.addTransform(true);
+  currentShape.checkSurfaced();
   printDebug();
 }
 
@@ -633,6 +682,7 @@ function actionMove(right) {
     return;
   }
   currentShape.addTransform(true);
+  currentShape.checkSurfaced();
   printDebug();
 }
 
@@ -690,6 +740,7 @@ function actionRotate(ccw) {
     }
   }
   currentShape.addTransform(true);
+  currentShape.checkSurfaced();
   printDebug();
 }
 

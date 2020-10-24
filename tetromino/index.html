@@ -8,7 +8,7 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: large;
-        margin: 40px auto;
+        margin: 7em auto;
         padding: 20px;
         width: 123px;
         display: block;
@@ -17,7 +17,7 @@
         border: 1px solid #000;
       }
       #startDiv {
-        margin-left: -8px;
+        margin-left: -9.5em;
         position: absolute;
         width: 100%;
       }
@@ -69,6 +69,9 @@
       }
       .fullLine {
         filter: grayscale(100%);
+      }
+      .surfaced {
+        filter: brightness(80%);
       }
       td {
         padding: 0 1em;
@@ -149,7 +152,7 @@
             </tr>
           </table>
         </td>
-        <td>
+        <td style="display: none">
           Debug:<br>
           <textarea id="debug" readonly=true cols=12 rows=25 style="font-face: monospace"></textarea>
         </td>
