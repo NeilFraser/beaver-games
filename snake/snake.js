@@ -67,6 +67,8 @@ function init() {
   var difficultySelect = document.getElementById('difficulty');
   difficultySelect.selectedIndex = difficultyIndex;
   difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('player2keys').style.display =
+    (player2 ? 'block' : 'none');
 
   injectTable();
   initBorders();

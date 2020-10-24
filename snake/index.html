@@ -10,10 +10,17 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: large;
-        margin: 285px auto;
+        margin: 255px auto;
         padding: 20px;
-        width: 123px;
+        width: 300px;
         display: block;
+      }
+      #start>div:first-child {
+        font-size: 20pt;
+        padding-bottom: 1em;
+      }
+      .keys {
+        font-family: monospace;
       }
       #start:hover {
         border: 1px solid #000;
@@ -146,7 +153,11 @@
     </select>
     <h1><a href="../">Beaver Games</a> : Snake</h1>
     <div id="startDiv">
-      <button id="start">Start</button>
+      <button id="start">
+        <div>Start</div>
+        <div class="keys">Player 1 keys: &uarr; &larr; &darr; &rarr;</div>
+        <div class="keys" id="player2keys">Player 2 keys: W A S D</div>
+      </button>
     </div>
     <table id="grid"></table>
     <audio id="crash" src="../common/crash.mp3"></audio>

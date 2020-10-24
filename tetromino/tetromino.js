@@ -189,15 +189,16 @@ function createShape() {
   var svg = document.getElementById('shape');
   svg.appendChild(currentShape.g);
   updateNextShape();
-  mode = modes.PLAYING;
   printDebug();
   // Check for "block out" game over condition (shape overlaps with blocks).
   if (currentShape.isCollided()) {
     console.log('Game over: Block out.');
     fail();
+    return;
   }
   // Reset the timer so that the first turn of the new shape is whole.
   fallPid = setInterval(actionDown, speed);
+  currentShape.checkSurfaced();
   mode = modes.PLAYING;
 }
 

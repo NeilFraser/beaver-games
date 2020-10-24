@@ -8,10 +8,17 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: large;
-        margin: 20px auto;
+        margin: 0 auto;
         padding: 20px;
-        width: 123px;
+        width: 200px;
         display: block;
+      }
+      #start>div:first-child {
+        font-size: 20pt;
+        padding-bottom: 1em;
+      }
+      .keys {
+        font-family: monospace;
       }
       #start:hover {
         border: 1px solid #000;
@@ -58,7 +65,11 @@
     <h1><a href="../">Beaver Games</a> : Dino</h1>
 
     <div id="startDiv">
-      <button id="start">Start</button>
+      <button id="start">
+        <div>Start</div>
+        <div class="keys">&nbsp; Jump: &uarr;<br>
+        Crouch: &darr;</div>
+      </button>
     </div>
 
     <svg id="landscape" height="150" width="800" xmlns="http://www.w3.org/2000/svg">
