@@ -425,7 +425,7 @@ CurrentShape.prototype.lockDownCount = 0;
 CurrentShape.prototype.checkSurfaced = function() {
   clearTimeout(this.lockDownPid);
   if (currentShape.isSurfaced()) {
-    this.g.classList.add('surfaced');
+    this.g.setAttribute('filter', 'url(#surfacedFilter)');
     this.lockDownCount++;
     if (this.lockDownCount < 15) {
       this.lockDownPid = setTimeout(lockDown, 500);
@@ -434,7 +434,7 @@ CurrentShape.prototype.checkSurfaced = function() {
       lockDown();
     }
   } else {
-    this.g.classList.remove('surfaced');
+    this.g.removeAttribute('filter');
   }
 };
 
@@ -502,7 +502,7 @@ function identifyFullLines(callback) {
     }
   }
   // Highlight full lines.
-  deleteBlocks.map(function(block) {block.classList.add('fullLine');});
+  deleteBlocks.map(function(block) {block.setAttribute('filter', 'url(#fullLineFilter)');});
   setTimeout(deleteFullLines.bind(null, fullLines, deleteBlocks, callback),
              FULL_LINE_TIME);
 }

@@ -67,12 +67,6 @@
       .type_Z {
         fill: #cc2929;  /* HSV: 0, 80, 80 */
       }
-      .fullLine {
-        filter: grayscale(100%);
-      }
-      .surfaced {
-        filter: brightness(80%);
-      }
       td {
         padding: 0 1em;
       }
@@ -111,6 +105,12 @@
                 <stop offset="0%" style="stop-color: #fff; stop-opacity: 1"/>
                 <stop offset="100%" style="stop-color: #fff; stop-opacity: 0"/>
               </linearGradient>
+              <filter id="fullLineFilter">
+                <feColorMatrix type="saturate" values="0"/>
+              </filter>
+              <filter id="surfacedFilter">
+                <feColorMatrix type="saturate" values="2"/>
+              </filter>
             </defs>
             <g id="grid"></g>
             <g id="matrix"></g>
