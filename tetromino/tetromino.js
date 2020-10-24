@@ -24,7 +24,7 @@ var mode = modes.START;
 var START_LEVEL;
 
 // Height and width of a block.
-var SQUARE_SIZE = 20;
+var SQUARE_SIZE = 25;
 
 // Width of side and bottom borders.
 var BORDER_WIDTH = 10;
