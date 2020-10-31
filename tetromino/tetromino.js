@@ -168,6 +168,7 @@ function startGame() {
   startButton.style.display = 'none';
 
   lines = 0;
+  document.getElementById('lines').textContent = lines;
   recalculateSpeed();
   initDataGrid();
   // Delete any existing blocks.
