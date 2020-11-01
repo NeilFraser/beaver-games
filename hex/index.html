@@ -14,6 +14,9 @@
       .tank {
         stroke: none;
       }
+      .shell {
+        stroke: none;
+      }
       .player1 {
         fill: #F0A609;
       }
@@ -30,6 +33,10 @@
       .gridWall {
         fill: #222;
       }
+      #info {
+        float: left;
+        font-family: monospace;
+      }
     </style>
     <script src="../common/utils.js"></script>
     <script src="hex.js"></script>
@@ -42,6 +49,47 @@
       <option value=2>Hard</option>
     </select>
     <h1><a href="../">Beaver Games</a> : Hex</h1>
+
+    <div id="info">
+      <h3>Player 1 keys:</h3>
+      <table>
+        <tr>
+          <td>1</td>
+          <td>Turn left</td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td>Turn right</td>
+        </tr>
+        <tr>
+          <td>1+2</td>
+          <td>Move forwards</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td>Fire</td>
+        </tr>
+      </table>
+      <h3>Player 2 keys:</h3>
+      <table>
+        <tr>
+          <td>8</td>
+          <td>Turn left</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td>Turn right</td>
+        </tr>
+        <tr>
+          <td>8+9</td>
+          <td>Move forwards</td>
+        </tr>
+        <tr>
+          <td>0</td>
+          <td>Fire</td>
+        </tr>
+      </table>
+    </div>
 
     <svg id="landscape" height="540" width="814" xmlns="http://www.w3.org/2000/svg">
       <g id="grid"></g>
