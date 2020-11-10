@@ -37,24 +37,38 @@ var keyStatus = {
   '0': false
 };
 
+// Keys tapped within a turn.
+var keyTapped = {
+  '1': false,
+  '2': false,
+  '3': false,
+  '8': false,
+  '9': false,
+  '0': false
+};
+
 // Array of Tank objects (players).
 var tanks = [];
-// Incrementing index into 'tanks' array specifying whose turn it is.
-var turn = 0;
+// Incrementing tick count for each clock tick.
+var clockCycle = 0;
 
 // 2D axial grid of hexagons.
 var grid = [];
 
 // Number of milliseconds between two turns of a player.
-var SPEED = 500;
+var SPEED;
+
+var player1 = null;
+var player2 = null;
+var playerComputer = null;
 
 // On page load, initialize the event handlers and draw the grid.
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
+  var m = document.cookie.match(/difficulty=([0123])/);
   var difficultyIndex = m ? m[1] : 0;
-  //SPEED = [0.7, 1, 2][difficultyIndex];
+  SPEED = [750, 500][difficultyIndex % 2];
   var difficultySelect = document.getElementById('difficulty');
   difficultySelect.selectedIndex = difficultyIndex;
   difficultySelect.addEventListener('change', setDifficulty);
@@ -64,9 +78,25 @@ function init() {
 
   initGrid();
 
-  tanks.push(new Tank(1));
-  tanks.push(new Tank(2));
-  setInterval(clock, SPEED / tanks.length);
+  player1 = new Tank(1);
+  tanks.push(player1);
+  if (difficultyIndex > 1) {
+    player2 = new Tank(2);
+    tanks.push(player2);
+  } else {
+    document.getElementById('player2scores').style.display = 'none';
+    document.getElementById('player2keys').style.display = 'none';
+  }
+  playerComputer = new Tank(3);
+  tanks.push(playerComputer);
+  // If there are an even number of tanks:
+  // 2:  S2,S1,T1 - S1,S2,T2 - Repeat...
+  // 4:  S3,S1,T1 - S4,S2,T2 - S1,S3,T3 - S2,S4,T4 - Repeat...
+  // If there are an odd number of tanks:
+  // 1:  S1,T1 - S1 - Repeat...
+  // 3:  S1,T1 - S3 - S2,T2 - S1 - S3,T3 - S2 - Repeat...
+  var interval = SPEED / (tanks.length * ((tanks.length % 2) ?  2 : 1));
+  setInterval(clock, interval);
 }
 window.addEventListener('load', init);
 
@@ -79,58 +109,203 @@ function initGrid() {
     for (var x = startX; x < endX; x++) {
       row[x] = new Hex(x, y);
       if (y === 0 || y === GRID_HEIGHT - 1 ||
-          x === startX || x === endX - 1 ||
-          Math.random() < 0.05) {
-        row[x].setWall();
+          x === startX || x === endX - 1) {
+        // Outer border.
+        row[x].setWall(true);
       }
     }
     grid[y] = row;
   }
+  // Randomly add barriers.
+  for (var y in grid) {
+    var row = grid[y];
+    for (var x in row) {
+      var cell = row[x];
+      if (!cell.isWall && Math.random() < 0.3) {
+        // Place barrier as long as it doesn't form an exclave.
+        cell.setWall(true);
+        var neighbours = cell.getNeighbours();
+        var firstNeighbour = neighbours.pop();
+        if (firstNeighbour) {
+          for (var i = 0, neighbour; (neighbour = neighbours[i]); i++) {
+            if (!hasPath(firstNeighbour, neighbour)) {
+              cell.setWall(false);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
-// Handle a tank's turn.
-function clock() {
-  var tank = tanks[turn];
-  if (turn === 0) {
-    if (keyStatus[3]) {
-      tank.fire();
+// Is there a navigable path between two hexes?
+function hasPath(startHex, goalHex) {
+  var frontier = [startHex];
+  var reached = new Set();
+  reached.add(startHex);
+  while (frontier.length) {
+    var current = frontier.shift();
+    if (current === goalHex) {
+      return true;
     }
-    if (keyStatus[1] && keyStatus[2]) {
-      tank.move();
-    } else if (keyStatus[1]) {
-      tank.turn(-1);
-    } else if (keyStatus[2]) {
-      tank.turn(1);
-    }
-  } else if (turn === 1) {
-    if (keyStatus[0]) {
-      tank.fire();
-    }
-    if (keyStatus[8] && keyStatus[9]) {
-      tank.move();
-    } else if (keyStatus[8]) {
-      tank.turn(-1);
-    } else if (keyStatus[9]) {
-      tank.turn(1);
+    var neighbours = current.getNeighbours();
+    for (var i = 0, neighbour; (neighbour = neighbours[i]); i++) {
+      if (!reached.has(neighbour)) {
+        frontier.push(neighbour);
+        reached.add(neighbour);
+      }
     }
   }
-  var shell = tank.shell;
+  return false;
+}
+
+// Starting at the specified tank's location, find the path to the closest tank.
+// Return the initial direction to move to head to the tank.
+function findTank(tank) {
+  function record(newHex, newDir) {
+    var newDesc = makeDesc(newHex, newDir);
+    if (!cameFrom.has(newDesc)) {
+      frontier.push([newHex, newDir]);
+      cameFrom.set(newDesc, [currentHex, currentDir]);
+    }
+  }
+
+  function makeDesc(hex, direction) {
+    return hex.hexX + ',' + hex.hexY + ',' + direction;
+  }
+
+  var startHex = tank.getHex();
+  var startDir = tank.direction;
+  var frontier = [[startHex, startDir]];
+  var cameFrom = new Map();
+  while (frontier.length) {
+    var current = frontier.shift();
+    var currentHex = current[0];
+    var currentDir = current[1];
+    if (currentHex !== startHex && currentHex.getTank()) {
+      // Found an enemy tank.  Return the first direction to step to.
+      var returnDir = null;
+      while (currentHex !== startHex || currentDir !== startDir) {
+        returnDir = currentDir;
+        current = cameFrom.get(makeDesc(currentHex, currentDir));
+        currentHex = current[0];
+        currentDir = current[1];
+      }
+      return returnDir;
+    }
+    var newHex, newDir;
+    // Explore moving forwards.
+    var dxy = dirToDelta(currentDir);
+    newHex = grid[currentHex.hexY + dxy.y][currentHex.hexX + dxy.x];
+    newDir = currentDir;
+    if (!newHex.isWall) {
+      record(newHex, newDir);
+    }
+    newHex = currentHex;
+    // Explore turning right.
+    newDir = (currentDir + 1) % 6;
+    record(newHex, newDir);
+    // Explore turning left.
+    newDir = (currentDir + 5) % 6;
+    record(newHex, newDir);
+  }
+  return null;
+}
+
+// Handle a turn.
+function clock() {
+  var players = tanks.length;
+  var oddPlayers = players % 2;
+  var tank = null;
+  var shell = null;
+  if (oddPlayers) {
+    if (clockCycle % 2) {
+      shell = tanks[(clockCycle * 2) % players].shell;
+    } else {
+      tank = tanks[clockCycle / 2];
+    }
+  } else {
+    tank = tanks[clockCycle];
+    shell = tanks[(clockCycle + players / 2) % players].shell;
+  }
   if (shell) {
     shell.move();
-    setTimeout(function() {
-      if (shell.tank) {
-        shell.move();
+  }
+
+  if (tank) {
+    if (tank === player1) {
+      if (keyStatus[3] || keyTapped[3]) {
+        tank.fire();
       }
-    }, SPEED / tanks.length);
+      if (keyStatus[1] && keyStatus[2]) {
+        tank.move();
+      } else if (keyStatus[1] || (keyTapped[1] && !keyTapped[2])) {
+        tank.turn(-1);
+      } else if (keyStatus[2] || (keyTapped[2] && !keyTapped[1])) {
+        tank.turn(1);
+      }
+      keyTapped[1] = false;
+      keyTapped[2] = false;
+      keyTapped[3] = false;
+    } else if (tank === player2) {
+      if (keyStatus[0] || keyTapped[0]) {
+        tank.fire();
+      }
+      if (keyStatus[8] && keyStatus[9]) {
+        tank.move();
+      } else if (keyStatus[8] || (keyTapped[8] && !keyTapped[9])) {
+        tank.turn(-1);
+      } else if (keyStatus[9] || (keyTapped[9] && !keyTapped[8])) {
+        tank.turn(1);
+      }
+      keyTapped[8] = false;
+      keyTapped[9] = false;
+      keyTapped[0] = false;
+    } else if (tank === playerComputer) {
+      computerTurn(tank);
+    }
+    // If the tank just fired, the shell arms once it is clear of the tank.
+    if (tank.firing) {
+      tank.firing--;
+    }
+    if (tank.shell) {
+      tank.shell.move();
+    }
   }
-  // If the tank just fired, the shell arms once it is clear of the tank.
-  if (tank.firing) {
-    tank.firing--;
+
+  // Increment the clockCycle, wrapping to 0 as needed.
+  clockCycle++;
+  var wrapTicks = players * (oddPlayers ? 2 : 1);
+  if (clockCycle >= wrapTicks) {
+    clockCycle = 0;
   }
-  // Increment the turn, wrapping to 0 as needed.
-  turn++;
-  if (turn >= tanks.length) {
-    turn = 0;
+}
+
+function computerTurn(me) {
+  // Fire if there's a tank ahead of us.
+  var lookX = me.hexX;
+  var lookY = me.hexY;
+  var dxy = dirToDelta(me.direction);
+  do {
+    lookX += dxy.x;
+    lookY += dxy.y;
+    var hex = grid[lookY][lookX];
+  } while (!hex.isWall && !hex.getTank());
+  if (hex.getTank()) {
+    me.fire();
+  }
+
+  // Drive/Turn towards the nearest tank.
+  var direction = findTank(me);
+  if (direction !== null) {
+    if (((me.direction + 1) % 6) === direction) {
+      me.turn(1);
+    } else if (((me.direction + 5) % 6) === direction) {
+      me.turn(-1);
+    } else {
+      me.move();
+    }
   }
 }
 
@@ -160,8 +335,12 @@ dirToDelta.TABLE = [
 
 // User pressed a key to start an action.
 function keyDown(e) {
+  if (e.repeat) return;
   if (keyStatus.hasOwnProperty(e.key)) {
     keyStatus[e.key] = true;
+  }
+  if (keyTapped.hasOwnProperty(e.key)) {
+    keyTapped[e.key] = true;
   }
 }
 
@@ -196,9 +375,13 @@ function Hex(hexX, hexY) {
 }
 
 // Convert this hexagon into a wall.
-Hex.prototype.setWall = function() {
-  this.isWall = true;
-  this.element.classList.add('gridWall');
+Hex.prototype.setWall = function(wall) {
+  this.isWall = wall;
+  if (wall) {
+    this.element.classList.add('gridWall');
+  } else {
+    this.element.classList.remove('gridWall');
+  }
 };
 
 // Return list of all live shells in this hex.
@@ -224,6 +407,21 @@ Hex.prototype.getTank = function() {
   return null;
 };
 
+// Return all non-wall neighbours of this hex.
+Hex.prototype.getNeighbours = function() {
+  var neighbours = [];
+  for (var direction = 0; direction < 6; direction++) {
+    var dxy = dirToDelta(direction);
+    var newX = this.hexX + dxy.x;
+    var newY = this.hexY + dxy.y;
+    var newHex = grid[newY][newX];
+    if (!newHex.isWall) {
+      neighbours.push(newHex);
+    }
+  }
+  return neighbours;
+};
+
 // Abstract constructor for a object that is animatable.
 function AbstractAnimatable() {}
 
@@ -234,6 +432,7 @@ AbstractAnimatable.prototype.SPEED = 1;
 
 // Draw the object on the playing field.
 AbstractAnimatable.prototype.render = function(animate) {
+  cancelAnimationFrame(this.animationFramePid);
   if (animate) {
     this.translateXStart = this.translateXFinal;
     this.translateYStart = this.translateYFinal;
@@ -281,10 +480,18 @@ AbstractAnimatable.prototype.animate = function(timestamp) {
 
   this.setTransforms();
   if (ratio < 1) {
+    cancelAnimationFrame(this.animationFramePid);
     this.animationFramePid = requestAnimationFrame(this.animate.bind(this));
   } else {
     this.animateStart = undefined;
   }
+};
+
+// Get the hex for this object.
+AbstractAnimatable.prototype.getHex = function(opt_dx, opt_dy) {
+  var newX = this.hexX + (opt_dx || 0);
+  var newY = this.hexY + (opt_dy || 0);
+  return grid[newY][newX];
 };
 
 // Constructor for a new shell (bullet).
@@ -323,22 +530,19 @@ Shell.prototype.dispose = function() {
 // Update the shell's coordinates to move forwards.
 Shell.prototype.move = function() {
   var dxy = dirToDelta(this.direction);
-  var newX = this.hexX + dxy.x;
-  var newY = this.hexY + dxy.y;
-  var newHex = grid[newY][newX];
-  if (!newHex || newHex.isWall) {
+  var newHex = this.getHex(dxy.x, dxy.y);
+  if (newHex.isWall) {
     this.dispose();
     return;
   }
   var victim = newHex.getTank();
   if (victim && (victim !== this.tank || !victim.firing)) {
-    console.log(victim.firing);
+    victim.boom([this.tank]);
     this.dispose();
-    victim.boom();
     return;
   }
-  this.hexX = newX;
-  this.hexY = newY;
+  this.hexX += dxy.x;
+  this.hexY += dxy.y;
   this.render(true);
 };
 
@@ -356,6 +560,7 @@ function Tank(playerNumber) {
   this.shell = null;
   this.render(false);
   this.firing = 0;
+  this.score = 0;
 }
 
 // Inherit from AbstractAnimatable.
@@ -372,22 +577,22 @@ Tank.prototype.SPEED = 0.8;
 // Update the tank's coordinates to move forwards.
 Tank.prototype.move = function() {
   var dxy = dirToDelta(this.direction);
-  var newX = this.hexX + dxy.x;
-  var newY = this.hexY + dxy.y;
-  var newHex = grid[newY][newX];
-  if (!newHex || newHex.isWall || newHex.getTank()) {
+  var newHex = this.getHex(dxy.x, dxy.y);
+  if (newHex.isWall || newHex.getTank()) {
     return;
   }
   var shells = newHex.getShells(this);
   if (shells.length) {
+    var victors = [];
     for (var i = 0, shell; (shell = shells[i]); i++) {
+      victors.push(shell.tank);
       shell.dispose();
     }
-    this.boom();
+    this.boom(victors);
     return;
   }
-  this.hexX = newX;
-  this.hexY = newY;
+  this.hexX += dxy.x;
+  this.hexY += dxy.y;
   this.render(true);
 };
 
@@ -406,12 +611,27 @@ Tank.prototype.placeRandomly = function() {
   this.direction = Math.floor(Math.random() * 6);
 };
 
+// Change this tank's score.  Display the score.
+Tank.prototype.setScore = function() {
+  this.score++;
+  document.getElementById('player' + this.playerNumber + 'score').textContent = this.score;
+};
+
 // Explode the tank.
-Tank.prototype.boom = function() {
+Tank.prototype.boom = function(victors) {
   cancelAnimationFrame(this.animationFramePid);
   this.placeRandomly();
   this.firing = 0;
   this.render(false);
+  for (var i = 0, victor; (victor = victors[i]); i++) {
+    if (victor === this) {
+      // Spawn in your own shell's path.
+      this.setScore(this.score - 1);
+    } else {
+      // Victor killed this tank.
+      victor.setScore(victor.score + 1);
+    }
+  }
 };
 
 // Update the tank's direction to move clockwise or counter-clockwise.
@@ -425,7 +645,7 @@ Tank.prototype.turn = function(dir) {
   this.render(true);
 };
 
-// Fire a bullet if one doesn't already exist.
+// Fire a shell if one doesn't already exist.
 Tank.prototype.fire = function() {
   if (this.shell) return;
   this.shell = new Shell(this);

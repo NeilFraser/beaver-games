@@ -37,6 +37,10 @@
         float: left;
         font-family: monospace;
       }
+      #scores {
+        margin-bottom: 2em;
+        font-size: 24pt;
+      }
     </style>
     <script src="../common/utils.js"></script>
     <script src="hex.js"></script>
@@ -44,13 +48,38 @@
 
   <body>
     <select id="difficulty">
-      <option value=0>Easy</option>
-      <option value=1>Normal</option>
-      <option value=2>Hard</option>
+      <option value=0>1 Player - Slow</option>
+      <option value=1>1 Player - Fast</option>
+      <option value=2>2 Player - Slow</option>
+      <option value=3>2 Player - Fast</option>
     </select>
     <h1><a href="../">Beaver Games</a> : Hex</h1>
 
     <div id="info">
+      <div id="scores">
+        <p>
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player1"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player1score">0</span>
+        </p>
+        <p id="player2scores">
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player2"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player2score">0</span>
+        </p>
+        <p>
+          <svg height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="0,-2 2,2 0,1 -2,2" class="tank player3"
+                     transform="translate(10, 10) rotate(90) scale(5)"></polygon>
+          </svg>
+          <span id="player3score">0</span>
+        </p>
+      </div>
+
       <h3>Player 1 keys:</h3>
       <table>
         <tr>
@@ -70,25 +99,27 @@
           <td>Fire</td>
         </tr>
       </table>
-      <h3>Player 2 keys:</h3>
-      <table>
-        <tr>
-          <td>8</td>
-          <td>Turn left</td>
-        </tr>
-        <tr>
-          <td>9</td>
-          <td>Turn right</td>
-        </tr>
-        <tr>
-          <td>8+9</td>
-          <td>Move forwards</td>
-        </tr>
-        <tr>
-          <td>0</td>
-          <td>Fire</td>
-        </tr>
-      </table>
+      <div id="player2keys">
+        <h3>Player 2 keys:</h3>
+        <table>
+          <tr>
+            <td>8</td>
+            <td>Turn left</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Turn right</td>
+          </tr>
+          <tr>
+            <td>8+9</td>
+            <td>Move forwards</td>
+          </tr>
+          <tr>
+            <td>0</td>
+            <td>Fire</td>
+          </tr>
+        </table>
+      </div>
     </div>
 
     <svg id="landscape" height="540" width="814" xmlns="http://www.w3.org/2000/svg">
