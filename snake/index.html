@@ -137,20 +137,23 @@
       #grid .border {
         background-color: #888;
       }
-      #difficulty {
+      #options {
         float: right;
       }
     </style>
   </head>
   <body>
-    <select id="difficulty">
-      <option value=0>1 Player - Easy</option>
-      <option value=1>1 Player - Normal</option>
-      <option value=2>1 Player - Hard</option>
-      <option value=3>2 Players - Easy</option>
-      <option value=4>2 Players - Normal</option>
-      <option value=5>2 Players - Hard</option>
-    </select>
+    <div id="options">
+      <select id="players">
+        <option value=1>1 Player</option>
+        <option value=2>2 Players</option>
+      </select>
+      <select id="difficulty">
+        <option value=0>Easy</option>
+        <option value=1>Normal</option>
+        <option value=2>Hard</option>
+      </select>
+    </div>
     <h1><a href="../">Beaver Games</a> : Snake</h1>
     <div id="startDiv">
       <button id="start">

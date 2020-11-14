@@ -60,13 +60,16 @@ var player2 = false;
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012345])/);
+  var m = document.cookie.match(/difficulty=([012])/);
   var difficultyIndex = m ? m[1] : 0;
-  SPEED = [400, 200, 100][difficultyIndex % 3];
-  player2 = difficultyIndex >= 3;
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = difficultyIndex;
-  difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('difficulty').selectedIndex = difficultyIndex;
+  SPEED = [400, 200, 100][difficultyIndex];
+  m = document.cookie.match(/players=([12])/);
+  if (m && m[1] === '2') {
+    player2 = true;
+  }
+  document.getElementById('players').selectedIndex = player2 ? 1 : 0;
+  registerOptions('players', 'difficulty');
   document.getElementById('player2keys').style.display =
     (player2 ? 'block' : 'none');
 

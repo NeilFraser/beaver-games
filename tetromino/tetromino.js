@@ -139,9 +139,8 @@ function init() {
   var difficultyIndex = m ? m[1] : 0;
   // Starting level for easy, normal and hard modes.
   START_LEVEL = [1, 4, 8][difficultyIndex];
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = difficultyIndex;
-  difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('difficulty').selectedIndex = difficultyIndex;
+  registerOptions('difficulty');
 
   initSvgGrid();
 

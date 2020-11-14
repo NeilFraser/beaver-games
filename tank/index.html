@@ -1,10 +1,10 @@
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-    <title>Beaver Games : Hex</title>
+    <title>Beaver Games : Tank</title>
     <link rel="stylesheet" href="../common/style.css">
     <style>
-      #difficulty {
+      #options {
         float: right;
       }
       #landscape {
@@ -43,17 +43,21 @@
       }
     </style>
     <script src="../common/utils.js"></script>
-    <script src="hex.js"></script>
+    <script src="tank.js"></script>
   </head>
 
   <body>
-    <select id="difficulty">
-      <option value=0>1 Player - Slow</option>
-      <option value=1>1 Player - Fast</option>
-      <option value=2>2 Player - Slow</option>
-      <option value=3>2 Player - Fast</option>
-    </select>
-    <h1><a href="../">Beaver Games</a> : Hex</h1>
+    <div id="options">
+      <select id="players">
+        <option value=1>1 Player</option>
+        <option value=2>2 Players</option>
+      </select>
+      <select id="difficulty">
+        <option value=0>Slow</option>
+        <option value=1>Fast</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Tank</h1>
 
     <div id="info">
       <div id="scores">

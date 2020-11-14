@@ -5,7 +5,7 @@
  */
 
 /**
- * @fileoverview Hex game.
+ * @fileoverview Tank game.
  * @author root@neil.fraser.name (Neil Fraser)
  */
 'use strict';
@@ -66,12 +66,17 @@ var playerComputer = null;
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([0123])/);
+  var m = document.cookie.match(/difficulty=([01])/);
   var difficultyIndex = m ? m[1] : 0;
-  SPEED = [750, 500][difficultyIndex % 2];
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = difficultyIndex;
-  difficultySelect.addEventListener('change', setDifficulty);
+  SPEED = [750, 500][difficultyIndex];
+  document.getElementById('difficulty').selectedIndex = difficultyIndex;
+  var playerCount = 1;
+  m = document.cookie.match(/players=([12])/);
+  if (m && m[1] === '2') {
+    playerCount = 2;
+  }
+  document.getElementById('players').selectedIndex = playerCount - 1;
+  registerOptions('players', 'difficulty');
 
   document.addEventListener('keydown', keyDown);
   document.addEventListener('keyup', keyUp);
@@ -80,7 +85,7 @@ function init() {
 
   player1 = new Tank(1);
   tanks.push(player1);
-  if (difficultyIndex > 1) {
+  if (playerCount > 1) {
     player2 = new Tank(2);
     tanks.push(player2);
   } else {

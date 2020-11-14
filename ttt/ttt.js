@@ -321,9 +321,8 @@ function init() {
 
   var m = document.cookie.match(/difficulty=([12])/);
   DIFFICULTY = Number(m ? m[1] : 1);
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = DIFFICULTY - 1;
-  difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('difficulty').selectedIndex = DIFFICULTY - 1;
+  registerOptions('difficulty');
 
   document.addEventListener('keydown', keyDown);
   document.getElementById('shield').addEventListener('click', reset);

@@ -158,9 +158,8 @@ function init() {
   var m = document.cookie.match(/difficulty=([012])/);
   difficultyIndex = m ? m[1] : 0;
   SPEED = SPEEDS[difficultyIndex];
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = difficultyIndex;
-  difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('difficulty').selectedIndex = difficultyIndex;
+  registerOptions('difficulty');
 
   document.addEventListener('keydown', keyDown);
   document.addEventListener('keyup', keyUp);

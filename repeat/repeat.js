@@ -41,9 +41,8 @@ function init() {
   var m = document.cookie.match(/difficulty=([012])/);
   var difficultyIndex = m ? m[1] : 0;
   LEVELS = [8, 16, 32][difficultyIndex];
-  var difficultySelect = document.getElementById('difficulty');
-  difficultySelect.selectedIndex = difficultyIndex;
-  difficultySelect.addEventListener('change', setDifficulty);
+  document.getElementById('difficulty').selectedIndex = difficultyIndex;
+  registerOptions('difficulty');
   for (var i = 1; i <= 4; i++) {
     var button = document.getElementById('b' + i);
     button.addEventListener('mousedown', buttonStart.bind(button, i));

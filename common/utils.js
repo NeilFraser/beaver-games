@@ -25,13 +25,29 @@ function fixLinks() {
   }
 }
 
-// Change the difficulty level.
-function setDifficulty() {
-  var difficultySelect = document.getElementById('difficulty');
-  var value = difficultySelect.options[difficultySelect.selectedIndex].value;
-  document.cookie = 'difficulty=' + value + '; SameSite=Strict';
+// Names of dropdowns that configure the game.
+var optionNames = [];
+
+// Save the game options and reload.
+function saveOptions() {
+  for (var i = 0; i < optionNames.length; i++) {
+    var name = optionNames[i];
+    var dropdown = document.getElementById(name);
+    var value = dropdown.options[dropdown.selectedIndex].value;
+    document.cookie = name + '=' + value + '; SameSite=Strict';
+  }
   if (!document.cookie) {
     alert('Can\'t set cookie.\nKnown issue with Chrome on file:// URLs.');
   }
   location.reload();
+}
+
+// Set event handlers on the named game option dropdowns.
+function registerOptions(var_args) {
+  for (var i = 0; i < arguments.length; i++) {
+    var name = arguments[i];
+    optionNames.push(name);
+    var dropdown = document.getElementById(name);
+    dropdown.addEventListener('change', saveOptions);
+  }
 }
