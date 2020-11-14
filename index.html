@@ -4,11 +4,17 @@
     <title>Beaver Games</title>
     <link rel="stylesheet" href="common/style.css">
     <style>
+      header {
+        text-align: center;
+      }
       table {
-        margin: 2em 0;
+        margin: auto;
       }
       td {
         padding: 1em;
+      }
+      td:nth-child(2) {
+        padding-right: 5em;
       }
       td>div {
         font-weight: bold;
@@ -30,10 +36,11 @@ window.addEventListener('load', init);
   </head>
 
   <body>
-    <h1>Beaver Games</h1>
+    <header>
+      <h1>Beaver Games</h1>
 
-    <p><i>Simple games for young children.</i></p>
-
+      <p><i>Simple games for young children.</i></p>
+    </header>
     <table>
       <tr>
         <td>
@@ -43,8 +50,6 @@ window.addEventListener('load', init);
           <div><a href="repeat/">Repeat</a></div>
           <p>Remember a pattern.</p>
         </td>
-      </tr>
-      <tr>
         <td>
           <a href="snake/"><img src="snake/icon.png" width="100"></a>
         </td>
@@ -61,8 +66,6 @@ window.addEventListener('load', init);
           <div><a href="ttt/">Tic Tac Toe</a></div>
           <p>Three in a row.</p>
         </td>
-      </tr>
-      <tr>
         <td>
           <a href="dino/"><img src="dino/icon.png" width="100"></a>
         </td>
@@ -79,8 +82,6 @@ window.addEventListener('load', init);
           <div><a href="tetromino/">Tetromino</a></div>
           <p>Fit shapes together.</p>
         </td>
-      </tr>
-      <tr>
         <td>
           <a href="hex/"><img src="hex/icon.png" width="100"></a>
         </td>
