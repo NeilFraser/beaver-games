@@ -262,7 +262,4 @@ function noteStart(i) {
 function noteStop(i) {
   var button = document.getElementById('b' + i);
   button.classList.remove('highlight');
-  if (currentAudio) {
-    currentAudio.pause();
-  }
 }
