@@ -453,6 +453,7 @@ AbstractAnimatable.prototype.render = function(animate) {
     } else if (this.rotateStart === 90 && this.rotateFinal === 390) {
       this.rotateStart += 360;
     }
+    this.animateStart = undefined;
     this.animationFramePid = requestAnimationFrame(this.animate.bind(this));
   } else {
     this.translateXNow = this.translateXFinal;
