@@ -41,6 +41,9 @@ var moveResult = {
 // Milliseconds between each step.
 var SPEED;
 
+// Minimum distance between food and board edges.
+var foodMargin = 0;
+
 // Array of snake objects.
 var snakes = [];
 
@@ -64,6 +67,10 @@ function init() {
   var difficultyIndex = m ? m[1] : 0;
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
   SPEED = [400, 200, 100][difficultyIndex];
+  // Easy - Food is never next to a wall.
+  // Normal - Food is never in the wrap doors.
+  // Hard - Food is anywhere.
+  foodMargin = [2, 1, 0][difficultyIndex];
   m = document.cookie.match(/players=([12])/);
   if (m && m[1] === '2') {
     player2 = true;
@@ -196,10 +203,19 @@ function step() {
 
 // Add an new food square somewhere randomly on the board.
 function addFood() {
+  var count = 0;
   do {
-    var x = Math.floor(Math.random() * WIDTH);
-    var y = Math.floor(Math.random() * HEIGHT);
+    var x = Math.floor(Math.random() * (WIDTH - foodMargin * 2) + foodMargin);
+    var y = Math.floor(Math.random() * (HEIGHT - foodMargin * 2) + foodMargin);
     var cell = getCell([x, y]);
+    if (count++ > HEIGHT * WIDTH * 10) {
+      // Can't find a place to place food.  End game.
+      clearInterval(pid);
+      isRunning = false;
+      alert("You win!");
+      showStart();
+      return;
+    }
   } while (cell.classList.contains('border') ||
            cell.classList.contains('snake') ||
            cell.classList.contains('food'));
