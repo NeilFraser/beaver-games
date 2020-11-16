@@ -716,6 +716,9 @@ Tank.prototype.dispose = function() {
     return;
   }
   this.disposed = true;
+  var audio = document.getElementById('bang');
+  audio.currentTime = 0;
+  audio.play();
   // Create a hulk in this location.
   new Hulk(this);
   // Shutdown this tank.
