@@ -508,6 +508,7 @@ function identifyFullLines(callback) {
 }
 
 function deleteFullLines(fullLines, deleteBlocks, callback) {
+  document.getElementById('click').play();
   // Delete the SVG elements.
   for (var i = 0, block; (block = deleteBlocks[i]); i++) {
     block.parentNode.removeChild(block);
