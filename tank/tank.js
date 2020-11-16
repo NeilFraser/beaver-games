@@ -170,7 +170,15 @@ function hasPath(startHex, goalHex) {
 
 // Starting at the specified tank's location, find the path to the closest tank.
 // Return the initial direction to move to head to the tank.
-function findTank(tank) {
+function findTank(me) {
+  var goalHexes = new Set();
+  for (var i = 0, target; (target = tanks[i]); i++) {
+    if (target === me || target.disposed) {
+      continue;
+    }
+    goalHexes.add(target.getHex());
+  }
+
   function record(newHex, newDir) {
     var newDesc = makeDesc(newHex, newDir);
     if (!cameFrom.has(newDesc)) {
@@ -183,15 +191,15 @@ function findTank(tank) {
     return hex.hexX + ',' + hex.hexY + ',' + direction;
   }
 
-  var startHex = tank.getHex();
-  var startDir = tank.direction;
+  var startHex = me.getHex();
+  var startDir = me.direction;
   var frontier = [[startHex, startDir]];
   var cameFrom = new Map();
   while (frontier.length) {
     var current = frontier.shift();
     var currentHex = current[0];
     var currentDir = current[1];
-    if (currentHex !== startHex && currentHex.getTank()) {
+    if (currentHex !== startHex && goalHexes.has(currentHex)) {
       // Found an enemy tank.  Return the first direction to step to.
       var returnDir = null;
       while (currentHex !== startHex || currentDir !== startDir) {
@@ -314,7 +322,12 @@ function computerTurn(me) {
     } else if (((me.direction + 5) % 6) === direction) {
       me.turn(-1);
     } else {
-      me.move();
+      // Move forward, but not if there's a shell in the next square.
+      var dxy = dirToDelta(me.direction);
+      var newHex = me.getHex(dxy.x, dxy.y);
+      if (newHex.getShells().length === 0) {
+        me.move();
+      }
     }
   }
 }
