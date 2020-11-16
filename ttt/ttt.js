@@ -201,10 +201,12 @@ function drawScore() {
   // Print text message.
   var state = boardState(board);
   var text = '';
-  if (state === X_VALUE) {
-    text = cpuFirst ? 'Computer wins.' : 'You win!';
-  } else if (state === O_VALUE) {
-    text = cpuFirst ? 'You win!' : 'Computer wins.';
+  if (state === (cpuFirst ? X_VALUE : O_VALUE)) {
+    text = 'Computer wins.';
+    document.getElementById('fail').play();
+  } else if (state === (cpuFirst ? O_VALUE : X_VALUE)) {
+    text = 'You win!';
+    document.getElementById('ding').play();
   } else if (state === TIE) {
     text = 'It is a tie.';
   }
