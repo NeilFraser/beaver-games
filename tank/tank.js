@@ -648,6 +648,7 @@ Tank.prototype.move = function() {
                 dxy.x + ',' + dxy.y);
   }
   if (newHex.isWall || newHex.getTank()) {
+    this.animateStart = undefined;
     return;
   }
   var shells = newHex.getShells(this);
