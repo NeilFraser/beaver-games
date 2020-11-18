@@ -172,11 +172,27 @@ function hasPath(startHex, goalHex) {
 // Return the initial direction to move to head to the tank.
 function findTank(me) {
   var goalHexes = new Set();
+  var dangerHexes = new Set();
   for (var i = 0, target; (target = tanks[i]); i++) {
     if (target === me || target.disposed) {
       continue;
     }
-    goalHexes.add(target.getHex());
+    // Enemy tank is a good goal.
+    var hex = target.getHex();
+    goalHexes.add(hex);
+    // In front of an enemy tank is a dangerous place.
+    var lookX = hex.hexX;
+    var lookY = hex.hexY;
+    var dxy = dirToDelta(target.direction);
+    while (true) {
+      lookX += dxy.x;
+      lookY += dxy.y;
+      hex = grid[lookY][lookX];
+      if (hex.isWall || hex.getTank()) {
+        break;
+      }
+      dangerHexes.add(hex);
+    }
   }
 
   function record(newHex, newDir) {
@@ -215,7 +231,7 @@ function findTank(me) {
     var dxy = dirToDelta(currentDir);
     newHex = grid[currentHex.hexY + dxy.y][currentHex.hexX + dxy.x];
     newDir = currentDir;
-    if (!newHex.isWall) {
+    if (!newHex.isWall && !dangerHexes.has(newHex)) {
       record(newHex, newDir);
     }
     newHex = currentHex;
