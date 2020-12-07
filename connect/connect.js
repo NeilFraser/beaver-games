@@ -5,12 +5,13 @@
  */
 
 /**
- * @fileoverview Tic Tac Toe.
+ * @fileoverview Connect.
  * @author root@neil.fraser.name (Neil Fraser)
  */
 'use strict';
 
-// Height times width (not counting borders) must be even.
+// Height times width (not counting borders) should be even.
+// For Easy/Normal/Hard modes.
 var HEIGHTS = [6, 8, 10];
 var WIDTHS = [8, 12, 16];
 // Number of rows (plus a border top and bottom).
@@ -18,6 +19,7 @@ var HEIGHT;
 // Number of columns (plus a border left and right).
 var WIDTH;
 
+// List of colours for Easy mode.
 // Saturation: 80
 // Value: 80
 var COLOURS_10 = [
@@ -32,9 +34,10 @@ var COLOURS_10 = [
   '#7a29cc',  // Hue: 270
   '#cc29cc'   // Hue: 300
 ];
-
+// List of characters for Easy mode.
 var CHARACTERS_10 = '0123456789';
 
+// List of colours for Normal and Hard modes.
 var COLOURS_26 = [
   '#cc2929',  // Hue: 0
   '#cc5229',  // Hue: 15
@@ -63,9 +66,10 @@ var COLOURS_26 = [
   '#616161',  // Saturation: 0, Value 38
   '#474747'   // Saturation: 0, Value 28
 ];
-
+// List of characters for Normal and Hard modes.
 var CHARACTERS_26 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
+// List of colours and characters to be used.
 var COLOURS, CHARACTERS;
 
 // Height and width of one cell.
@@ -77,11 +81,14 @@ var board = [];
 // X/Y coordinates of currently selected cell.
 var selected = null;
 
+// Maximum number of corners that the connection path may have.
 var MAX_PATH_CORNERS = 2;
 
+// Start-up initialization code.  Run once.
 function init() {
   fixLinks();
 
+  // Configure difficulty mode.
   var m = document.cookie.match(/difficulty=([012])/);
   var difficulty = Number(m ? m[1] : 1);
   document.getElementById('difficulty').selectedIndex = difficulty;
@@ -91,25 +98,29 @@ function init() {
   HEIGHT = HEIGHTS[difficulty] + 2;
   WIDTH = WIDTHS[difficulty] + 2;
 
+  // Initialize the canvas.
   var canvas = document.getElementById('canvas');
   canvas.addEventListener('click', onClick);
   canvas.setAttribute('height', HEIGHT * CELL_SIZE);
   canvas.setAttribute('width', WIDTH * CELL_SIZE);
 
+  // Start button is only for restart in this game, but add event handler now.
   document.getElementById('start').addEventListener('click', startGame);
   startGame();
 }
 window.addEventListener('load', init);
 
+// Initalize the data structure that represents the board.
 function initBoard() {
   var emptyCells = [];
   board.length = 0;
   for (var y = 0; y < HEIGHT; y++) {
     board[y] = [];
     for (var x = 0; x < WIDTH; x++) {
+      // Set every cell to be blank.
       board[y][x] = -1;
       if (x > 0 && y > 0 && x < WIDTH - 1 && y < HEIGHT - 1) {
-        // Playable cells.
+        // Build array of playable cells.
         emptyCells.push({x: x, y: y});
       }
     }
@@ -117,6 +128,7 @@ function initBoard() {
   // Randomize the order of the empty cells, then pair them up.
   shuffle(emptyCells);
   for (var i = 0; i < emptyCells.length; i += 2) {
+    // Assign a random colour to each pair.
     var colour = Math.floor(Math.random() * COLOURS.length);
     var cell1 = emptyCells[i];
     var cell2 = emptyCells[i + 1];
@@ -127,6 +139,7 @@ function initBoard() {
   }
 }
 
+// Clear the canvas and redraw everything.
 function drawBoard() {
   var canvas = document.getElementById('canvas');
   canvas.width = canvas.width;  // Clear the canvas.
@@ -135,17 +148,21 @@ function drawBoard() {
 
   for (var y = 0; y < HEIGHT; y++) {
     for (var x = 0; x < WIDTH; x++) {
+      // Draw the cell.
       var colour = board[y][x];
       ctx.fillStyle = colour === -1 ? '#fff' : COLOURS[colour];
       var xy = cellCoordinates(x, y);
       ctx.fillRect(xy.x - CELL_SIZE / 2 - 1, xy.y - CELL_SIZE / 2 - 1,
                    CELL_SIZE - 2, CELL_SIZE - 2);
+      // Draw a small dot in the upper left corner.  Forms a grid.
       ctx.fillStyle = '#bbb';
       ctx.fillRect(xy.x - CELL_SIZE / 2 - 3, xy.y - CELL_SIZE / 2 - 3,
                    2, 2);
       if (colour !== -1) {
+        // Print the character for this non-empty cell.
         var character = CHARACTERS[colour];
         if ((x + y + colour) % 2) {
+          // Randomly (but deterministically) make half the letters lowercase.
           character = character.toLowerCase();
         }
         ctx.fillStyle = '#fff';
@@ -154,6 +171,7 @@ function drawBoard() {
     }
   }
 
+  // If a cell is selected, draw the selection border.
   if (selected) {
     ctx.strokeStyle = '#ccc';
     ctx.lineWidth = 5;
@@ -163,7 +181,7 @@ function drawBoard() {
   }
 }
 
-// Show the start button.
+// Game ended.  Show the start button.
 function showStart() {
   document.body.className = '';
   var startButton = document.getElementById('start');
@@ -179,6 +197,7 @@ function startGame() {
   checkMoves();
 }
 
+// Draw a path from one cell to another using the provided array of coordinates.
 function drawPath(path) {
   var canvas = document.getElementById('canvas');
   var ctx = canvas.getContext('2d');
@@ -201,6 +220,7 @@ function cellCoordinates(x, y) {
   return {x: canvasX, y: canvasY};
 }
 
+// User clicked on the canvas.
 function onClick(e) {
   var element = document.getElementById('canvas');
   // Compute the X/Y cell coordinates of the click.
@@ -233,12 +253,16 @@ function onClick(e) {
   }
 }
 
+// Are the provided coordinates within the board (including the one-cell border)?
 function isValidCoords(x, y) {
   return x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT;
 }
 
+// Compute and display the number of possible moves.
+// End game if there aren't any (either because of win or loss).
 function checkMoves() {
-  var count = 0;
+  // Build array of all remaining cells with a colour.
+  // Array X/Y locations of all the 'A's, all the 'B's, etc.
   var groups = [];
   for (var y = 1; y < HEIGHT - 1; y++) {
     for (var x = 1; x < WIDTH - 1; x++) {
@@ -252,7 +276,10 @@ function checkMoves() {
       groups[colour].push({x: x, y: y});
     }
   }
+  var count = 0;
   if (groups.length) {
+    // For each pair in the group, determine if there is a path between them.
+    // Don't count any pair twice.
     for (var g = 0; g < groups.length; g++) {
       var group = groups[g];
       if (!group) {
@@ -267,11 +294,13 @@ function checkMoves() {
       }
     }
     if (count === 0) {
+      // There are groups, but no paths.  Sorry, game over.
       document.getElementById('crash').play();
       document.body.className = 'shake';
       setTimeout(showStart, 1000);
     }
   } else {
+    // No groups.  The board has been cleared.  Game over.
     document.getElementById('win').play();
     setTimeout(showStart, 1000);
   }
@@ -286,6 +315,9 @@ var deltas = [
   [0, 1]
 ];
 
+// Find a path from x1/y1 to x2/y2.  Limited by MAX_PATH_CORNERS.
+// Only navigate across empty cells.  Use a breadth-first search.
+// Return list of coordinates for path, or null if none.
 function findPath(x1, y1, x2, y2) {
   var queue = [];
   queue.push({path: [{x: x1, y: y1}], corners: MAX_PATH_CORNERS});
