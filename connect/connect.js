@@ -98,6 +98,7 @@ function init() {
 
   initBoard();
   drawBoard();
+  checkMoves();
 }
 window.addEventListener('load', init);
 
@@ -205,7 +206,7 @@ function onClick(e) {
         if (path) {
           board[selected.y][selected.x] = -1;
           board[y][x] = -1;
-          checkWin()
+          checkMoves();
         }
       }
     }
@@ -221,15 +222,42 @@ function isValidCoords(x, y) {
   return x >= 0 && y >= 0 && x < WIDTH && y < HEIGHT;
 }
 
-function checkWin() {
+function checkMoves() {
+  var count = 0;
+  var groups = [];
   for (var y = 1; y < HEIGHT - 1; y++) {
     for (var x = 1; x < WIDTH - 1; x++) {
-      if (board[y][x] !== -1) {
-        return;
+      var colour = board[y][x];
+      if (colour === -1) {
+        continue;
       }
+      if (!groups[colour]) {
+        groups[colour] = [];
+      }
+      groups[colour].push({x: x, y: y});
     }
   }
-  document.getElementById('win').play();
+  if (groups.length) {
+    for (var g = 0; g < groups.length; g++) {
+      var group = groups[g];
+      if (!group) {
+        continue;
+      }
+      for (var i = 0; i < group.length - 1; i++) {
+        for (var j = i + 1; j < group.length; j++) {
+          if (findPath(group[i].x, group[i].y, group[j].x, group[j].y)) {
+            count++;
+          }
+        }
+      }
+    }
+    if (count === 0) {
+      document.getElementById('crash').play();
+    }
+  } else {
+    document.getElementById('win').play();
+  }
+  document.getElementById('possibleMoves').textContent = count;
 }
 
 // X/Y deltas for each direction.
