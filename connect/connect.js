@@ -96,9 +96,8 @@ function init() {
   canvas.setAttribute('height', HEIGHT * CELL_SIZE);
   canvas.setAttribute('width', WIDTH * CELL_SIZE);
 
-  initBoard();
-  drawBoard();
-  checkMoves();
+  document.getElementById('start').addEventListener('click', startGame);
+  startGame();
 }
 window.addEventListener('load', init);
 
@@ -162,6 +161,22 @@ function drawBoard() {
     ctx.strokeRect(xy.x - CELL_SIZE / 2 - 1, xy.y - CELL_SIZE / 2 - 1,
                    CELL_SIZE - 2, CELL_SIZE - 2);
   }
+}
+
+// Show the start button.
+function showStart() {
+  document.body.className = '';
+  var startButton = document.getElementById('start');
+  startButton.style.display = 'block';
+}
+
+// Hide the start button, and start the game.
+function startGame() {
+  var startButton = document.getElementById('start');
+  startButton.style.display = 'none';
+  initBoard();
+  drawBoard();
+  checkMoves();
 }
 
 function drawPath(path) {
@@ -253,9 +268,12 @@ function checkMoves() {
     }
     if (count === 0) {
       document.getElementById('crash').play();
+      document.body.className = 'shake';
+      setTimeout(showStart, 1000);
     }
   } else {
     document.getElementById('win').play();
+    setTimeout(showStart, 1000);
   }
   document.getElementById('possibleMoves').textContent = count;
 }

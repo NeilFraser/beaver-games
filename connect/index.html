@@ -12,6 +12,28 @@
       #canvasDiv {
         text-align: center;
       }
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 165px auto;
+        padding: 20px;
+        width: 123px;
+        display: none;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
+      #instructions {
+        font-size: small;
+        font-style: italic;
+        text-align: center;
+      }
     </style>
   </head>
   <body>
@@ -22,10 +44,21 @@
     </select>
     <h1><a href="../">Beaver Games</a> : Connect</h1>
 
+    <div id="startDiv">
+      <button id="start">
+        <div>Start</div>
+      </button>
+    </div>
+
     <div id="canvasDiv">
       <canvas id="canvas"></canvas>
     </div>
-    <div id="status">Possible moves: <span id="possibleMoves">0</span></div>
+
+    <div id="instructions">
+      Match similar characters that may be connected with up to three lines.
+      Possible moves: <span id="possibleMoves">0</span>
+    </div>
+
     <audio id="crash" src="../common/crash.mp3"></audio>
     <audio id="win" src="win.mp3"></audio>
   </body>
