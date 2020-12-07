@@ -12,62 +12,27 @@
 
 // Height times width (not counting borders) should be even.
 // For Easy/Normal/Hard modes.
-var HEIGHTS = [6, 8, 10];
+var HEIGHTS = [5, 7, 9];
 var WIDTHS = [8, 12, 16];
 // Number of rows (plus a border top and bottom).
 var HEIGHT;
 // Number of columns (plus a border left and right).
 var WIDTH;
 
-// List of colours for Easy mode.
-// Saturation: 80
-// Value: 80
-var COLOURS_10 = [
-  '#7a7a7a',   // Saturation: 0, Value 48
-  '#cc2929',  // Hue: 0
-  '#cc7a29',  // Hue: 30
-  '#ccb129',  // Hue: 50
-  '#29cc29',  // Hue: 120
-  '#29cccc',  // Hue: 180
-  '#295fcc',  // Hue: 220
-  '#2929cc',  // Hue: 240
-  '#7a29cc',  // Hue: 270
-  '#cc29cc'   // Hue: 300
+// List of hues for numbers in Easy mode.
+var HUES_EASY = [
+  5, 30, 50, 120, 180, 210, 240, 260, 290, 325
 ];
-// List of characters for Easy mode.
-var CHARACTERS_10 = '0123456789';
 
-// List of colours for Normal and Hard modes.
-var COLOURS_26 = [
-  '#cc2929',  // Hue: 0
-  '#cc5229',  // Hue: 15
-  '#cc7a29',  // Hue: 30
-  '#cc9629',  // Hue: 40
-  '#ccb129',  // Hue: 50
-  '#88cc29',  // Hue: 85
-  '#5fcc29',  // Hue: 100
-  '#29cc29',  // Hue: 120
-  '#29cc7a',  // Hue: 150
-  '#29cccc',  // Hue: 180
-  '#2996cc',  // Hue: 200
-  '#295fcc',  // Hue: 220
-  '#2944cc',  // Hue: 230
-  '#2929cc',  // Hue: 240
-  '#5229cc',  // Hue: 255
-  '#7a29cc',  // Hue: 270
-  '#a329cc',  // Hue: 285
-  '#cc29cc',  // Hue: 300
-  '#cc29a3',  // Hue: 315
-  '#cc297a',  // Hue: 330
-  '#cc2952',  // Hue: 345
-  '#adadad',  // Saturation: 0, Value 68
-  '#949494',  // Saturation: 0, Value 58
-  '#7a7a7a',  // Saturation: 0, Value 48
-  '#616161',  // Saturation: 0, Value 38
-  '#474747'   // Saturation: 0, Value 28
+var COLOURS_NUMERIC_HARD = [
+  '#333', '#444', '#555', '#666', '#777', '#888', '#999', '#aaa', '#bbb', '#ccc'
 ];
+
+// List of characters for Easy mode.
+var CHARACTERS_NUMERIC = '0123456789';
+
 // List of characters for Normal and Hard modes.
-var CHARACTERS_26 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+var CHARACTERS_ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // List of colours and characters to be used.
 var COLOURS, CHARACTERS;
@@ -87,14 +52,35 @@ var MAX_PATH_CORNERS = 2;
 // Start-up initialization code.  Run once.
 function init() {
   fixLinks();
+  var SATURATION = 0.8;
+  var VALUE = 0.8 * 256;
 
   // Configure difficulty mode.
   var m = document.cookie.match(/difficulty=([012])/);
   var difficulty = Number(m ? m[1] : 0);
   document.getElementById('difficulty').selectedIndex = difficulty;
   registerOptions('difficulty');
-  COLOURS = [COLOURS_10, COLOURS_26, COLOURS_26][difficulty];
-  CHARACTERS = [CHARACTERS_10, CHARACTERS_26, CHARACTERS_26][difficulty];
+  if (difficulty === 0) {
+    // Easy mode has colourful numbers.
+    COLOURS = [];
+    for (var i = 0; i < HUES_EASY.length; i++) {
+      COLOURS.push(hsvToHex(HUES_EASY[i], SATURATION, VALUE));
+    }
+    CHARACTERS = CHARACTERS_NUMERIC;
+  } else {
+    // Normal mode has colourful letters.
+    COLOURS = [];
+    for (var i = 0; i < CHARACTERS_ALPHA.length; i++) {
+      COLOURS.push(hsvToHex(i / CHARACTERS_ALPHA.length * 360, SATURATION, VALUE));
+    }
+    CHARACTERS = CHARACTERS_ALPHA;
+    if (difficulty === 2) {
+      // Hard mode also has greyscale numbers.
+      COLOURS = COLOURS.concat(COLOURS_NUMERIC_HARD);
+      CHARACTERS += CHARACTERS_NUMERIC;
+    }
+  }
+  // Set size, and add border around the board for path routing.
   HEIGHT = HEIGHTS[difficulty] + 2;
   WIDTH = WIDTHS[difficulty] + 2;
 
@@ -365,4 +351,70 @@ function shuffle(arr) {
     arr[i] = arr[j];
     arr[j] = tmp;
   }
+}
+
+/**
+ * Converts an HSV triplet to hex representation.
+ * @param {number} h Hue value in [0, 360].
+ * @param {number} s Saturation value in [0, 1].
+ * @param {number} v Brightness in [0, 255].
+ * @return {string} Hex representation of the colour.
+ * Copied from Blockly.utils.colour.hsvToHex and Blockly.utils.colour.rgbToHex
+ */
+function hsvToHex(h, s, v) {
+  var red = 0;
+  var green = 0;
+  var blue = 0;
+  if (s == 0) {
+    red = v;
+    green = v;
+    blue = v;
+  } else {
+    var sextant = Math.floor(h / 60);
+    var remainder = (h / 60) - sextant;
+    var val1 = v * (1 - s);
+    var val2 = v * (1 - (s * remainder));
+    var val3 = v * (1 - (s * (1 - remainder)));
+    switch (sextant) {
+      case 1:
+        red = val2;
+        green = v;
+        blue = val1;
+        break;
+      case 2:
+        red = val1;
+        green = v;
+        blue = val3;
+        break;
+      case 3:
+        red = val1;
+        green = val2;
+        blue = v;
+        break;
+      case 4:
+        red = val3;
+        green = val1;
+        blue = v;
+        break;
+      case 5:
+        red = v;
+        green = val1;
+        blue = val2;
+        break;
+      case 6:
+      case 0:
+        red = v;
+        green = val3;
+        blue = val1;
+        break;
+    }
+  }
+  red = Math.floor(red);
+  green = Math.floor(green);
+  blue = Math.floor(blue);
+  var rgb = (red << 16) | (green << 8) | blue;
+  if (red < 0x10) {
+    return '#' + (0x1000000 | rgb).toString(16).substr(1);
+  }
+  return '#' + rgb.toString(16);
 }
