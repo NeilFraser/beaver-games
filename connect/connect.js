@@ -90,7 +90,7 @@ function init() {
 
   // Configure difficulty mode.
   var m = document.cookie.match(/difficulty=([012])/);
-  var difficulty = Number(m ? m[1] : 1);
+  var difficulty = Number(m ? m[1] : 0);
   document.getElementById('difficulty').selectedIndex = difficulty;
   registerOptions('difficulty');
   COLOURS = [COLOURS_10, COLOURS_26, COLOURS_26][difficulty];
