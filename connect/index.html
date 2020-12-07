@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Connect</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="connect.js"></script>
+    <style>
+      #difficulty {
+        float: right;
+      }
+      #canvasDiv {
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <select id="difficulty">
+      <option value=0>Easy</option>
+      <option value=1>Normal</option>
+      <option value=2>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Connect</h1>
+
+    <div id="canvasDiv">
+      <canvas id="canvas"></canvas>
+    </div>
+    <audio id="win" src="win.mp3"></audio>
+  </body>
+</html>

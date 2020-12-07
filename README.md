@@ -1,4 +1,4 @@
-# beaver-games
+# Beaver Games
 
 Try them out:  https://beaver.games/
 
