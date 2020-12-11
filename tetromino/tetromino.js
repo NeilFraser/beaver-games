@@ -760,7 +760,11 @@ function keyDown(e) {
   if (keyStatus.hasOwnProperty(e.key)) {
     keyStatus[e.key] = true;
   }
-  if (e.repeat || mode !== modes.PLAYING) {
+  if (e.repeat) {
+    e.preventDefault();
+    return;
+  }
+  if (mode !== modes.PLAYING) {
     return;
   }
   switch (e.key) {
@@ -781,6 +785,7 @@ function keyDown(e) {
     case('ArrowDown'):
       // Move down one, and increase falling speed by 20x.
       actionDown();
+      stopAutoRepeat();
       clearInterval(fallPid);
       fallPid = setInterval(actionDown, speed / 20);
       break;

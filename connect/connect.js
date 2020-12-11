@@ -92,6 +92,7 @@ function init() {
 
   // Start button is only for restart in this game, but add event handler now.
   document.getElementById('start').addEventListener('click', startGame);
+  document.addEventListener('keypress', keyPress);
   startGame();
 }
 window.addEventListener('load', init);
@@ -169,6 +170,7 @@ function drawBoard() {
 
 // Game ended.  Show the start button.
 function showStart() {
+  drawBoard();  // Clear the last path.
   document.body.className = '';
   var startButton = document.getElementById('start');
   startButton.style.display = 'block';
@@ -340,6 +342,16 @@ function findPath(x1, y1, x2, y2) {
     }
   }
   return null;
+}
+
+// User pressed space or enter to restart game.
+function keyPress(e) {
+  var startButton = document.getElementById('start');
+  if (startButton.style.display === 'block' &&
+      (e.key === 'Enter' || e.key === ' ')) {
+    startGame();
+    e.preventDefault();
+  }
 }
 
 // Randomize the order of an array in place.  Copied from goog.array.shuffle
