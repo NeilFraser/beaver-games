@@ -32,22 +32,27 @@ var OBSTACLE_RATIO = 0.3;
 
 // Current state of the keyboard.
 var keyStatus = {
-  '1': false,
-  '2': false,
-  '3': false,
-  '8': false,
-  '9': false,
-  '0': false
+  'a': false,
+  'd': false,
+  'w': false,
+  'f': false,
+  'left': false,
+  'right': false,
+  'up': false,
+  'm': false
+
 };
 
 // Keys tapped within a turn.
 var keyTapped = {
-  '1': false,
-  '2': false,
-  '3': false,
-  '8': false,
-  '9': false,
-  '0': false
+  'a': false,
+  'd': false,
+  'w': false,
+  'f': false,
+  'left': false,
+  'right': false,
+  'up': false,
+  'm': false
 };
 
 // Array of Tank objects (players).
@@ -267,33 +272,35 @@ function clock() {
 
   if (tank && !tank.frozen) {
     if (tank === player1) {
-      if (keyStatus[3] || keyTapped[3]) {
+      if (keyStatus['f'] || keyTapped['f']) {
         tank.fire();
       }
-      if (keyStatus[1] && keyStatus[2]) {
+      if (keyStatus['w'] || keyTapped['w']) {
         tank.move();
-      } else if (keyStatus[1] || (keyTapped[1] && !keyTapped[2])) {
+      } else if (keyStatus['a'] || keyTapped['a']) {
         tank.turn(-1);
-      } else if (keyStatus[2] || (keyTapped[2] && !keyTapped[1])) {
+      } else if (keyStatus['d'] || keyTapped['d']) {
         tank.turn(1);
       }
-      keyTapped[1] = false;
-      keyTapped[2] = false;
-      keyTapped[3] = false;
+      keyTapped['w'] = false;
+      keyTapped['a'] = false;
+      keyTapped['d'] = false;
+      keyTapped['f'] = false;
     } else if (tank === player2) {
-      if (keyStatus[0] || keyTapped[0]) {
+      if (keyStatus['m'] || keyTapped['m']) {
         tank.fire();
       }
-      if (keyStatus[8] && keyStatus[9]) {
+      if (keyStatus['up'] || keyTapped['up']) {
         tank.move();
-      } else if (keyStatus[8] || (keyTapped[8] && !keyTapped[9])) {
+      } else if (keyStatus['left'] || keyTapped['left']) {
         tank.turn(-1);
-      } else if (keyStatus[9] || (keyTapped[9] && !keyTapped[8])) {
+      } else if (keyStatus['right'] || keyTapped['right']) {
         tank.turn(1);
       }
-      keyTapped[8] = false;
-      keyTapped[9] = false;
-      keyTapped[0] = false;
+      keyTapped['up'] = false;
+      keyTapped['left'] = false;
+      keyTapped['right'] = false;
+      keyTapped['m'] = false;
     } else if (tank === playerComputer) {
       computerTurn(tank);
     }
@@ -375,18 +382,45 @@ dirToDelta.TABLE = [
 // User pressed a key to start an action.
 function keyDown(e) {
   if (e.repeat) return;
-  if (keyStatus.hasOwnProperty(e.key)) {
-    keyStatus[e.key] = true;
-  }
-  if (keyTapped.hasOwnProperty(e.key)) {
-    keyTapped[e.key] = true;
+ 
+  switch(e.keyCode){
+    case 37: // left
+      keyStatus['left'] = true;
+      keyTapped['left'] = true;
+      break;
+    case 38: // up
+      keyStatus['up'] = true;
+      keyTapped['up'] = true;
+      break;
+    case 39: // right
+      keyStatus['right'] = true;
+      keyTapped['right'] = true;
+      break;
+    default:
+      if(keyStatus.hasOwnProperty(e.key))
+        keyStatus[e.key] = true;
+      if(keyTapped.hasOwnProperty(e.key))
+        keyTapped[e.key] = true;
+      break;
   }
 }
 
 // User releases a key to stop an action.
 function keyUp(e) {
-  if (keyStatus.hasOwnProperty(e.key)) {
-    keyStatus[e.key] = false;
+  switch(e.keyCode){
+    case 37: // left
+      keyStatus['left'] = false;
+      break;
+    case 38: // up
+      keyStatus['up'] = false;
+      break;
+    case 39: // right
+      keyStatus['right'] = false;
+      break;
+    default:
+      if (keyStatus.hasOwnProperty(e.key)) 
+        keyStatus[e.key] = false;
+      break;
   }
 }
 
@@ -708,13 +742,15 @@ Tank.prototype.placeRandomly = function() {
   this.render(false);
   // Clear any keypresses while dead.
   if (this.playerNumber === 1) {
-    keyTapped[1] = false;
-    keyTapped[2] = false;
-    keyTapped[3] = false;
+    keyTapped['a'] = false;
+    keyTapped['w'] = false;
+    keyTapped['d'] = false;
+    keyTapped['f'] = false;
   } else if (this.playerNumber === 2) {
-    keyTapped[8] = false;
-    keyTapped[9] = false;
-    keyTapped[0] = false;
+    keyTapped['left'] = false;
+    keyTapped['up'] = false;
+    keyTapped['right'] = false;
+    keyTapped['m'] = false;
   }
 };
 
