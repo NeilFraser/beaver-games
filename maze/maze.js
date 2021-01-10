@@ -31,6 +31,9 @@ var walls = [];
 // Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
 
+// Array of coordinates that the avatar moved.
+var avatarPath = [];
+
 // Object with x/y coordinates of avatar.
 var avatar = {x: 0, y: 0};
 
@@ -61,6 +64,10 @@ function init() {
 
   // Draw avatar.
   var g = document.getElementById('avatarLayer');
+  var element = document.createElementNS(SVG_NS, 'path');
+  element.style.strokeWidth = (SQUARE_SIZE / 6) + 'px';
+  element.id = 'avatarPath';
+  g.appendChild(element);
   var element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
   element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
@@ -73,8 +80,9 @@ function init() {
 }
 window.addEventListener('load', init);
 
-
+// Clear any existing maze.  Create a new maze.
 function initMaze() {
+  // Clear old SVG walls and goal.
   var g = document.getElementById('wallLayer');
   while (g.firstChild) {
     g.removeChild(g.firstChild);
@@ -83,7 +91,7 @@ function initMaze() {
   while (g.firstChild) {
     g.removeChild(g.firstChild);
   }
-
+  // Initialize the wall grid to be solid.
   walls.length = 0;
   for (var x = 0; x < WIDTH; x++) {
     walls[x] = [];
@@ -92,24 +100,13 @@ function initMaze() {
     }
   }
 
-  walls[avatar.x][avatar.y] = false;
-  initMaze.horizon = [];
-  if (isWall(avatar.x + 1, avatar.y, false)) {
-    initMaze.horizon.push({x: avatar.x + 1, y: avatar.y});
-  }
-  if (isWall(avatar.x - 1, avatar.y, false)) {
-    initMaze.horizon.push({x: avatar.x - 1, y: avatar.y});
-  }
-  if (isWall(avatar.x, avatar.y + 1, false)) {
-    initMaze.horizon.push({x: avatar.x, y: avatar.y + 1});
-  }
-  if (isWall(avatar.x, avatar.y - 1, false)) {
-    initMaze.horizon.push({x: avatar.x, y: avatar.y - 1});
-  }
-
+  avatarPath = [{x: avatar.x, y: avatar.y}];
+  drawPath();
+  initMaze.horizon = [{x: avatar.x, y: avatar.y}];
   initMazeStep();
 }
 
+// Set the goal and allow user interaction.
 function startGame() {
   // Draw goal.
   var g = document.getElementById('goalLayer');
@@ -119,10 +116,11 @@ function startGame() {
   element.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2);
   element.id = 'goal';
   g.appendChild(element);
-
+  // Allow user input.
   isRunning = true;
 }
 
+// Grow the maze by one step.
 function initMazeStep() {
   if (!initMaze.horizon.length) {
     // Done.
@@ -135,7 +133,7 @@ function initMazeStep() {
   var wallCount =
     isWall(cell.x + 1, cell.y, true) + isWall(cell.x - 1, cell.y, true) +
     isWall(cell.x, cell.y + 1, true) + isWall(cell.x, cell.y - 1, true);
-  if (wallCount === 3) {
+  if (wallCount >= 3) {
     if (isWall(cell.x + 1, cell.y, false)) {
       initMaze.horizon.push({x: cell.x + 1, y: cell.y});
     }
@@ -150,10 +148,12 @@ function initMazeStep() {
     }
     walls[cell.x][cell.y] = false;
     draw(cell.x, cell.y);
+    // Also redraw the four neighbouring cells since they may have been changed.
     draw(cell.x + 1, cell.y);
     draw(cell.x - 1, cell.y);
     draw(cell.x, cell.y + 1);
     draw(cell.x, cell.y - 1);
+    // Record this cell as the goal (the last cell grown will be the goal).
     goal = cell;
     setTimeout(initMazeStep, 0);
   } else {
@@ -161,9 +161,10 @@ function initMazeStep() {
   }
 }
 
+// Draw the path at the given location.
 function draw(x, y) {
   if (isWall(x, y, true)) {
-    return;
+    return;  // No path here.
   }
   var layer = document.getElementById('wallLayer');
   var oldElement = document.getElementById(x + '_' + y);
@@ -171,13 +172,14 @@ function draw(x, y) {
     layer.removeChild(oldElement);
   }
   var g = document.createElementNS(SVG_NS, 'g');
-  //var element = document.createElementNS(SVG_NS, 'rect');
+  // Every cell has a circle in the middle.
   var element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
   element.setAttribute('cx', SQUARE_SIZE / 2);
   element.setAttribute('cy', SQUARE_SIZE / 2);
   element.setAttribute('class', 'path');
   g.appendChild(element);
+  // Add the north, south, east and west paths as needed.
   if (!isWall(x - 1, y, true)) {
     var element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
@@ -252,6 +254,7 @@ function keyDown(e) {
   e.preventDefault();
 }
 
+// Move the avatar one step.
 function move(dx, dy) {
   var newX = avatar.x + dx;
   var newY = avatar.y + dy;
@@ -264,9 +267,30 @@ function move(dx, dy) {
   element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
   element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2);
 
+  var lastSpot = avatarPath[avatarPath.length - 2];
+  if (lastSpot && lastSpot.x === newX && lastSpot.y === newY) {
+    avatarPath.pop();
+  } else {
+    avatarPath.push({x: newX, y: newY});
+  }
+  drawPath();
+
   if (newX === goal.x && newY === goal.y) {
+    // Avatar has arrived at the goal.
     isRunning = false;
     document.getElementById('ding').play();
     setTimeout(initMaze, 500);
   }
+}
+
+// Render the avatar's path.
+function drawPath() {
+  var d = [];
+  for (var i = 0; i < avatarPath.length; i++) {
+    d.push(i ? 'L' : 'M',
+           avatarPath[i].x * SQUARE_SIZE + SQUARE_SIZE / 2,
+           avatarPath[i].y * SQUARE_SIZE + SQUARE_SIZE / 2);
+  }
+  var element = document.getElementById('avatarPath');
+  element.setAttribute('d', d.join(' '));
 }
