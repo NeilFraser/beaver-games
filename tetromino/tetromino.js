@@ -36,7 +36,7 @@ var ROWS = 20;
 // Partial visibility of top-most playfield row.
 var TOP_ROW_HEIGHT = 5;
 
-// SVG namespace.
+// Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Directions to try kicking a rotated 'T/L/J/S/Z' shape that collides.

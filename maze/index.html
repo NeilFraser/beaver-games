@@ -1,0 +1,47 @@
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Maze</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <style>
+      #options {
+        float: right;
+      }
+      #landscape {
+        border: 10px solid #888;
+        display: block;
+        margin: auto;
+        background-color: #888;
+      }
+      .path {
+        fill: #2E5FFF;
+      }
+      #avatar {
+        fill: #F0A609;
+      }
+      #goal {
+        fill: #D02E2B;
+      }
+    </style>
+    <script src="../common/utils.js"></script>
+    <script src="maze.js"></script>
+  </head>
+
+  <body>
+    <div id="options">
+      <select id="difficulty">
+        <option value=0>Easy</option>
+        <option value=1>Normal</option>
+        <option value=2>Hard</option>
+      </select>
+    </div>
+    <h1><a href="../">Beaver Games</a> : Maze</h1>
+
+    <svg id="landscape" xmlns="http://www.w3.org/2000/svg">
+      <g id="wallLayer"></g>
+      <g id="goalLayer"></g>
+      <g id="avatarLayer"></g>
+    </svg>
+    <audio id="ding" src="../common/ding.mp3"></audio>
+  </body>
+</html>

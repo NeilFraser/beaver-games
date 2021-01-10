@@ -36,9 +36,9 @@ var enabled;
 // 2: play a perfect game.
 var DIFFICULTY;
 
-// SVG namespace.
+// Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
-// XLINK namespace.
+// Namespace for XLink attributes.
 var XLINK_NS = 'http://www.w3.org/1999/xlink';
 
 // A blank square was clicked.

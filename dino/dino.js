@@ -79,6 +79,7 @@ var dino = {
   rotation: 0
 };
 
+// Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
 
 var animationPid = undefined;
