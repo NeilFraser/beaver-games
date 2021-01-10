@@ -11,9 +11,9 @@
 'use strict';
 
 // For Easy/Normal/Hard modes.
-var HEIGHTS = [8, 16, 24];
-var WIDTHS = [16, 32, 48];
-var SQUARE_SIZES = [40, 25, 20];
+var HEIGHTS = [12, 16, 24];
+var WIDTHS = [24, 32, 48];
+var SQUARE_SIZES = [30, 25, 20];
 // Number of rows.
 var HEIGHT;
 // Number of columns.
