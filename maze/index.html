@@ -7,6 +7,23 @@
       #options {
         float: right;
       }
+      #start {
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: large;
+        margin: 150px auto;
+        padding: 20px;
+        width: 123px;
+        display: block;
+      }
+      #start:hover {
+        border: 1px solid #000;
+      }
+      #startDiv {
+        margin-left: -8px;
+        position: absolute;
+        width: 100%;
+      }
       #landscape {
         border: 10px solid #888;
         display: block;
@@ -42,6 +59,10 @@
       </select>
     </div>
     <h1><a href="../">Beaver Games</a> : Maze</h1>
+
+    <div id="startDiv">
+      <button id="start">Start</button>
+    </div>
 
     <svg id="landscape" xmlns="http://www.w3.org/2000/svg">
       <g id="wallLayer"></g>

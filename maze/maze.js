@@ -25,6 +25,9 @@ var SQUARE_SIZE;
 // Is the game running?
 var isRunning = false;
 
+// Is the start button visible?
+var isStartVisible = true;
+
 // 2D array of walls (true if wall, false if path).
 var walls = [];
 
@@ -59,7 +62,7 @@ function init() {
   svg.setAttribute('width', SQUARE_SIZE * WIDTH);
 
   // Start button is only for restart in this game, but add event handler now.
-  //document.getElementById('start').addEventListener('click', startGame);
+  document.getElementById('start').addEventListener('click', startButton);
   document.addEventListener('keydown', keyDown);
 
   // Draw avatar.
@@ -79,6 +82,14 @@ function init() {
   initMaze();
 }
 window.addEventListener('load', init);
+
+// Hide the start button.
+// Clicking a button is needed to authorize the browser to play sounds.  :(
+function startButton() {
+  var startButton = document.getElementById('start');
+  startButton.style.display = 'none';
+  isStartVisible = false;
+}
 
 // Clear any existing maze.  Create a new maze.
 function initMaze() {
@@ -232,7 +243,7 @@ function isWall(x, y, outside) {
 
 // Player is changing directions using the keyboard.
 function keyDown(e) {
-  if (!isRunning || e.repeat) {
+  if (isStartVisible || !isRunning || e.repeat) {
     return;
   }
   switch (e.key) {
