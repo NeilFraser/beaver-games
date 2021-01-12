@@ -203,6 +203,14 @@ function createShape() {
   fallPid = setInterval(actionDown, speed);
   currentShape.checkSurfaced();
   mode = modes.PLAYING;
+
+  // Reset autorepeat for the new shape.
+  stopAutoRepeat();
+  if (keyStatus.ArrowLeft) {
+    initAutoRepeat('ArrowLeft');
+  } else if (keyStatus.ArrowRight) {
+    initAutoRepeat('ArrowRight');
+  }
 }
 
 // Draw the grid markers on the board.
@@ -785,7 +793,6 @@ function keyDown(e) {
     case('ArrowDown'):
       // Move down one, and increase falling speed by 20x.
       actionDown();
-      stopAutoRepeat();
       clearInterval(fallPid);
       fallPid = setInterval(actionDown, speed / 20);
       break;
