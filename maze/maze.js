@@ -63,6 +63,7 @@ function init() {
 
   // Start button is only for restart in this game, but add event handler now.
   document.getElementById('start').addEventListener('click', startButton);
+  document.addEventListener('keypress', keyPress);
   document.addEventListener('keydown', keyDown);
 
   // Draw avatar.
@@ -239,6 +240,14 @@ function isWall(x, y, outside) {
     return outside;
   }
   return walls[x][y];
+}
+
+// User pressed space or enter to start game.
+function keyPress(e) {
+  if (isStartVisible && (e.key === 'Enter' || e.key === ' ')) {
+    startButton();
+    e.preventDefault();
+  }
 }
 
 // Player is changing directions using the keyboard.
