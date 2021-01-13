@@ -43,6 +43,9 @@ var avatar = {x: 0, y: 0};
 // Object with x/y coordinates of goal.
 var goal = null;
 
+// Randomly selected origin point for growing the maze.
+var originX, originY;
+
 // Start-up initialization code.  Run once.
 function init() {
   fixLinks();
@@ -66,18 +69,9 @@ function init() {
   document.addEventListener('keypress', keyPress);
   document.addEventListener('keydown', keyDown);
 
-  // Draw avatar.
-  var g = document.getElementById('avatarLayer');
-  var element = document.createElementNS(SVG_NS, 'path');
-  element.style.strokeWidth = (SQUARE_SIZE / 6) + 'px';
-  element.id = 'avatarPath';
-  g.appendChild(element);
-  var element = document.createElementNS(SVG_NS, 'circle');
-  element.setAttribute('r', SQUARE_SIZE / 4);
-  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
-  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2);
-  element.id = 'avatar';
-  g.appendChild(element);
+  // Start the first maze from a random place.
+  avatar.x = Math.floor(Math.random() * WIDTH);
+  avatar.y = Math.floor(Math.random() * HEIGHT);
 
   // Draw the maze and goal.
   initMaze();
@@ -103,6 +97,10 @@ function initMaze() {
   while (g.firstChild) {
     g.removeChild(g.firstChild);
   }
+  g = document.getElementById('avatarLayer');
+  while (g.firstChild) {
+    g.removeChild(g.firstChild);
+  }
   // Initialize the wall grid to be solid.
   walls.length = 0;
   for (var x = 0; x < WIDTH; x++) {
@@ -112,15 +110,19 @@ function initMaze() {
     }
   }
 
-  avatarPath = [{x: avatar.x, y: avatar.y}];
-  drawPath();
-  initMaze.horizon = [{x: avatar.x, y: avatar.y}];
+  // Use the avatar/goal location in the previous maze as the origin for the
+  // next maze.
+  originX = avatar.x;
+  originY = avatar.y;
+  initMaze.horizon = [{x: originX, y: originY}];
   initMazeStep();
 }
 
 // Set the goal and allow user interaction.
 function startGame() {
-  // Draw goal.
+  // Choose the goal coordinates.
+  goal = findEnd(originX, originY);
+  // Draw the goal.
   var g = document.getElementById('goalLayer');
   var element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
@@ -128,6 +130,23 @@ function startGame() {
   element.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2);
   element.id = 'goal';
   g.appendChild(element);
+
+  // Choose the avatar coordinates.
+  avatar = findEnd(goal.x, goal.y);
+  avatarPath = [{x: avatar.x, y: avatar.y}];
+  // Draw the avatar.
+  var g = document.getElementById('avatarLayer');
+  var element = document.createElementNS(SVG_NS, 'path');
+  element.style.strokeWidth = (SQUARE_SIZE / 6) + 'px';
+  element.id = 'avatarPath';
+  g.appendChild(element);
+  var element = document.createElementNS(SVG_NS, 'circle');
+  element.setAttribute('r', SQUARE_SIZE / 4);
+  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
+  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2);
+  element.id = 'avatar';
+  g.appendChild(element);
+
   // Allow user input.
   isRunning = true;
 }
@@ -165,8 +184,6 @@ function initMazeStep() {
     draw(cell.x - 1, cell.y);
     draw(cell.x, cell.y + 1);
     draw(cell.x, cell.y - 1);
-    // Record this cell as the goal (the last cell grown will be the goal).
-    goal = cell;
     setTimeout(initMazeStep, 0);
   } else {
     initMazeStep();
@@ -231,6 +248,40 @@ function draw(x, y) {
   g.setAttribute('transform', 'translate(' + (x * SQUARE_SIZE) + ',' + (y * SQUARE_SIZE) + ')');
   g.id = x + '_' + y;
   layer.appendChild(g);
+}
+
+// Spider the maze to find the furthest point from the provided start point.
+function findEnd(startX, startY) {
+  var end = null;
+  var endSteps = 0;
+  var visited = new Set();
+  var queue = new Map();
+  queue.set(startX + ' ' + startY, 0);
+  while (queue.size) {
+    var xys_ = queue.entries().next().value;
+    var xy = xys_[0];
+    var steps = Number(xys_[1]) + 1;
+    queue.delete(xy);
+    if (visited.has(xy)) {
+      continue;
+    }
+    visited.add(xy);
+    var xy_ = xy.split(' ');
+    var x = Number(xy_[0]);
+    var y = Number(xy_[1]);
+    if (isWall(x, y, true)) {
+      continue;
+    }
+    if (steps > endSteps) {
+      end = {x: x, y: y};
+      endSteps = steps;
+    }
+    queue.set((x + 1) + ' ' + y, steps);
+    queue.set((x - 1) + ' ' + y, steps);
+    queue.set(x + ' ' + (y + 1), steps);
+    queue.set(x + ' ' + (y - 1), steps);
+  }
+  return end;
 }
 
 // Return if the provided coordinates are a wall.
