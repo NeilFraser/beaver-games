@@ -61,8 +61,8 @@ function init() {
   WIDTH = WIDTHS[difficulty];
   SQUARE_SIZE = SQUARE_SIZES[difficulty];
   var svg = document.getElementById('landscape');
-  svg.setAttribute('height', SQUARE_SIZE * HEIGHT);
-  svg.setAttribute('width', SQUARE_SIZE * WIDTH);
+  svg.setAttribute('height', SQUARE_SIZE * HEIGHT + 1);
+  svg.setAttribute('width', SQUARE_SIZE * WIDTH + 1);
 
   // Start button is only for restart in this game, but add event handler now.
   document.getElementById('start').addEventListener('click', startButton);
@@ -126,8 +126,8 @@ function startGame() {
   var g = document.getElementById('goalLayer');
   var element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
-  element.setAttribute('cx', goal.x * SQUARE_SIZE + SQUARE_SIZE / 2);
-  element.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2);
+  element.setAttribute('cx', goal.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  element.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   element.id = 'goal';
   g.appendChild(element);
 
@@ -142,8 +142,8 @@ function startGame() {
   g.appendChild(element);
   var element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
-  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
-  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2);
+  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   element.id = 'avatar';
   g.appendChild(element);
 
@@ -213,7 +213,7 @@ function draw(x, y) {
     var element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE / 2);
-    element.setAttribute('x', 0);
+    element.setAttribute('x', -1);
     element.setAttribute('y', SQUARE_SIZE / 4);
     element.setAttribute('class', 'path');
     g.appendChild(element);
@@ -232,7 +232,7 @@ function draw(x, y) {
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE / 2);
     element.setAttribute('x', SQUARE_SIZE / 4);
-    element.setAttribute('y', 0);
+    element.setAttribute('y', -1);
     element.setAttribute('class', 'path');
     g.appendChild(element);
   }
@@ -245,7 +245,8 @@ function draw(x, y) {
     element.setAttribute('class', 'path');
     g.appendChild(element);
   }
-  g.setAttribute('transform', 'translate(' + (x * SQUARE_SIZE) + ',' + (y * SQUARE_SIZE) + ')');
+  g.setAttribute('transform', 'translate(' + (x * SQUARE_SIZE + 0.5) + ',' +
+                 (y * SQUARE_SIZE + 0.5) + ')');
   g.id = x + '_' + y;
   layer.appendChild(g);
 }
@@ -335,8 +336,8 @@ function move(dx, dy) {
   avatar.x = newX;
   avatar.y = newY;
   var element = document.getElementById('avatar');
-  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2);
-  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2);
+  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
 
   var lastSpot = avatarPath[avatarPath.length - 2];
   if (lastSpot && lastSpot.x === newX && lastSpot.y === newY) {
@@ -359,8 +360,8 @@ function drawPath() {
   var d = [];
   for (var i = 0; i < avatarPath.length; i++) {
     d.push(i ? 'L' : 'M',
-           avatarPath[i].x * SQUARE_SIZE + SQUARE_SIZE / 2,
-           avatarPath[i].y * SQUARE_SIZE + SQUARE_SIZE / 2);
+           avatarPath[i].x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5,
+           avatarPath[i].y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   }
   var element = document.getElementById('avatarPath');
   element.setAttribute('d', d.join(' '));

@@ -27,14 +27,14 @@ var START_LEVEL;
 var SQUARE_SIZE = 25;
 
 // Width of side and bottom borders.
-var BORDER_WIDTH = 10;
+var BORDER_WIDTH = 9.5;
 
 // Number of playfield columns.
 var COLUMNS = 10;
 // Number of fully visible playfield rows.
 var ROWS = 20;
 // Partial visibility of top-most playfield row.
-var TOP_ROW_HEIGHT = 5;
+var TOP_ROW_HEIGHT = 5.5;
 
 // Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';

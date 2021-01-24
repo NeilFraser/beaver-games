@@ -33,8 +33,10 @@ function saveOptions() {
   for (var i = 0; i < optionNames.length; i++) {
     var name = optionNames[i];
     var dropdown = document.getElementById(name);
-    var value = dropdown.options[dropdown.selectedIndex].value;
-    document.cookie = name + '=' + value + '; SameSite=Strict';
+    if (dropdown.selectedIndex > -1) {
+      var value = dropdown.options[dropdown.selectedIndex].value;
+      document.cookie = name + '=' + value + '; SameSite=Strict';
+    }
   }
   if (!document.cookie) {
     alert('Can\'t set cookie.\nKnown issue with Chrome on file:// URLs.');
