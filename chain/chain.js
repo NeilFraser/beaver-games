@@ -42,7 +42,7 @@ var HEIGHT = 5;
 var WIDTH = 6;
 
 // Height and width of one cell.
-var CELL_SIZE = 64;
+var CELL_SIZE = 100;
 
 // Namespace for SVG elements.
 var SVG_NS = 'http://www.w3.org/2000/svg';
@@ -94,30 +94,41 @@ function initSvgGrid() {
     var matrixX = x * CELL_SIZE;
     for (var y = 0; y <= HEIGHT; y++) {
       var matrixY = y * CELL_SIZE;
-      var line = document.createElementNS(SVG_NS, 'line');
-      line.setAttribute('x1', matrixX - LEN + 0.5);
-      line.setAttribute('y1', matrixY + 0.5);
-      line.setAttribute('x2', matrixX + LEN + 0.5);
-      line.setAttribute('y2', matrixY + 0.5);
-      line.classList.add('grid');
-      grid.appendChild(line);
-      line = document.createElementNS(SVG_NS, 'line');
-      line.setAttribute('x1', matrixX + 0.5);
-      line.setAttribute('y1', matrixY - LEN + 0.5);
-      line.setAttribute('x2', matrixX + 0.5);
-      line.setAttribute('y2', matrixY + LEN + 0.5);
-      line.classList.add('grid');
-      grid.appendChild(line);
+      // Horizontal tick.
+      if (y > 0 && y < HEIGHT) {
+        var line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', matrixX - LEN + 0.5);
+        line.setAttribute('y1', matrixY + 0.5);
+        line.setAttribute('x2', matrixX + LEN + 0.5);
+        line.setAttribute('y2', matrixY + 0.5);
+        line.setAttribute('class', 'grid');
+        grid.appendChild(line);
+      }
+      // Vertical tick.
+      if (x > 0 && x < WIDTH) {
+        line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', matrixX + 0.5);
+        line.setAttribute('y1', matrixY - LEN + 0.5);
+        line.setAttribute('x2', matrixX + 0.5);
+        line.setAttribute('y2', matrixY + LEN + 0.5);
+        line.setAttribute('class', 'grid');
+        grid.appendChild(line);
+      }
     }
   }
+  var rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('x', 0.5);
+  rect.setAttribute('y', 0.5);
+  rect.setAttribute('width', WIDTH * CELL_SIZE);
+  rect.setAttribute('height', HEIGHT * CELL_SIZE);
+  rect.setAttribute('class', 'grid');
+  grid.appendChild(rect);
 }
 
 // Draw empty matrix cells on the board.
 function initSvgMatrix() {
   var matrix = document.getElementById('matrix');
   if (!matrix) throw Error('No matrix SVG element found.');
-  // <line class="grid" x1="19" y1="20" x2="21" y2="20"/>
-  // <line class="grid" x1="20" y1="19" x2="20" y2="21"/>
   for (var x = 0; x < WIDTH; x++) {
     var matrixX = x * CELL_SIZE;
     for (var y = 0; y < HEIGHT; y++) {
@@ -160,6 +171,10 @@ function startPress() {
 function newGame() {
   clearTimeout(timeoutPID);
   cancelAnimationFrame(animationPID);
+  var explodeGroup = document.getElementById('explode');
+  while(explodeGroup.firstChild) {
+    explodeGroup.removeChild(explodeGroup.firstChild);
+  }
   liveField = new Field();
   for (var x = 0; x < WIDTH; x++) {
     for (var y = 0; y < HEIGHT; y++) {
@@ -311,8 +326,8 @@ function implodeStep_(square, steps) {
 function explodeInit_(square) {
   var x = square.x;
   var y = square.y;
-  var g = document.getElementById(x + '_' + y);
-  var explodeGroup = document.createElementNS(SVG_NS, 'g');
+  var explodeGroup = document.getElementById('explode');
+  explodeGroup.setAttribute('transform', square.getElement().getAttribute('transform'));
   var deltas = [];
   if (x !== 0) {
     deltas.push({x: -1, y: 0});
@@ -334,9 +349,6 @@ function explodeInit_(square) {
     animatables[i] = new FlyingBomb(startXY, deltas[i], use);
     animatables[i].render(0);
   }
-  g.appendChild(explodeGroup);
-
-  explodeStep_.group = explodeGroup;
   explodeStep_.animatables = animatables;
   explodeStep_.animateStart = null;
   explodeStep_.neighbours = liveField.getNeighbours(x, y);
@@ -363,8 +375,10 @@ function explodeStep_(timestamp) {
 
 // Clean up the flying bombs, officially add them to the neighbours.
 function explodeFinish_() {
-  explodeStep_.group.parentNode.removeChild(explodeStep_.group);
-  explodeStep_.group = null;
+  var explodeGroup = document.getElementById('explode');
+  while(explodeGroup.firstChild) {
+    explodeGroup.removeChild(explodeGroup.firstChild);
+  }
   explodeStep_.animatables = null;
   explodeStep_.animateStart = null;
   for (var i = 0, square; (square = explodeStep_.neighbours[i]); i++) {
@@ -380,7 +394,7 @@ function explodeFinish_() {
 
 // Erase a square and draw in the current number of bombs.
 function drawSquare(square) {
-  var g = document.getElementById(square.x + '_' + square.y);
+  var g = square.getElement();
   while (g.firstChild != g.lastChild) {
     g.removeChild(g.firstChild);
   }
@@ -396,12 +410,12 @@ function drawSquare(square) {
 // Coordinates for clusters of 1,2,3,4,5 and 6 bombs.
 var BOMB_COORDINATES = [
   [],
-  [{x: 23, y: 19}],
-  [{x: 9, y: 19}, {x: 37, y: 19}],
-  [{x: 9, y: 31}, {x: 23, y: 5}, {x: 37, y: 31}],
-  [{x: 11, y: 5}, {x: 35, y: 33}, {x: 35, y: 5}, {x: 11, y: 33}],
-  [{x: 3, y: 10}, {x: 23, y: 2}, {x: 43, y: 10}, {x: 11, y: 35}, {x: 35, y: 36}],
-  [{x: 3, y: 10}, {x: 23, y: 2}, {x: 43, y: 10}, {x: 3, y: 36}, {x: 23, y: 28}, {x: 43, y: 36}]
+  [{x: 36, y: 29}],
+  [{x: 15, y: 29}, {x: 57, y: 29}],
+  [{x: 15, y: 47}, {x: 36, y: 8}, {x: 57, y: 47}],
+  [{x: 18, y: 8}, {x: 54, y: 50}, {x: 54, y: 8}, {x: 18, y: 50}],
+  [{x: 6, y: 15}, {x: 36, y: 3}, {x: 66, y: 15}, {x: 18, y: 54}, {x: 54, y: 54}],
+  [{x: 6, y: 15}, {x: 36, y: 3}, {x: 66, y: 15}, {x: 6, y: 55}, {x: 36, y: 43}, {x: 66, y: 55}]
 ];
 
 // Draw and return a single bomb.
@@ -556,4 +570,8 @@ Square.prototype.isCritical = function() {
 // Is this square currently beyond maximum capacity?
 Square.prototype.isOverloaded = function() {
   return this.bombs >= this.neighbourCount;
+};
+
+Square.prototype.getElement = function() {
+  return document.getElementById(this.x + '_' + this.y);
 };

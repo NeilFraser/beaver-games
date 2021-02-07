@@ -8,7 +8,7 @@
         border: 1px solid #ccc;
         border-radius: 5px;
         font-size: large;
-        margin: 129px auto;
+        margin: 170px auto;
         padding: 20px;
         width: 123px;
         display: block;
@@ -29,7 +29,11 @@
       #options {
         float: right;
       }
-      #grid {
+      rect.grid {
+        stroke: #888;
+        fill: none;
+      }
+      line.grid {
         stroke: #444;
       }
       .body {
@@ -63,6 +67,12 @@
       .hover-player1:hover {
         stroke: #2E5FFF;
       }
+      #instructions {
+        margin: 4em 4em 0;
+        font-size: small;
+        font-style: italic;
+        text-align: center;
+      }
     </style>
     <script src="../common/utils.js"></script>
     <script src="chain.js"></script>
@@ -89,16 +99,22 @@
     </div>
 
     <svg id="board" xmlns="http://www.w3.org/2000/svg">
-      <symbol id="bomb" height="30" width="30">
+      <symbol id="bomb" height="50" width="50" transform='scale(1.5)'>
         <path d="m 9.5,5 c 0,-4.5 0,-4.5 4.5,-4.5" class="fuse"/>
         <rect x="5" y="5" height="3" width="9" class="body"/>
         <circle cx="9.5" cy="16.5" r="9.5" class="body"/>
         <line x1="6" y1="13" x2="13" y2="20" class="cross"/>
         <line x1="13" y1="13" x2="6" y2="20" class="cross"/>
       </symbol>
-      <g id="matrix"></g>
       <g id="grid"></g>
+      <g id="matrix"></g>
+      <g id="explode"></g>
     </svg>
 
+<p id="instructions">
+  Take turns piling bombs onto the squares.  Corner squares explode with two bombs,
+  edge squares explode with three bombs, center squares explode with four bombs.
+  Game ends when a player has no bombs left.
+</p>
   </body>
 </html>
