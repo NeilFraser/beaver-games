@@ -164,6 +164,7 @@ function startPress() {
   startButton.style.display = 'none';
   players[0] = true;
   players[1] = (playerOption === 2);
+  inputMode = inputModes.BUSY;
   newGame();
 }
 
@@ -241,7 +242,9 @@ function startNextTurn() {
   } else {
     // Computer turn.
     setHoverClass(false);
-    inputMode = inputModes.BUSY;
+    if (inputMode !== inputModes.START) {
+      inputMode = inputModes.BUSY;
+    }
     timeoutPID = setTimeout(cpuPlay, 1000);
   }
 }
@@ -255,7 +258,9 @@ function sequenceDetonations(first) {
   if (first) {
     sequenceDetonations.lastX = NaN;
     sequenceDetonations.lastY = NaN;
-    inputMode = inputModes.BUSY;
+    if (inputMode !== inputModes.START) {
+      inputMode = inputModes.BUSY;
+    }
     setHoverClass(false);
   }
   var bestScore = -1;
