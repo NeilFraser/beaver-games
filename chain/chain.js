@@ -10,10 +10,7 @@
  */
 'use strict';
 
-// One of three difficulty levels (0, 1, 2).
-// 0: always play a move that wins.  -- Disabled (doesn't force player to think)
-// 1: failing a win, play a blocking move.
-// 2: play a perfect game.
+// One of three difficulty levels (0, 1, 2).  No upper limit.
 var DIFFICULTY;
 
 // Is player0 and/or player1 human?
@@ -33,9 +30,6 @@ var inputModes = {
   BUSY: 1
 };
 var inputMode = inputModes.START;
-
-// How many moves have happened so far (not including the current one)?
-var moveNumber = 0;
 
 // Height and width of playing board.
 var HEIGHT = 5;
@@ -183,27 +177,32 @@ function newGame() {
     }
   }
   turn = 1;
-  moveNumber = 0;
   startNextTurn();
 }
 
 // Have the computer play one move.
 function cpuPlay() {
-  var best = cpuThink(liveField, turn, 1);
-  if (!plantBomb(best.x, best.y)) {
+  // The computer should appear to take a second to think of a move.
+  // If it takes less that this, add an artifical delay.
+  var startTime = Date.now();
+  var best = cpuThink(liveField, turn, DIFFICULTY);
+  var elapsedTime = Date.now() - startTime;
+  timeoutPID = setTimeout(cpuPublish_.bind(null, best.x, best.y), 1000 - elapsedTime);
+}
+
+// Reveal the move.
+function cpuPublish_(x, y) {
+  if (!plantBomb(x, y)) {
     throw Error('Invalid location.');
   }
   sequenceDetonations(true);
 }
 
+// Run a min-max analysis for all possible moves.  Level controls the depth.
 function cpuThink(board, who, level) {
-  if (level === 0) {
-    var score = board.score();
-    score += Math.random();  // Add some non-deterministic noise.
-    return {score: score};
-  }
   var bestScore = -Infinity;
   var bestX, bestY;
+  var score;
   for (var x = 0; x < WIDTH; x++) {
     for (var y = 0; y < HEIGHT; y++) {
       var mySquare = board.getSquare(x, y);
@@ -215,13 +214,18 @@ function cpuThink(board, who, level) {
         // We win.
         return {score: Infinity, x: x, y: y};
       }
-      var score = cpuThink(clone, 1 - who, level - 1).score;
-      // Score: Positive means player 0 is winning, negative means player 1 is winning.
-      // We want to find the best move for 'who'.
-      if (who === 1) {
-        score *= -1;
+      if (level === 0) {
+        score = clone.score();
+        // Score: Positive means player 0 is winning, negative means player 1 is winning.
+        // We want to find the best move for 'who'.
+        if (who === 1) {
+          score *= -1;
+        }
+        score += Math.random();  // Add some non-deterministic noise.
+      } else {
+        score = -cpuThink(clone, 1 - who, level - 1).score;
       }
-      if (score > bestScore) {
+      if (score >= bestScore) {
         bestScore = score;
         bestX = x;
         bestY = y;
@@ -269,7 +273,6 @@ function startNextTurn() {
     return;
   }
   turn = 1 - turn;
-  moveNumber++;
   if (players[turn]) {
     // Human turn.
     setHoverClass(true);
@@ -280,7 +283,7 @@ function startNextTurn() {
     if (inputMode !== inputModes.START) {
       inputMode = inputModes.BUSY;
     }
-    timeoutPID = setTimeout(cpuPlay, 1000);
+    cpuPlay();
   }
 }
 
