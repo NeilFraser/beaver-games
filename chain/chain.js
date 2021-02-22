@@ -189,11 +189,46 @@ function newGame() {
 
 // Have the computer play one move.
 function cpuPlay() {
-  do {
-    var x = Math.floor(Math.random() * WIDTH);
-    var y = Math.floor(Math.random() * HEIGHT);
-  } while (!plantBomb(x, y));
+  var best = cpuThink(liveField, turn, 1);
+  if (!plantBomb(best.x, best.y)) {
+    throw Error('Invalid location.');
+  }
   sequenceDetonations(true);
+}
+
+function cpuThink(board, who, level) {
+  if (level === 0) {
+    var score = board.score();
+    score += Math.random();  // Add some non-deterministic noise.
+    return {score: score};
+  }
+  var bestScore = -Infinity;
+  var bestX, bestY;
+  for (var x = 0; x < WIDTH; x++) {
+    for (var y = 0; y < HEIGHT; y++) {
+      var mySquare = board.getSquare(x, y);
+      if (mySquare.bombs !== 0 && mySquare.owner !== who) {
+        continue;
+      }
+      var clone = new Field(board);
+      if (clone.simulate(x, y, who)) {
+        // We win.
+        return {score: Infinity, x: x, y: y};
+      }
+      var score = cpuThink(clone, 1 - who, level - 1).score;
+      // Score: Positive means player 0 is winning, negative means player 1 is winning.
+      // We want to find the best move for 'who'.
+      if (who === 1) {
+        score *= -1;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        bestX = x;
+        bestY = y;
+      }
+    }
+  }
+  return {score: bestScore, x: bestX, y: bestY};
 }
 
 // User clicked on the SVG.  Plant a bomb there -- if legal.
@@ -307,11 +342,11 @@ sequenceDetonations.lastY = NaN;
 
 // Initiate a detonation sequence for the given square.
 function detonateWithGraphics(x, y) {
-		var square = liveField.getSquare(x, y);
-		if (!square.isOverloaded()) {
-			throw new Error("Can't blow up non-overloaded square.");
-		}
-    timeoutPID = setTimeout(implodeStep_.bind(null, square, square.neighbourCount), 100);
+  var square = liveField.getSquare(x, y);
+  if (!square.isOverloaded()) {
+    throw new Error("Can't blow up non-overloaded square.");
+  }
+  timeoutPID = setTimeout(implodeStep_.bind(null, square, square.neighbourCount), 100);
 }
 
 // Detonation starts with removing the bombs that will fly away.
@@ -485,7 +520,7 @@ function Field(opt_parent) {
     this.squares_[x] = new Array(HEIGHT);
     for (var y = 0; y < HEIGHT; y++) {
       if (opt_parent) {
-        this.squares_[x][y] = new Square(opt_parent);
+        this.squares_[x][y] = new Square(opt_parent.squares_[x][y]);
       } else {
         this.squares_[x][y] = new Square(null, x, y);
       }
@@ -518,25 +553,91 @@ Field.prototype.getSquare = function(x, y) {
 
 // Has one player exterminated the other?
 Field.prototype.isExterminated = function() {
-  var who = -1;
+  var firstWho;
   var multiple = false;
   for (var x = 0; x < WIDTH; x++) {
     for (var y = 0; y < HEIGHT; y++) {
-      if (this.squares_[x][y].bombs !== 0) {
-        if (who === -1) {
-          who = this.squares_[x][y].owner;  // First bomb found.
-        } else if (who == this.squares_[x][y].owner) {
-          multiple = true; // there's more than one square with bombs
+      var square = this.squares_[x][y];
+      if (square.bombs !== 0) {
+        if (firstWho === undefined) {
+          firstWho = square.owner;  // First bomb found.
+        } else if (firstWho === square.owner) {
+          multiple = true; // There's more than one square with bombs.
         } else {
-          return false; // there's more than one player
+          return false; // There's more than one player.
         }
       }
     }
   }
-  // There's only one player on the board.
-  // But that's ok if there's only one square filled
-  // (meaning the other player hasn't had its first turn yet).
+  // There's less than two player on the board.
+  // But that's ok if there's only zero or one square filled
+  // (meaning both players haven't yet had their first turns).
   return multiple;
+};
+
+// Calculates a score which is designed to indicate how healthy a player's position is.
+// Positive means player 0 is winning, negative means player 1 is winning.
+// Used internally by the CPU player to rank the results of hypothetical moves.
+// Changes to this function can have a profound effect on the CPU player.
+Field.prototype.score = function() {
+  var playerScores = [0, 0];
+  for (var x = 0; x < WIDTH; x++) {
+    for (var y = 0; y < HEIGHT; y++) {
+      var square = this.squares_[x][y];
+      if (square.bombs > 0) {
+        var squareScore = 1;  // One point for owning the square.
+        squareScore += square.bombs;  // One point for each bomb.
+        if (square.isCritical()) {  // Being critical is very good.
+          squareScore += 4;
+        }
+        playerScores[square.owner] += squareScore;
+      }
+    }
+  }
+  return playerScores[0] - playerScores[1];
+};
+
+// Simulates the effects of droping a bomb belonging to 'turn' on x/y.
+// Used internally by the CPU player on disposable copies of the board.
+// Returns true if this move wipes out the other player.
+Field.prototype.simulate = function(x, y, who) {
+  var square = this.squares_[x][y];
+  square.addBomb(who);
+  if (!square.isOverloaded()) {
+    return false;
+  }
+  this.detonateLogically(x, y);
+  var exterminated;
+  do {
+    var stable = true;
+    for (var scanX = 0; scanX < WIDTH; scanX++) {
+      for (var scanY = 0; scanY < HEIGHT; scanY++) {
+        if (this.squares_[scanX][scanY].isOverloaded()) {
+          this.detonateLogically(scanX, scanY);
+          stable = false;
+        }
+      }
+    }
+    exterminated = this.isExterminated();
+  } while (!stable && !exterminated);
+  return exterminated;
+};
+
+// Blow up the specified square non-graphcially.
+// Used internally be the CPU player.
+Field.prototype.detonateLogically = function(x, y) {
+  var square = this.squares_[x][y];
+  if (!square.isOverloaded()) {
+    throw new Error("Can't blow up non-overloaded square.");
+  }
+  var neighbours = this.getNeighbours(x, y);
+  square.bombs -= neighbours.length;
+  for (var i = 0, neighbour; (neighbour = neighbours[i]); i++) {
+    neighbour.addBomb(square.owner);
+  }
+  if (square.bombs === 0) {
+    square.owner = -1;
+  }
 };
 
 
@@ -547,7 +648,7 @@ function Square(parent, x, y) {
   if (parent) {
     this.x = parent.x;
     this.y = parent.y;
-    this.neighbourCount = parent.newNeighbourCount;
+    this.neighbourCount = parent.neighbourCount;
     this.bombs = parent.bombs;
     this.owner = parent.owner;
   } else {
