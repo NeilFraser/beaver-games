@@ -241,8 +241,8 @@ function crash() {
 // With this, the player will hear to apple
 // eating sounds.
 function playEatSound() {
-  const apple = document.getElementById('apple');
-  if(!apple.paused) {
+  var apple = document.getElementById('apple');
+  if (!apple.paused) {
     apple.pause();
     apple.currentTime = 0;
   }
