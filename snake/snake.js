@@ -232,6 +232,23 @@ function crash() {
   setTimeout(disolveSnake, 100);
 }
 
+// Play sound when snake is eating an apple.
+// Note: when two apples are eating quickly,
+// one after the other, we ensure that we
+// play both sounds. To do so, we pause
+// the first sound (currently playing),
+// reset the player and play the second one.
+// With this, the player will hear to apple
+// eating sounds.
+function playEatSound() {
+  const apple = document.getElementById('apple');
+  if(!apple.paused) {
+    apple.pause();
+    apple.currentTime = 0;
+  }
+  apple.play();
+}
+
 // Animate the destruction of the current snake.
 function disolveSnake() {
   var snake = snakes[snakeIndex];
@@ -379,7 +396,7 @@ Snake.prototype.step = function(initialGrow) {
     crash();
     return;
   } else if (result == moveResult.FOOD) {
-    document.getElementById('apple').play();
+    playEatSound();
     addFood();
   } else if (result == moveResult.FREE && !initialGrow) {
     this.shrink();
