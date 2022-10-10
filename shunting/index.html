@@ -24,6 +24,10 @@
       .controlBG {
         fill: #666;
       }
+      .clickTarget {
+        opacity: 0;
+        cursor: pointer;
+      }
       #border {
         fill: none;
         stroke: #888;
@@ -93,36 +97,14 @@
           <rect class="controlBG" width="4" height="2" x="8" y="27.5" ry="1" />
           <circle class="control" cx="10" cy="28.5" r="1" />
           <rect class="rail" width="1" height="32" x="1" y="0" />
-          <rect class="rail" width="1" height="32" x="6" y="0" />
-          <path class="rail" d="M 1,32 C 1,20.596 5.53,9.658 13.594,1.594 l 0.707,0.707 C 6.49,10.128 2.066,20.811 2,32 Z" />
+          <path class="rail pointStraight" d="" />
+          <path class="rail pointCurve" d="" />
           <path class="rail" d="M 6,32 C 6,21.922 10.004,12.256 17.13,5.13 l 0.707,0.707 C 10.898,12.776 7.066,22.137 7,32 Z" />
+          <rect class="clickTarget" width="14.5" height="14" x="-1" y="20" rx="4" />
         </g>
       </defs>
 
-      <g id="trackGroup">
-        <use transform="translate(4,87)" href="#straight" />
-        <use transform="translate(4,71)" href="#straight" />
-        <use transform="translate(4,51)" href="#curve" />
-        <use transform="rotate(22.5,-82.197,55.555)" href="#curve" />
-        <use transform="rotate(45,-1.077,56.328)" href="#turnout" />
-        <use transform="rotate(45,23.065,66.328)" href="#curve" />
-        <use transform="rotate(67.5,36.082,54.112)" href="#curve" />
-        <use transform="rotate(90,41.127,45.5)" href="#straight" />
-        <use transform="rotate(90,49.127,53.5)" href="#straight" />
-        <use transform="rotate(90,57.127,61.5)" href="#straight" />
-        <use transform="rotate(90,59.627,64)" href="#buffer" />
-
-        <use transform="rotate(90,26.5,53.5)" href="#turnout" />
-        <use transform="rotate(90,34.5,61.5)" href="#straight" />
-        <use transform="rotate(90,42.5,69.5)" href="#straight" />
-        <use transform="rotate(90,50.5,77.5)" href="#straight" />
-        <use transform="rotate(90,53,80)" href="#buffer" />
-
-        <use transform="rotate(-67.5,70.117,-28.108)" href="#curve" />
-        <use transform="rotate(-90,71.5,-13.068)" href="#curve" />
-        <use transform="rotate(90,35.068,85.5)" href="#straight" />
-        <use transform="rotate(90,37.568,88)" href="#buffer" />
-      </g>
+      <g id="trackGroup"></g>
 
       <g id="trainGroup"></g>
 

@@ -41,9 +41,37 @@ var PATH_A = [0, 1, 2, 3, 4, 5];
 var PATH_B = [0, 1, 2, 6, 7, 8];
 var PATH_C = [0, 1, 2, 6, 9, 10, 11];
 
+// Array of both turnouts.
+var turnouts = [];
+
+// Turnout object.
+var Turnout = function(node) {
+  // Get references to key nodes used in switching.
+  this.pointStraight_ = node.getElementsByClassName('pointStraight')[0];
+  this.pointCurve_ = node.getElementsByClassName('pointCurve')[0];
+  this.control_ = node.getElementsByClassName('control')[0];
+  var clickTarget = node.getElementsByClassName('clickTarget')[0];
+  clickTarget.addEventListener('click', this.toggle.bind(this));
+  this.set(true);
+};
+
 // True is straight, false is curve.
-var turnout1State = false;
-var turnout2State = true;
+Turnout.prototype.set = function(state) {
+  this.state = state;
+  if (state) {
+    this.control_.setAttribute('cx', 9);
+    this.pointStraight_.setAttribute('d', 'M 6,0 H 7 V 32 H 6 Z');
+    this.pointCurve_.setAttribute('d', 'M 2.5,30.5 C 2.401,27.119 2.524,22.871 2.961,19.163 5.016,12.594 8.637,6.551 13.594,1.594 l 0.707,0.707 C 9.449,7.163 5.904,13.127 3.898,19.63 3.231,22.843 3.003,27.002 3,30.5 Z');
+  } else {
+    this.control_.setAttribute('cx', 11);
+    this.pointStraight_.setAttribute('d', 'M 6,0 H 7 L 7,20 5.5,30.5 H 5 L 6,20 Z');
+    this.pointCurve_.setAttribute('d', 'M 1,32 C 1,20.596 5.53,9.658 13.594,1.594 l 0.707,0.707 C 6.49,10.128 2.066,20.811 2,32 Z');
+  }
+};
+
+Turnout.prototype.toggle = function() {
+  this.set(!this.state);
+};
 
 // Is this segment before the first turnout?
 function isBeforeTurnout1(segmentIndex) {
@@ -58,6 +86,32 @@ function isBeforeTurnout2(segmentIndex) {
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
+  drawTrack('straight', 'translate(4, 87)');
+  drawTrack('straight', 'translate(4, 71)');
+  drawTrack('curve', 'translate(4, 51)');
+
+  drawTrack('curve', 'rotate(22.5, -82.197, 55.555)');
+  var turnout1Node = drawTrack('turnout', 'rotate(45, -1.077, 56.328)');
+  drawTrack('curve', 'rotate(45, 23.065, 66.328)');
+  drawTrack('curve', 'rotate(67.5, 36.082, 54.112)');
+  drawTrack('straight', 'rotate(90, 41.127, 45.5)');
+  drawTrack('straight', 'rotate(90, 49.127, 53.5)');
+  drawTrack('straight', 'rotate(90, 57.127, 61.5)');
+  drawTrack('buffer', 'rotate(90, 59.627, 64)');
+
+  var turnout2Node = drawTrack('turnout', 'rotate(90, 26.5, 53.5)');
+  drawTrack('straight', 'rotate(90, 34.5, 61.5)');
+  drawTrack('straight', 'rotate(90, 42.5, 69.5)');
+  drawTrack('straight', 'rotate(90, 50.5, 77.5)');
+  drawTrack('buffer', 'rotate(90, 53, 80)');
+
+  drawTrack('curve', 'rotate(-67.5, 70.117, -28.108)');
+  drawTrack('curve', 'rotate(-90, 71.5, -13.068)');
+  drawTrack('straight', 'rotate(90, 35.068, 85.5)');
+  drawTrack('buffer', 'rotate(90, 37.568, 88)');
+
+  turnouts.push(new Turnout(turnout1Node), new Turnout(turnout2Node));
+
 
   me = document.createElementNS(SVG_NS, 'circle');
   me.setAttribute('r', '1');
@@ -81,9 +135,24 @@ function run() {
   setTimeout(run, 100)
 }
 
+// Draw a track segment onto the display.  Return the 'use' or 'g' node.
+function drawTrack(defId, transform) {
+  if (defId === 'turnout') {
+    // Turnouts need to be cloned since they have a moving control.
+    var node = document.getElementById(defId).cloneNode(true);
+  } else {
+    // Other track segments can just be 'use' nodes.
+    var node = document.createElementNS(SVG_NS, 'use');
+    node.setAttribute('href', '#' +  defId);
+  }
+  node.setAttribute('transform', transform);
+  document.getElementById('trackGroup').appendChild(node);
+  return node;
+}
+
 // Given the state of the turnouts, return the current path.
 function getPath() {
-  return turnout1State ? PATH_A : turnout2State ? PATH_B : PATH_C;
+  return turnouts[0].state ? PATH_A : turnouts[1].state ? PATH_B : PATH_C;
 }
 
 // Calculate the length of a line or curve segment.
