@@ -41,6 +41,28 @@ var PATH_A = [0, 1, 2, 3, 4, 5];
 var PATH_B = [0, 1, 2, 6, 7, 8];
 var PATH_C = [0, 1, 2, 6, 9, 10, 11];
 
+// Colours for each car in the train.
+// Should have at least as many colours as TRAIN_LENGTH.
+var COLOURS = [
+  '#ccb129',  /* HSV: 50, 80, 80 */
+  '#29cccc',  /* HSV: 180, 80, 80 */
+  '#cc29cc',  /* HSV: 300, 80, 80 */
+  '#cc7a29',  /* HSV: 30, 80, 80 */
+  '#295fcc',  /* HSV: 220, 80, 80 */
+  '#29cc29',  /* HSV: 120, 80, 80 */
+  '#cc2929',  /* HSV: 0, 80, 80 */
+];
+// Locomotive colour.
+var LOCO_COLOUR = '#444';
+// Colour of extra cars not part of the train.
+var SKIP_COLOUR = '#999';
+
+// Number of cars required in final train (not including locomotive).
+var TRAIN_LENGTH = 5;
+// Number of cars to choose from.
+var CAR_COUNT = 8;
+var PERMUTATIONS = factorial(CAR_COUNT) / factorial(CAR_COUNT - TRAIN_LENGTH);
+
 // Array of both turnouts.
 var turnouts = [];
 
@@ -73,6 +95,52 @@ Turnout.prototype.toggle = function() {
   this.set(!this.state);
 };
 
+// Vehicle object.
+var Vehicle = function(colour) {
+  this.LENGTH = 14;
+  this.WIDTH = 8;
+  // Distance from midpoint to forwards or back axle.
+  this.AXLE_DISTANCE = 6;
+  var g = document.createElementNS(SVG_NS, 'g');
+  var rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('width', this.WIDTH);
+  g.appendChild(rect);
+  rect.setAttribute('fill', colour);
+  if (colour === LOCO_COLOUR) {
+    rect.setAttribute('height', this.LENGTH - 3);
+    rect.setAttribute('y', 3);
+    var head = document.createElementNS(SVG_NS, 'rect');
+    g.appendChild(head);
+    head.setAttribute('height', 6);
+    head.setAttribute('width', this.WIDTH);
+    head.setAttribute('rx', 3);
+    head.setAttribute('fill', colour);
+  } else {
+    rect.setAttribute('height', this.LENGTH);
+  }
+  document.getElementById('trainGroup').appendChild(g);
+  this.node = g;
+};
+
+Vehicle.prototype.setDistance = function(dist) {
+  var xyFront = calculateCoordinates(dist + this.LENGTH / 2);
+  if (!xyFront) return 1;
+  var xyBack = calculateCoordinates(dist - this.LENGTH / 2);
+  if (!xyBack) return -1;
+
+  var xyBackAxle = calculateCoordinates(dist - this.AXLE_DISTANCE);
+  var xyFrontAxle = calculateCoordinates(dist + this.AXLE_DISTANCE);
+  var xyMid = {
+    x: (xyBackAxle.x + xyFrontAxle.x) / 2,
+    y: (xyBackAxle.y + xyFrontAxle.y) / 2
+  };
+  var angle = -Math.atan2(xyFrontAxle.x - xyBackAxle.x, xyFrontAxle.y - xyBackAxle.y);
+  angle = angle / Math.PI * 180;
+  this.node.setAttribute('transform', 'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
+      ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
+  return xyMid;
+};
+
 // Is this segment before the first turnout?
 function isBeforeTurnout1(segmentIndex) {
   return segmentIndex < 3;
@@ -86,6 +154,7 @@ function isBeforeTurnout2(segmentIndex) {
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
+
   drawTrack('straight', 'translate(4, 87)');
   drawTrack('straight', 'translate(4, 71)');
   drawTrack('curve', 'translate(4, 51)');
@@ -112,27 +181,133 @@ function init() {
 
   turnouts.push(new Turnout(turnout1Node), new Turnout(turnout2Node));
 
+  // Create goal visualization.
+  for (var i = TRAIN_LENGTH; i >= 0; i--) {
+    // <div class="goalCar">5</div>
+    var div = document.createElement('div');
+    div.className = 'goalCar';
+    div.appendChild(document.createTextNode(i || '\xa0'));
+    document.getElementById('goalCars').appendChild(div);
+  }
+  reset(location.hash.substring(1));
 
-  me = document.createElementNS(SVG_NS, 'circle');
-  me.setAttribute('r', '1');
-  document.getElementById('trainGroup').appendChild(me);
+  me = new Vehicle(LOCO_COLOUR);
   run();
 }
 window.addEventListener('load', init);
 
 var me;
-var dist = 0;
+var dist = 1;
 var dir = 1;
 function run() {
-  var xy = calculateCoordinates(dist)
-  if (xy) {
-    me.setAttribute('cx', xy.x);
-    me.setAttribute('cy', xy.y);
+  var xy = calculateCoordinates(dist);
+  if (xy && dist > 0) {
+    me.setDistance(dist);
   } else {
     dir *= -1;
   }
   dist += dir;
-  setTimeout(run, 100)
+  setTimeout(run, 25);
+}
+
+function reset(opt_key) {
+  // Use the key in the URL hash, if there is one.  Otherwise make a new one.
+  var hashKey = Number(opt_key);
+  if (hashKey > 0 && hashKey <= PERMUTATIONS) {
+    var key = Math.floor(hashKey);
+  } else {
+    var key = Math.floor(Math.random() * PERMUTATIONS) + 1;
+    location.hash = key;
+  }
+
+  // Seed the pseudo-random generator with the key.
+  pseudoRandom(key);
+  // The colours don't matter to gameplay at all, but mix them up for variety.
+  var randomColours = COLOURS.slice();
+  shuffle(randomColours);
+  var cars = document.getElementsByClassName('goalCar');
+  for (var i = 0; i < cars.length - 1; i++) {
+    cars[i].style.backgroundColor = randomColours[i];
+  }
+  cars[i].style.backgroundColor = LOCO_COLOUR;
+
+  // Decompose the key into car selection.
+  key--;  // Decrement from 1-based to 0-based.
+  var digits = decomposeKey(key);
+  // Digits is a breakdown of indicies, not counting already picked cars.
+  // E.g. [2, 2, 1] means first car in train is car #2, second car is the new
+  // car #2 (after removing or skipping over the previously selected one), the
+  // third car is car #1.
+  var carOrder = new Array(CAR_COUNT);
+  for (var i = 0; i < digits.length; i++) {
+    var digit = digits[i];
+    for (var j = 0; j < carOrder.length; j++) {
+      if (carOrder[j] === undefined) {
+        if (!digit) {
+          carOrder[j] = i;
+          break;
+        }
+        digit--;
+      }
+    }
+  }
+  console.log(carOrder);
+}
+
+// Decompose the key into a sequence of digits.
+// The first (left-most digit) is base n, the next digit is base n+1, and so on.
+// E.g. 4567 -> [5, 3, 0, 1, 3] (for the case of 8 cars, choose 5).
+function decomposeKey(key) {
+  var min = CAR_COUNT - TRAIN_LENGTH;
+  var max = CAR_COUNT;
+  var base = PERMUTATIONS;
+  var digits = [];
+  for (var i = max; i > min; i--) {
+    base /= i;
+    var remainder = key % base;
+    digits.push((key - remainder) / base);
+    key = remainder;
+  }
+  return digits;
+}
+
+// Randomize the order of an array in place.
+// Use pseudo-random generator instead of Math.random.
+function shuffle(arr) {
+  for (var i = arr.length - 1; i > 0; i--) {
+    // Choose a random array index in [0, i] (inclusive with i).
+    var j = Math.floor(pseudoRandom() * (i + 1));
+    var tmp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = tmp;
+  }
+}
+
+// Returns a pseudo-random number between 0 and 1.
+// If opt_seed is provided, reset the algorithm to that seed.
+// Equivalent to Math.random, but deterministic.
+function pseudoRandom(opt_seed) {
+  if (opt_seed !== undefined) {
+    pseudoRandom.previous = 671581058 + opt_seed;
+  }
+  pseudoRandom.previous = (pseudoRandom.previous * pseudoRandom.PRIME1 / 10000) >>> 0;
+  var rand = (pseudoRandom.previous * pseudoRandom.PRIME2 / 10000) >>> 0;
+  return rand / pseudoRandom.MAX;
+}
+pseudoRandom.MAX = 4294967296;
+pseudoRandom.PRIME1 = 3439588987;
+pseudoRandom.PRIME2 = 1264941673;
+pseudoRandom.previous = 671581058;  // Randomly chosen seed.
+
+// Return the factorial of n.
+function factorial(n) {
+  if (n < 2) return 1;
+  var f = n;
+  while (n > 1) {
+    n--;
+    f *= n;
+  }
+  return f;
 }
 
 // Draw a track segment onto the display.  Return the 'use' or 'g' node.
