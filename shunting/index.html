@@ -11,6 +11,11 @@
       td {
         vertical-align: top;
       }
+      #centerCell {
+        border: 1px solid #888;
+        padding: 0;
+        position: relative;
+      }
       .sleeper {
         fill: #aaa;
       }
@@ -49,6 +54,17 @@
       #goalCars>div:last-child {
         border-radius: 0 0 15px 15px;
       }
+      #leftButton, #rightButton {
+        position: absolute;
+        font-size: x-large;
+        bottom: 1ex;
+      }
+      #leftButton {
+        left: 40%;
+      }
+      #rightButton {
+        right: 40%;
+      }
     </style>
     <script src="../common/utils.js"></script>
     <script src="shunting.js"></script>
@@ -63,9 +79,11 @@
           <td style="padding: 1ex; text-align: center;">
             <h3>Build this train:</h3>
             <div id="goalCars"></div>
-            <p><button onclick="reset()">New Game</button></p>
+            <p><button onclick="reset()">New Train</button></p>
           </td>
-          <td style="border: 1px solid #888; padding: 0">
+          <td id="centerCell">
+          <button id="leftButton" onmousedown="drive(-1)" onmouseup="drive(0)">&larr;</button>
+          <button id="rightButton" onmousedown="drive(1)" onmouseup="drive(0)">&rarr;</button>
 <svg
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns="http://www.w3.org/2000/svg"
@@ -139,8 +157,11 @@
   </g>
 </svg>
           </td>
-          <td>
+          <td style="width: 15em; padding: 1ex;">
             <h2>Instructions</h2>
+            <p>Use the keyboard or the onscreen buttons to drive the locomotive.
+              Assemble the specified train.
+            </p>
             <h2>Keys</h2>
             <table id="keyTable">
               <tbody>

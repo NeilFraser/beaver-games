@@ -63,6 +63,13 @@ var TRAIN_LENGTH = 5;
 var CAR_COUNT = 8;
 var PERMUTATIONS = factorial(CAR_COUNT) / factorial(CAR_COUNT - TRAIN_LENGTH);
 
+// Speed of locomotive.
+var MAX_SPEED = 1;
+var ACCELERATION = 0.05;
+
+// Allow the train into the headshunt overflow area if true;
+var headshuntOpen = false;
+
 // Array of both turnouts.
 var turnouts = [];
 
@@ -96,7 +103,7 @@ Turnout.prototype.toggle = function() {
 };
 
 // Vehicle object.
-var Vehicle = function(colour) {
+var Vehicle = function(colour, distance) {
   this.LENGTH = 14;
   this.WIDTH = 8;
   // Distance from midpoint to forwards or back axle.
@@ -120,13 +127,16 @@ var Vehicle = function(colour) {
   }
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
+
+  this.setDistance(distance);
 };
 
 Vehicle.prototype.setDistance = function(dist) {
-  var xyFront = calculateCoordinates(dist + this.LENGTH / 2);
-  if (!xyFront) return 1;
-  var xyBack = calculateCoordinates(dist - this.LENGTH / 2);
-  if (!xyBack) return -1;
+  var xyFront = calculateCoordinates(dist - this.LENGTH / 2);
+  if (!xyFront) return -1;
+  var xyBack = calculateCoordinates(dist + this.LENGTH / 2);
+  if (!xyBack) return 1;
+  this.distance_ = dist;
 
   var xyBackAxle = calculateCoordinates(dist - this.AXLE_DISTANCE);
   var xyFrontAxle = calculateCoordinates(dist + this.AXLE_DISTANCE);
@@ -139,6 +149,10 @@ Vehicle.prototype.setDistance = function(dist) {
   this.node.setAttribute('transform', 'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
       ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
   return xyMid;
+};
+
+Vehicle.prototype.getDistance = function() {
+  return this.distance_;
 };
 
 // Is this segment before the first turnout?
@@ -191,23 +205,56 @@ function init() {
   }
   reset(location.hash.substring(1));
 
-  me = new Vehicle(LOCO_COLOUR);
-  run();
+  locomotive = new Vehicle(LOCO_COLOUR, 26);
+  setInterval(update, 25);
 }
 window.addEventListener('load', init);
+window.addEventListener('keypress', keypress);
+window.addEventListener('keydown', keydown);
+window.addEventListener('keyup', keyup);
 
-var me;
-var dist = 1;
-var dir = 1;
-function run() {
-  var xy = calculateCoordinates(dist);
-  if (xy && dist > 0) {
-    me.setDistance(dist);
-  } else {
-    dir *= -1;
+var locomotive = null;
+var locoActualSpeed = 0;
+var locoDesiredSpeed = 0;
+
+function keypress(e) {
+  if (e.key === '1') {
+    turnouts[0].toggle();
   }
-  dist += dir;
-  setTimeout(run, 25);
+  if (e.key === '2') {
+    turnouts[1].toggle();
+  }
+  if (e.key === ' ') {
+    // TODo Decouplers!
+  }
+}
+
+function keydown(e) {
+  if (e.key === 'ArrowRight') {
+    drive(1);
+  }
+  if (e.key === 'ArrowLeft') {
+    drive(-1);
+  }
+}
+
+function keyup(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    drive(0);
+  }
+}
+
+function update() {
+  if (locoActualSpeed < locoDesiredSpeed) {
+    locoActualSpeed = Math.min(locoActualSpeed + ACCELERATION, locoDesiredSpeed);
+  } else if (locoActualSpeed > locoDesiredSpeed) {
+    locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
+  }
+  locomotive.setDistance(locomotive.getDistance() + locoActualSpeed);
+}
+
+function drive(direction) {
+  locoDesiredSpeed = MAX_SPEED * Math.sign(direction);
 }
 
 function reset(opt_key) {
@@ -354,9 +401,16 @@ for (var i = 0; i < PATH_SEGMENTS.length; i++) {
 //
 function calculateCoordinates(distance) {
   distance += HEADSHUNT_OVERFLOW;
-  if (distance < 0) {
-    // Ran off the headshunt end.
-    return NaN;
+  if (headshuntOpen) {
+    if (distance < 0) {
+      // Ran off the headshunt end.
+      return NaN;
+    }
+  } else {
+    if (distance < HEADSHUNT_OVERFLOW) {
+      // Ran off the headshunt end.
+      return NaN;
+    }
   }
   var path = getPath();
   for (var i = 0; i < path.length; i++) {
