@@ -18,29 +18,6 @@ var RADIUS = 40;
 // Enough room for a 9 car train to drive offscreen.
 var HEADSHUNT_OVERFLOW = 150;
 
-// Coordinates of each section of track.
-// ['line', startX, startY, deltaX, deltaY]
-// ['curve', centerX, centerY, startDegrees, deltaDegrees]
-var PATH_SEGMENTS = [
-  ['line', 8, 103 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW], // 0:  Headshunt overflow
-  ['line', 8, 103, 0, -2 * 16],              // 1:  Headshunt straight
-  ['curve', 48, 71, 180, 45],                // 2:  Headshunt curve
-  ['line', 19.716, 42.716, 22.627, -22.628], // 3:  Turnout #1 straight
-  ['curve', 70.627, 48.372, 225, 45],        // 4:  Siding A curve
-  ['line', 70.627, 8.372, 3 * 16 + 1, 0],    // 5:  Siding A straight
-  ['curve', 48, 71, 225, 45],                // 6:  Turnout #1 curve
-  ['line', 48, 31, 2 * 16, 0],               // 7:  Turnout #2 straight
-  ['line', 48 + 2 * 16, 31, 3 * 16 + 1, 0],  // 8:  Siding B
-  ['curve', 48, 71, 270, 45],                // 9:  Turnout #2 curve
-  ['curve', 104.568, 14.431, 135, -45],      // 10: Siding C curve
-  ['line', 104.568, 54.431, 16 + 1, 0]       // 11: Siding C straight
-];
-
-// Paths to reach each siding.
-var PATH_A = [0, 1, 2, 3, 4, 5];
-var PATH_B = [0, 1, 2, 6, 7, 8];
-var PATH_C = [0, 1, 2, 6, 9, 10, 11];
-
 // Colours for each car in the train.
 // Should have at least as many colours as TRAIN_LENGTH.
 var COLOURS = [
@@ -67,20 +44,94 @@ var PERMUTATIONS = factorial(CAR_COUNT) / factorial(CAR_COUNT - TRAIN_LENGTH);
 var MAX_SPEED = 1;
 var ACCELERATION = 0.05;
 
-// Allow the train into the headshunt overflow area if true;
-var headshuntOpen = false;
-
 // Array of both turnouts.
 var turnouts = [];
 
+
+var AbstractSegment = function() {};
+
+AbstractSegment.prototype.nextSegment = null;
+
+AbstractSegment.prototype.previousSegment = null;
+
+AbstractSegment.prototype.walk = function(startDistance, delta) {
+  var endDistance = startDistance + delta;
+  if (endDistance < 0) {
+    if (this.previousSegment) {
+      return this.previousSegment.walk(
+          startDistance + this.previousSegment.length, delta);
+    }
+    // End of track (headshunt or turnout).
+    locoActualSpeed = 0;
+    return [this, 0];
+  }
+  if (endDistance > this.length) {
+    if (this.nextSegment) {
+      return this.nextSegment.walk(startDistance - this.length, delta);
+    }
+    // End of track (buffer).
+    locoActualSpeed = 0;
+    return [this, this.length];
+  }
+  return [this, endDistance];
+};
+
+AbstractSegment.prototype.calculateCoordinates = function(distance) {
+  throw Error('Implemented by subclass');
+};
+
+
+var StraightSegment = function(startX, startY, deltaX, deltaY) {
+  this.startX = startX;
+  this.startY = startY;
+  this.deltaX = deltaX;
+  this.deltaY = deltaY;
+  this.length = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+};
+StraightSegment.prototype = new AbstractSegment();
+
+StraightSegment.prototype.calculateCoordinates = function(distance) {
+  var fraction = distance / this.length;
+  return {
+    x: this.startX + this.deltaX * fraction,
+    y: this.startY + this.deltaY * fraction
+  };
+};
+
+
+var CurveSegment = function(centerX, centerY, startDegrees, deltaDegrees) {
+  this.centerX = centerX;
+  this.centerY = centerY;
+  this.startDegrees = startDegrees;
+  this.deltaDegrees = deltaDegrees;
+  var arc = Math.abs(deltaDegrees);
+  arc = arc / 180 * Math.PI;
+  this.length = RADIUS * arc;
+};
+CurveSegment.prototype = new AbstractSegment();
+
+CurveSegment.prototype.calculateCoordinates = function(distance) {
+  var fraction = distance / this.length;
+  var arc = (this.startDegrees + this.deltaDegrees * fraction);
+  var arc = arc / 180 * Math.PI;
+  return {
+    x: this.centerX + Math.cos(arc) * RADIUS,
+    y: this.centerY + Math.sin(arc) * RADIUS
+  };
+};
+
 // Turnout object.
-var Turnout = function(node) {
+var Turnout = function(node,
+    rootSegmentIndex, straightSegmentIndex, curveSegmentIndex) {
   // Get references to key nodes used in switching.
   this.pointStraight_ = node.getElementsByClassName('pointStraight')[0];
   this.pointCurve_ = node.getElementsByClassName('pointCurve')[0];
   this.control_ = node.getElementsByClassName('control')[0];
   var clickTarget = node.getElementsByClassName('clickTarget')[0];
   clickTarget.addEventListener('click', this.toggle.bind(this));
+  this.rootSegment_ = PATH_SEGMENTS[rootSegmentIndex];
+  this.straightSegment_ = PATH_SEGMENTS[straightSegmentIndex];
+  this.curveSegment_ = PATH_SEGMENTS[curveSegmentIndex];
   this.set(true);
 };
 
@@ -91,10 +142,12 @@ Turnout.prototype.set = function(state) {
     this.control_.setAttribute('cx', 9);
     this.pointStraight_.setAttribute('d', 'M 6,0 H 7 V 32 H 6 Z');
     this.pointCurve_.setAttribute('d', 'M 2.5,30.5 C 2.401,27.119 2.524,22.871 2.961,19.163 5.016,12.594 8.637,6.551 13.594,1.594 l 0.707,0.707 C 9.449,7.163 5.904,13.127 3.898,19.63 3.231,22.843 3.003,27.002 3,30.5 Z');
+    this.rootSegment_.nextSegment = this.straightSegment_;
   } else {
     this.control_.setAttribute('cx', 11);
     this.pointStraight_.setAttribute('d', 'M 6,0 H 7 L 7,20 5.5,30.5 H 5 L 6,20 Z');
     this.pointCurve_.setAttribute('d', 'M 1,32 C 1,20.596 5.53,9.658 13.594,1.594 l 0.707,0.707 C 6.49,10.128 2.066,20.811 2,32 Z');
+    this.rootSegment_.nextSegment = this.curveSegment_;
   }
 };
 
@@ -103,10 +156,10 @@ Turnout.prototype.toggle = function() {
 };
 
 // Vehicle object.
-var Vehicle = function(colour, distance) {
+var Vehicle = function(colour) {
   this.LENGTH = 14;
   this.WIDTH = 8;
-  // Distance from midpoint to forwards or back axle.
+  // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
   var g = document.createElementNS(SVG_NS, 'g');
   var rect = document.createElementNS(SVG_NS, 'rect');
@@ -128,42 +181,81 @@ var Vehicle = function(colour, distance) {
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
 
-  this.setDistance(distance);
+  this.segment_ = null;
+  this.distance_ = 0;
 };
 
-Vehicle.prototype.setDistance = function(dist) {
-  var xyFront = calculateCoordinates(dist - this.LENGTH / 2);
-  if (!xyFront) return -1;
-  var xyBack = calculateCoordinates(dist + this.LENGTH / 2);
-  if (!xyBack) return 1;
-  this.distance_ = dist;
+// Force move the vehicle to the specified location.  No checks.
+// Location is defined by the back axle.
+Vehicle.prototype.moveTo = function(segment, distance) {
+  this.segment_ = segment;
+  this.distance_ = distance;
+};
 
-  var xyBackAxle = calculateCoordinates(dist - this.AXLE_DISTANCE);
-  var xyFrontAxle = calculateCoordinates(dist + this.AXLE_DISTANCE);
+Vehicle.prototype.moveBy = function(delta) {
+  if (delta >= 0) {  // Moving backwards (towards the buffers).
+    var locBackAxle = this.segment_.walk(this.distance_, delta);
+    var locFrontAxle = locBackAxle[0].walk(locBackAxle[1], -2 * this.AXLE_DISTANCE);
+  } else {  // Moving forwards (towards the headshunt).
+    var locFrontAxle = this.segment_.walk(this.distance_ - 2 * this.AXLE_DISTANCE, delta);
+    var locBackAxle = locFrontAxle[0].walk(locFrontAxle[1], 2 * this.AXLE_DISTANCE);
+  }
+  this.segment_ = locBackAxle[0];
+  this.distance_ = locBackAxle[1];
+
+  var xyFrontAxle = locFrontAxle[0].calculateCoordinates(locFrontAxle[1]);
+  var xyBackAxle = locBackAxle[0].calculateCoordinates(locBackAxle[1]);
   var xyMid = {
     x: (xyBackAxle.x + xyFrontAxle.x) / 2,
     y: (xyBackAxle.y + xyFrontAxle.y) / 2
   };
-  var angle = -Math.atan2(xyFrontAxle.x - xyBackAxle.x, xyFrontAxle.y - xyBackAxle.y);
+  var angle = -Math.atan2(xyBackAxle.x - xyFrontAxle.x, xyBackAxle.y - xyFrontAxle.y);
   angle = angle / Math.PI * 180;
   this.node.setAttribute('transform', 'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
       ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
   return xyMid;
 };
 
-Vehicle.prototype.getDistance = function() {
-  return this.distance_;
-};
 
-// Is this segment before the first turnout?
-function isBeforeTurnout1(segmentIndex) {
-  return segmentIndex < 3;
+// Coordinates of each section of track.
+// straight: startX, startY, deltaX, deltaY
+// curve: centerX, centerY, startDegrees, deltaDegrees
+var PATH_SEGMENTS = [
+  new StraightSegment(8, 102 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0:  Headshunt overflow
+  new StraightSegment(8, 102, 0, -2 * 16),              // 1:  Headshunt straight
+  new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
+  new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
+  new CurveSegment(70.627, 48.372, 225, 45),            // 4:  Siding A curve
+  new StraightSegment(70.627, 8.372, 3 * 16, 0),    // 5:  Siding A straight
+  new CurveSegment(48, 71, 225, 45),                    // 6:  Turnout #1 curve
+  new StraightSegment(48, 31, 2 * 16, 0),               // 7:  Turnout #2 straight
+  new StraightSegment(48 + 2 * 16, 31, 3 * 16, 0),  // 8:  Siding B
+  new CurveSegment(48, 71, 270, 45),                    // 9:  Turnout #2 curve
+  new CurveSegment(104.568, 14.431, 135, -45),          // 10: Siding C curve
+  new StraightSegment(104.568, 54.431, 16, 0)       // 11: Siding C straight
+];
+// Link the segments together.
+function bilateralLink(i, j) {
+  PATH_SEGMENTS[i].nextSegment = PATH_SEGMENTS[j];
+  PATH_SEGMENTS[j].previousSegment = PATH_SEGMENTS[i];
+}
+bilateralLink(0, 1);
+bilateralLink(1, 2);
+bilateralLink(2, 3);
+bilateralLink(3, 4);
+bilateralLink(4, 5);
+bilateralLink(2, 6);  // Clobbers 2->3, leaves 3->2.
+bilateralLink(6, 7);
+bilateralLink(7, 8);
+bilateralLink(6, 9);  // Clobbers 6->7, leaves 7->6.
+bilateralLink(9, 10);
+bilateralLink(10, 11);
+
+// Set whether the train may enter the headshut's offscreen overflow section.
+function setHeadShuntOverflow(open) {
+  PATH_SEGMENTS[1].previousSegment = open ? PATH_SEGMENTS[0] : null;
 }
 
-// Is this segment before the second turnout?
-function isBeforeTurnout2(segmentIndex) {
-  return segmentIndex < 7;
-}
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
@@ -193,7 +285,9 @@ function init() {
   drawTrack('straight', 'rotate(90, 35.068, 85.5)');
   drawTrack('buffer', 'rotate(90, 37.568, 88)');
 
-  turnouts.push(new Turnout(turnout1Node), new Turnout(turnout2Node));
+  turnouts.push(
+      new Turnout(turnout1Node, 2, 3, 6),
+      new Turnout(turnout2Node, 6, 7, 9));
 
   // Create goal visualization.
   for (var i = TRAIN_LENGTH; i >= 0; i--) {
@@ -203,9 +297,9 @@ function init() {
     div.appendChild(document.createTextNode(i || '\xa0'));
     document.getElementById('goalCars').appendChild(div);
   }
+  locomotive = new Vehicle(LOCO_COLOUR);
   reset(location.hash.substring(1));
 
-  locomotive = new Vehicle(LOCO_COLOUR, 26);
   setInterval(update, 25);
 }
 window.addEventListener('load', init);
@@ -225,7 +319,7 @@ function keypress(e) {
     turnouts[1].toggle();
   }
   if (e.key === ' ') {
-    // TODo Decouplers!
+    // TODO Decouplers!
   }
 }
 
@@ -250,7 +344,7 @@ function update() {
   } else if (locoActualSpeed > locoDesiredSpeed) {
     locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
   }
-  locomotive.setDistance(locomotive.getDistance() + locoActualSpeed);
+  locomotive.moveBy(locoActualSpeed);
 }
 
 function drive(direction) {
@@ -299,6 +393,12 @@ function reset(opt_key) {
     }
   }
   console.log(carOrder);
+
+  setHeadShuntOverflow(false);
+  // I don't think there's a need to reset the turnouts.
+  locoActualSpeed = 0;
+  locoDesiredSpeed = 0;
+  locomotive.moveTo(PATH_SEGMENTS[2], 1);
 }
 
 // Decompose the key into a sequence of digits.
@@ -370,83 +470,4 @@ function drawTrack(defId, transform) {
   node.setAttribute('transform', transform);
   document.getElementById('trackGroup').appendChild(node);
   return node;
-}
-
-// Given the state of the turnouts, return the current path.
-function getPath() {
-  return turnouts[0].state ? PATH_A : turnouts[1].state ? PATH_B : PATH_C;
-}
-
-// Calculate the length of a line or curve segment.
-function calculateLength(segment) {
-  var type = segment[0];
-  if (type === 'line') {
-    var deltaX = segment[3];
-    var deltaY = segment[4];
-    return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-  } else if (type === 'curve') {
-    var arc = Math.abs(segment[4]);
-    arc = arc / 180 * Math.PI;
-    return RADIUS * arc;
-  }
-  throw TypeError(type);
-}
-
-// Precalculate all the lengths and store as a property on each segment.
-for (var i = 0; i < PATH_SEGMENTS.length; i++) {
-  var segment = PATH_SEGMENTS[i];
-  segment.calculatedLength = calculateLength(segment);
-}
-
-//
-function calculateCoordinates(distance) {
-  distance += HEADSHUNT_OVERFLOW;
-  if (headshuntOpen) {
-    if (distance < 0) {
-      // Ran off the headshunt end.
-      return NaN;
-    }
-  } else {
-    if (distance < HEADSHUNT_OVERFLOW) {
-      // Ran off the headshunt end.
-      return NaN;
-    }
-  }
-  var path = getPath();
-  for (var i = 0; i < path.length; i++) {
-    var segment = PATH_SEGMENTS[path[i]];
-    if (distance > segment.calculatedLength) {
-      distance -= segment.calculatedLength;
-    } else {
-      return calculateCoordinatesForSegment(segment, distance);
-    }
-  }
-  // Ran over the buffers.
-  return NaN;
-}
-
-function calculateCoordinatesForSegment(segment, distance) {
-  var type = segment[0];
-  var fraction = distance / segment.calculatedLength;
-  if (type === 'line') {
-    var startX = segment[1];
-    var startY = segment[2];
-    var deltaX = segment[3] * fraction;
-    var deltaY = segment[4] * fraction;
-    return {
-      x: startX + deltaX,
-      y: startY + deltaY
-    };
-  } else if (type === 'curve') {
-    var centerX = segment[1];
-    var centerY = segment[2];
-    var startDegrees = segment[3];
-    var deltaDegrees = segment[4] * fraction;
-    var radians = (startDegrees + deltaDegrees) / 180 * Math.PI;
-    return {
-      x: centerX + Math.cos(radians) * RADIUS,
-      y: centerY + Math.sin(radians) * RADIUS
-    };
-  }
-  throw TypeError(type);
 }
