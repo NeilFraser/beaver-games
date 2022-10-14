@@ -45,8 +45,9 @@ var turnouts = [];
 var locomotive = null;
 var locoActualSpeed = 0;
 var locoDesiredSpeed = 0;
-var cars = [];
-
+// Array of all eight cars.
+var allCars = [];
+var trains = [];
 
 // Abstract class for a track segment.
 var AbstractSegment = function() {};
@@ -140,6 +141,7 @@ CurveSegment.prototype.calculateCoordinates = function(distance) {
   };
 };
 
+
 // Class for turnout.
 // `node` is the SVG group for the turnout.
 // `rootSegmentIndex` is the index of the track segment which connects to
@@ -194,6 +196,7 @@ var Vehicle = function(isLocomotive) {
   this.LENGTH = 14;
   this.WIDTH = 8;
   this.nextVehicle = null;
+  this.prevVehicle = null;
   this.textNode_ = null;
   // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
@@ -221,6 +224,9 @@ var Vehicle = function(isLocomotive) {
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
 
+  this.coupler = document.createElementNS(SVG_NS, 'line');
+  document.getElementById('couplerGroup').appendChild(this.coupler);
+
   this.segment_ = null;
   this.distance_ = 0;
 };
@@ -243,13 +249,32 @@ Vehicle.prototype.setNumber = function(number) {
   }
 };
 
-// Couple this locomotive or car to another car.  Forms a singly linked list.
-// Or to decouple, pass null.
+// Couple this locomotive or car to another car.  Forms a doubly linked list.
 Vehicle.prototype.couple = function(nextVehicle) {
-  this.nextVehicle = nextVehicle;
-  if (nextVehicle) {
-    nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+  if (this.nextVehicle || nextVehicle.prevVehicle) {
+    throw Error("Vehicle already coupled");
   }
+  this.nextVehicle = nextVehicle;
+  nextVehicle.prevVehicle = this;
+  nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+  var n = trains.indexOf(nextVehicle);
+  if (n === -1) throw Error("Vehicle wasn't a train")
+  trains.splice(n, 1);
+  this.coupler.style.visibility = 'visible';
+};
+
+// Decouple this locomotive or care from another car.
+// Ok to call if not already coupled (does nothing).
+Vehicle.prototype.uncouple = function() {
+  if (this.nextVehicle) {
+    if (nextVehicle.prevVehicle !== this) {
+      throw Error("nextVehicle wasn't connected to us");
+    }
+    nextVehicle.prevVehicle = null;
+    trains.push(this.nextVehicle);
+    this.nextVehicle = null;
+  }
+  this.coupler.style.visibility = 'hidden';
 };
 
 // Force move this vehicle to the specified location.  No checks.
@@ -274,13 +299,20 @@ Vehicle.prototype.moveBy = function(delta) {
 
   var xyFrontAxle = locFrontAxle[0].calculateCoordinates(locFrontAxle[1]);
   var xyBackAxle = locBackAxle[0].calculateCoordinates(locBackAxle[1]);
+  this.coupler.setAttribute('x1', xyBackAxle.x);
+  this.coupler.setAttribute('y1', xyBackAxle.y);
+  if (this.prevVehicle) {
+    this.prevVehicle.coupler.setAttribute('x2', xyFrontAxle.x);
+    this.prevVehicle.coupler.setAttribute('y2', xyFrontAxle.y);
+  }
   var xyMid = {
     x: (xyBackAxle.x + xyFrontAxle.x) / 2,
     y: (xyBackAxle.y + xyFrontAxle.y) / 2
   };
   var angle = -Math.atan2(xyBackAxle.x - xyFrontAxle.x, xyBackAxle.y - xyFrontAxle.y);
   angle = angle / Math.PI * 180;
-  this.node.setAttribute('transform', 'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
+  this.node.setAttribute('transform',
+      'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
       ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
 };
 
@@ -370,7 +402,8 @@ function init() {
   locomotive = new Vehicle(true);
   locomotive.setColour(LOCO_COLOUR);
   for (var i = 0; i < CAR_COUNT; i++) {
-    cars[i] = new Vehicle(false);
+    allCars[i] = new Vehicle(false);
+    trains[i] = allCars[i];
   }
 
   reset(location.hash.substring(1));
@@ -468,9 +501,9 @@ function reset(opt_key) {
   // I don't think there's a need to reset the turnouts.
 
   // Uncouple everything.
-  locomotive.couple(null);
+  locomotive.uncouple();
   for (var n = 0; n < CAR_COUNT; n++) {
-    cars[n].couple(null);
+    allCars[n].uncouple();
   }
 
   // Place the locomotive.
@@ -494,13 +527,13 @@ function reset(opt_key) {
     for (var j = 0; j < carGroup[2]; j++) {
       if (j === 0) {
         // First car in group is placed.
-        cars[n].moveTo(carGroup[0], carGroup[1]);
+        allCars[n].moveTo(carGroup[0], carGroup[1]);
       } else {
         // Each subsequent car is coupled to the previous car.
-        cars[n - 1].couple(cars[n]);
+        allCars[n - 1].couple(allCars[n]);
       }
-      cars[n].setColour(carOrder[n] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[n]]);
-      cars[n].setNumber(carOrder[n] === undefined ? undefined : carOrder[n] + 1);
+      allCars[n].setColour(carOrder[n] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[n]]);
+      allCars[n].setNumber(carOrder[n] === undefined ? undefined : carOrder[n] + 1);
       n++;
       if (n >= CAR_COUNT) {
         break groupLoop;
@@ -544,6 +577,7 @@ function factorial(n) {
 
 // Every few miliseconds update the the animation.  Runs continuously.
 function update() {
+  // Accelerate/decelerate towards the desired speed.
   if (locoActualSpeed < locoDesiredSpeed) {
     locoActualSpeed = Math.min(locoActualSpeed + ACCELERATION, locoDesiredSpeed);
   } else if (locoActualSpeed > locoDesiredSpeed) {
