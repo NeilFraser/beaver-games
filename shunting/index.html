@@ -16,6 +16,34 @@
         padding: 0;
         position: relative;
       }
+      #keyTable>tbody>tr>td:first-child {
+        text-align: right;
+        padding-right: 1em;
+      }
+      .goalCar {
+        color: #fff;
+        text-align: center;
+        margin: 5px 3em;
+        padding: 2ex;
+        border-radius: 5px;
+      }
+      #goalCars>div:last-child {
+        border-radius: 5px 5px 15px 15px;
+      }
+      #leftButton, #rightButton {
+        background-color: #FE2;
+        position: absolute;
+        font-size: x-large;
+        bottom: 1ex;
+        border-radius: 5px;
+      }
+      #leftButton {
+        left: 40%;
+      }
+      #rightButton {
+        right: 40%;
+      }
+      /* SVG elements */
       .sleeper {
         fill: #aaa;
       }
@@ -23,10 +51,10 @@
         fill: #666;
       }
       .buffer {
-        fill: #d00;
+        fill: #D02E2B;
       }
       .control {
-        fill: #ff0;
+        fill: #FE2;
       }
       .controlBG {
         fill: #666;
@@ -41,30 +69,10 @@
         stroke: #00f;
         stroke-width: 0.1;
       }
-      .goalCar {
-        color: #fff;
-        text-align: center;
-        margin: 5px 3em;
-        padding: 2ex;
-        border-radius: 5px;
-      }
-      #keyTable>tbody>tr>td:first-child {
-        text-align: right;
-        padding-right: 1em;
-      }
-      #goalCars>div:last-child {
-        border-radius: 5px 5px 15px 15px;
-      }
-      #leftButton, #rightButton {
-        position: absolute;
-        font-size: x-large;
-        bottom: 1ex;
-      }
-      #leftButton {
-        left: 40%;
-      }
-      #rightButton {
-        right: 40%;
+      .carNumber {
+        fill: #fff;
+        font-size: 5px;
+        user-select: none;
       }
     </style>
     <script src="../common/utils.js"></script>
@@ -177,5 +185,7 @@
         </tr>
       </tbody>
     </table>
+
+    <audio id="click" src="click.mp3"></audio>
   </body>
 </html>

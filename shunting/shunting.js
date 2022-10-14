@@ -18,21 +18,18 @@ var RADIUS = 40;
 // Enough room for a 9 car train to drive offscreen.
 var HEADSHUNT_OVERFLOW = 150;
 
-// Colours for each car in the train.
-// Should have at least as many colours as TRAIN_LENGTH.
-var COLOURS = [
-  '#ccb129',  /* HSV: 50, 80, 80 */
-  '#29cccc',  /* HSV: 180, 80, 80 */
-  '#cc29cc',  /* HSV: 300, 80, 80 */
-  '#cc7a29',  /* HSV: 30, 80, 80 */
-  '#295fcc',  /* HSV: 220, 80, 80 */
-  '#29cc29',  /* HSV: 120, 80, 80 */
-  '#cc2929',  /* HSV: 0, 80, 80 */
-];
 // Locomotive colour.
-var LOCO_COLOUR = '#444';
+var LOCO_COLOUR = '#178F47';
+// Car colour.
+var CAR_COLOURS = [
+  '#7B9AFF',  /* HSV: 226, 52, 100 */
+  '#6E90FF',  /* HSV: 226, 57, 100 */
+  '#6186FF',  /* HSV: 226, 62, 100 */
+  '#547DFF',  /* HSV: 226, 67, 100 */
+  '#4873FF'   /* HSV: 226, 72, 100 */
+];
 // Colour of extra cars not part of the train.
-var SKIP_COLOUR = '#999';
+var SKIP_COLOUR = '#2E5FFF';  /* HSV: 226, 82, 100 */
 
 // Number of cars required in final train (not including locomotive).
 var TRAIN_LENGTH = 5;
@@ -156,6 +153,7 @@ Turnout.prototype.set = function(state) {
 };
 
 Turnout.prototype.toggle = function() {
+  document.getElementById('click').play();
   this.set(!this.state);
 };
 
@@ -163,6 +161,7 @@ Turnout.prototype.toggle = function() {
 var Vehicle = function(isLocomotive) {
   this.LENGTH = 14;
   this.WIDTH = 8;
+  this.textNode_ = null;
   // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
   var g = document.createElementNS(SVG_NS, 'g');
@@ -180,6 +179,11 @@ var Vehicle = function(isLocomotive) {
     head.setAttribute('rx', 3);
   } else {
     rect.setAttribute('height', this.LENGTH);
+    var text = document.createElementNS(SVG_NS, 'text');
+    text.setAttribute('class', 'carNumber');
+    text.setAttribute('transform', 'translate(5.4, 5.3) rotate(180)');
+    this.textNode_ = text;
+    g.appendChild(text);
   }
   g.style.display = 'none';
   document.getElementById('trainGroup').appendChild(g);
@@ -194,6 +198,16 @@ Vehicle.prototype.setColour = function(colour) {
     this.node.childNodes[i].setAttribute('fill', colour);
   }
   this.node.style.display = 'block';
+};
+
+Vehicle.prototype.setNumber = function(number) {
+  var text = this.textNode_;
+  while (text.firstChild) {
+    text.removeChild(text.firstChild);
+  }
+  if (number !== undefined) {
+    text.appendChild(document.createTextNode(number));
+  }
 };
 
 // Force move the vehicle to the specified location.  No checks.
@@ -234,7 +248,7 @@ Vehicle.prototype.moveBy = function(delta) {
 // curve: centerX, centerY, startDegrees, deltaDegrees
 var PATH_SEGMENTS = [
   new StraightSegment(8, 102 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0:  Headshunt overflow
-  new StraightSegment(8, 102, 0, -2 * 16),              // 1:  Headshunt straight
+  new StraightSegment(8, 102, 0, -2 * 16 + 1),          // 1:  Headshunt straight
   new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
   new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
   new CurveSegment(70.627, 48.372, 225, 45),            // 4:  Siding A curve
@@ -374,14 +388,9 @@ function reset(opt_key) {
     location.hash = key;
   }
 
-  // Seed the pseudo-random generator with the key.
-  pseudoRandom(key);
-  // The colours don't matter to gameplay at all, but mix them up for variety.
-  var randomColours = COLOURS.slice();
-  shuffle(randomColours);
   var goalCars = document.getElementsByClassName('goalCar');
   for (var i = 0; i < goalCars.length - 1; i++) {
-    goalCars[i].style.backgroundColor = randomColours[i];
+    goalCars[i].style.backgroundColor = CAR_COLOURS[TRAIN_LENGTH - i - 1];
   }
   goalCars[i].style.backgroundColor = LOCO_COLOUR;
 
@@ -429,8 +438,8 @@ function reset(opt_key) {
   ];
   for (var i = 0; i < cars.length; i++) {
     cars[i].moveTo(carLocations[i][0], carLocations[i][1]);
-    cars[i].setColour(carOrder[i] === undefined ?
-        SKIP_COLOUR : randomColours[carOrder[i]]);
+    cars[i].setColour(carOrder[i] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[i]]);
+    cars[i].setNumber(carOrder[i] === undefined ? undefined : carOrder[i] + 1);
   }
 }
 
@@ -450,34 +459,6 @@ function decomposeKey(key) {
   }
   return digits;
 }
-
-// Randomize the order of an array in place.
-// Use pseudo-random generator instead of Math.random.
-function shuffle(arr) {
-  for (var i = arr.length - 1; i > 0; i--) {
-    // Choose a random array index in [0, i] (inclusive with i).
-    var j = Math.floor(pseudoRandom() * (i + 1));
-    var tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
-}
-
-// Returns a pseudo-random number between 0 and 1.
-// If opt_seed is provided, reset the algorithm to that seed.
-// Equivalent to Math.random, but deterministic.
-function pseudoRandom(opt_seed) {
-  if (opt_seed !== undefined) {
-    pseudoRandom.previous = 671581058 + opt_seed;
-  }
-  pseudoRandom.previous = (pseudoRandom.previous * pseudoRandom.PRIME1 / 10000) >>> 0;
-  var rand = (pseudoRandom.previous * pseudoRandom.PRIME2 / 10000) >>> 0;
-  return rand / pseudoRandom.MAX;
-}
-pseudoRandom.MAX = 4294967296;
-pseudoRandom.PRIME1 = 3439588987;
-pseudoRandom.PRIME2 = 1264941673;
-pseudoRandom.previous = 671581058;  // Randomly chosen seed.
 
 // Return the factorial of n.
 function factorial(n) {
