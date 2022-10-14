@@ -47,6 +47,10 @@ var ACCELERATION = 0.05;
 // Array of both turnouts.
 var turnouts = [];
 
+var locomotive = null;
+var locoActualSpeed = 0;
+var locoDesiredSpeed = 0;
+var cars = [];
 
 var AbstractSegment = function() {};
 
@@ -156,17 +160,17 @@ Turnout.prototype.toggle = function() {
 };
 
 // Vehicle object.
-var Vehicle = function(colour) {
+var Vehicle = function(isLocomotive) {
   this.LENGTH = 14;
   this.WIDTH = 8;
   // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
   var g = document.createElementNS(SVG_NS, 'g');
   var rect = document.createElementNS(SVG_NS, 'rect');
+  rect.setAttribute('rx', 1);
   rect.setAttribute('width', this.WIDTH);
   g.appendChild(rect);
-  rect.setAttribute('fill', colour);
-  if (colour === LOCO_COLOUR) {
+  if (isLocomotive) {
     rect.setAttribute('height', this.LENGTH - 3);
     rect.setAttribute('y', 3);
     var head = document.createElementNS(SVG_NS, 'rect');
@@ -174,10 +178,10 @@ var Vehicle = function(colour) {
     head.setAttribute('height', 6);
     head.setAttribute('width', this.WIDTH);
     head.setAttribute('rx', 3);
-    head.setAttribute('fill', colour);
   } else {
     rect.setAttribute('height', this.LENGTH);
   }
+  g.style.display = 'none';
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
 
@@ -185,11 +189,19 @@ var Vehicle = function(colour) {
   this.distance_ = 0;
 };
 
+Vehicle.prototype.setColour = function(colour) {
+  for (var i = 0; i < this.node.childNodes.length; i++) {
+    this.node.childNodes[i].setAttribute('fill', colour);
+  }
+  this.node.style.display = 'block';
+};
+
 // Force move the vehicle to the specified location.  No checks.
 // Location is defined by the back axle.
 Vehicle.prototype.moveTo = function(segment, distance) {
   this.segment_ = segment;
   this.distance_ = distance;
+  this.moveBy(0);
 };
 
 Vehicle.prototype.moveBy = function(delta) {
@@ -226,13 +238,13 @@ var PATH_SEGMENTS = [
   new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
   new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
   new CurveSegment(70.627, 48.372, 225, 45),            // 4:  Siding A curve
-  new StraightSegment(70.627, 8.372, 3 * 16, 0),    // 5:  Siding A straight
+  new StraightSegment(70.627, 8.372, 3 * 16, 0),        // 5:  Siding A straight
   new CurveSegment(48, 71, 225, 45),                    // 6:  Turnout #1 curve
   new StraightSegment(48, 31, 2 * 16, 0),               // 7:  Turnout #2 straight
-  new StraightSegment(48 + 2 * 16, 31, 3 * 16, 0),  // 8:  Siding B
+  new StraightSegment(48 + 2 * 16, 31, 3 * 16, 0),      // 8:  Siding B
   new CurveSegment(48, 71, 270, 45),                    // 9:  Turnout #2 curve
   new CurveSegment(104.568, 14.431, 135, -45),          // 10: Siding C curve
-  new StraightSegment(104.568, 54.431, 16, 0)       // 11: Siding C straight
+  new StraightSegment(104.568, 54.431, 16, 0)           // 11: Siding C straight
 ];
 // Link the segments together.
 function bilateralLink(i, j) {
@@ -297,7 +309,10 @@ function init() {
     div.appendChild(document.createTextNode(i || '\xa0'));
     document.getElementById('goalCars').appendChild(div);
   }
-  locomotive = new Vehicle(LOCO_COLOUR);
+  locomotive = new Vehicle(true);
+  for (var i = 0; i < CAR_COUNT; i++) {
+    cars[i] = new Vehicle(false);
+  }
   reset(location.hash.substring(1));
 
   setInterval(update, 25);
@@ -306,10 +321,6 @@ window.addEventListener('load', init);
 window.addEventListener('keypress', keypress);
 window.addEventListener('keydown', keydown);
 window.addEventListener('keyup', keyup);
-
-var locomotive = null;
-var locoActualSpeed = 0;
-var locoDesiredSpeed = 0;
 
 function keypress(e) {
   if (e.key === '1') {
@@ -344,7 +355,9 @@ function update() {
   } else if (locoActualSpeed > locoDesiredSpeed) {
     locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
   }
-  locomotive.moveBy(locoActualSpeed);
+  if (locoActualSpeed) {
+    locomotive.moveBy(locoActualSpeed);
+  }
 }
 
 function drive(direction) {
@@ -366,11 +379,11 @@ function reset(opt_key) {
   // The colours don't matter to gameplay at all, but mix them up for variety.
   var randomColours = COLOURS.slice();
   shuffle(randomColours);
-  var cars = document.getElementsByClassName('goalCar');
-  for (var i = 0; i < cars.length - 1; i++) {
-    cars[i].style.backgroundColor = randomColours[i];
+  var goalCars = document.getElementsByClassName('goalCar');
+  for (var i = 0; i < goalCars.length - 1; i++) {
+    goalCars[i].style.backgroundColor = randomColours[i];
   }
-  cars[i].style.backgroundColor = LOCO_COLOUR;
+  goalCars[i].style.backgroundColor = LOCO_COLOUR;
 
   // Decompose the key into car selection.
   key--;  // Decrement from 1-based to 0-based.
@@ -399,6 +412,26 @@ function reset(opt_key) {
   locoActualSpeed = 0;
   locoDesiredSpeed = 0;
   locomotive.moveTo(PATH_SEGMENTS[2], 1);
+  locomotive.setColour(LOCO_COLOUR);
+  var offset = 15;
+  var carLocations = [
+    [PATH_SEGMENTS[4], 0 + offset],
+    [PATH_SEGMENTS[4], 16 + offset],
+    [PATH_SEGMENTS[5], 0 + offset],
+    [PATH_SEGMENTS[5], 16 + offset],
+    [PATH_SEGMENTS[5], 32 + offset],
+    [PATH_SEGMENTS[8], 0 + offset],
+    [PATH_SEGMENTS[8], 16 + offset],
+    [PATH_SEGMENTS[8], 32 + offset],
+    [PATH_SEGMENTS[10], 0 + offset],
+    [PATH_SEGMENTS[10], 16 + offset],
+    [PATH_SEGMENTS[11], 0 + offset]
+  ];
+  for (var i = 0; i < cars.length; i++) {
+    cars[i].moveTo(carLocations[i][0], carLocations[i][1]);
+    cars[i].setColour(carOrder[i] === undefined ?
+        SKIP_COLOUR : randomColours[carOrder[i]]);
+  }
 }
 
 // Decompose the key into a sequence of digits.
