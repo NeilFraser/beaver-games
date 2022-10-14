@@ -56,7 +56,10 @@ var AbstractSegment = function() {};
 AbstractSegment.prototype.nextSegment = null;
 
 // The previous segment (if any) in the direction of the headshunt.
-AbstractSegment.prototype.previousSegment = null;
+AbstractSegment.prototype.prevSegment = null;
+
+// Reference to the turnout this track segment belongs to (if any).
+AbstractSegment.prototype.turnout = null;
 
 // Starting on this track segment, and the specified 'startDistance' (measured
 // from the start of this segment), walk 'delta' (negative is towards the
@@ -68,9 +71,9 @@ AbstractSegment.prototype.previousSegment = null;
 AbstractSegment.prototype.walk = function(startDistance, delta) {
   var endDistance = startDistance + delta;
   if (endDistance < 0) {
-    if (this.previousSegment) {
-      return this.previousSegment.walk(
-          startDistance + this.previousSegment.length, delta);
+    if (this.prevSegment) {
+      return this.prevSegment.walk(
+          startDistance + this.prevSegment.length, delta);
     }
     // End of track (headshunt or turnout).
     return [this, 0];
@@ -155,6 +158,8 @@ var Turnout = function(node,
   this.rootSegment_ = PATH_SEGMENTS[rootSegmentIndex];
   this.straightSegment_ = PATH_SEGMENTS[straightSegmentIndex];
   this.curveSegment_ = PATH_SEGMENTS[curveSegmentIndex];
+  this.straightSegment_.turnout = this;
+  this.curveSegment_.turnout = this;
   // Get references to key SVG nodes used in the UI for switching.
   this.pointStraight_ = node.getElementsByClassName('pointStraight')[0];
   this.pointCurve_ = node.getElementsByClassName('pointCurve')[0];
@@ -162,7 +167,8 @@ var Turnout = function(node,
 
   var clickTarget = node.getElementsByClassName('clickTarget')[0];
   clickTarget.addEventListener('click', this.toggle.bind(this));
-
+  // Is there a locomotive or car on this turnout?
+  this.hasVehicle = false;
   this.set_(true);
 };
 
@@ -186,8 +192,10 @@ Turnout.prototype.set_ = function(state) {
 
 // Toggle this turnout's direction.  Plays sound.
 Turnout.prototype.toggle = function() {
-  document.getElementById('click').play();
-  this.set_(!this.state);
+  if (!this.hasVehicle) {
+    document.getElementById('click').play();
+    this.set_(!this.state);
+  }
 };
 
 
@@ -293,9 +301,18 @@ Vehicle.prototype.moveBy = function(delta) {
   } else {  // Moving forwards (towards the headshunt).
     var locFrontAxle = this.segment_.walk(this.distance_ - 2 * this.AXLE_DISTANCE, delta);
     var locBackAxle = locFrontAxle[0].walk(locFrontAxle[1], 2 * this.AXLE_DISTANCE);
+    var backSegment = locBackAxle[0];
+    if (!this.prevVehicle && backSegment.turnout &&
+        backSegment.prevSegment.nextSegment !== backSegment) {
+      // We are a locomotive running through a turnout switched the wrong way.
+      backSegment.turnout.toggle();
+    }
   }
   this.segment_ = locBackAxle[0];
   this.distance_ = locBackAxle[1];
+  if (this.segment_.turnout) {
+    this.segment_.turnout.hasVehicle = true;
+  }
 
   var xyFrontAxle = locFrontAxle[0].calculateCoordinates(locFrontAxle[1]);
   var xyBackAxle = locBackAxle[0].calculateCoordinates(locBackAxle[1]);
@@ -314,6 +331,9 @@ Vehicle.prototype.moveBy = function(delta) {
   this.node.setAttribute('transform',
       'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
       ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
+  if (this.nextVehicle) {
+    this.nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+  }
 };
 
 
@@ -346,7 +366,7 @@ function init() {
   // Forms a doubly linked list.
   function bilateralLink(i, j) {
     PATH_SEGMENTS[i].nextSegment = PATH_SEGMENTS[j];
-    PATH_SEGMENTS[j].previousSegment = PATH_SEGMENTS[i];
+    PATH_SEGMENTS[j].prevSegment = PATH_SEGMENTS[i];
   }
   bilateralLink(0, 1);
   bilateralLink(1, 2);
@@ -544,7 +564,7 @@ function reset(opt_key) {
 
 // Set whether the train may enter the headshut's offscreen overflow section.
 function setHeadShuntOverflow(open) {
-  PATH_SEGMENTS[1].previousSegment = open ? PATH_SEGMENTS[0] : null;
+  PATH_SEGMENTS[1].prevSegment = open ? PATH_SEGMENTS[0] : null;
 }
 
 // Decompose the key into a sequence of digits.
@@ -584,6 +604,9 @@ function update() {
     locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
   }
   if (locoActualSpeed) {
+    for (var i = 0; i < turnouts.length; i++) {
+      turnouts[i].hasVehicle = false;
+    }
     locomotive.moveBy(locoActualSpeed);
   }
 }
