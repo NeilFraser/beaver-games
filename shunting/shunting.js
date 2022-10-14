@@ -15,12 +15,10 @@ var SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Standard Lego curve radius.
 var RADIUS = 40;
-// Enough room for a 9 car train to drive offscreen.
-var HEADSHUNT_OVERFLOW = 150;
 
-// Locomotive colour.
+// Locomotive colour (green).
 var LOCO_COLOUR = '#178F47';
-// Car colour.
+// Car colour (light blue trending to dark blue).
 var CAR_COLOURS = [
   '#7B9AFF',  /* HSV: 226, 52, 100 */
   '#6E90FF',  /* HSV: 226, 57, 100 */
@@ -28,7 +26,7 @@ var CAR_COLOURS = [
   '#547DFF',  /* HSV: 226, 67, 100 */
   '#4873FF'   /* HSV: 226, 72, 100 */
 ];
-// Colour of extra cars not part of the train.
+// Colour of extra cars not part of the train (darkest blue).
 var SKIP_COLOUR = '#2E5FFF';  /* HSV: 226, 82, 100 */
 
 // Number of cars required in final train (not including locomotive).
@@ -49,12 +47,23 @@ var locoActualSpeed = 0;
 var locoDesiredSpeed = 0;
 var cars = [];
 
+
+// Abstract class for a track segment.
 var AbstractSegment = function() {};
 
+// The next segment (if any) in the direction of the buffers.
 AbstractSegment.prototype.nextSegment = null;
 
+// The previous segment (if any) in the direction of the headshunt.
 AbstractSegment.prototype.previousSegment = null;
 
+// Starting on this track segment, and the specified 'startDistance' (measured
+// from the start of this segment), walk 'delta' (negative is towards the
+// headshunt, positive is towards the buffers).
+// Return a location tuple composed of the track segment and distance
+// (measured from the start of that segment).
+// If the walk exceeds the length of the track (e.g. hitting a buffer), return
+// the location of the end of the track.
 AbstractSegment.prototype.walk = function(startDistance, delta) {
   var endDistance = startDistance + delta;
   if (endDistance < 0) {
@@ -63,7 +72,6 @@ AbstractSegment.prototype.walk = function(startDistance, delta) {
           startDistance + this.previousSegment.length, delta);
     }
     // End of track (headshunt or turnout).
-    locoActualSpeed = 0;
     return [this, 0];
   }
   if (endDistance > this.length) {
@@ -71,17 +79,20 @@ AbstractSegment.prototype.walk = function(startDistance, delta) {
       return this.nextSegment.walk(startDistance - this.length, delta);
     }
     // End of track (buffer).
-    locoActualSpeed = 0;
     return [this, this.length];
   }
   return [this, endDistance];
 };
 
+// Calculate the X/Y SVG coordinates of a point 'distance' down this segment.
 AbstractSegment.prototype.calculateCoordinates = function(distance) {
   throw Error('Implemented by subclass');
 };
 
 
+// Class for a straight segment of track.
+// startX/Y are the SVG coordinates of the bottom end of the track.
+// deltaX/Y is the relative distance from startX/Y to the top end of the track.
 var StraightSegment = function(startX, startY, deltaX, deltaY) {
   this.startX = startX;
   this.startY = startY;
@@ -91,6 +102,7 @@ var StraightSegment = function(startX, startY, deltaX, deltaY) {
 };
 StraightSegment.prototype = new AbstractSegment();
 
+// Calculate the X/Y SVG coordinates of a point 'distance' down this segment.
 StraightSegment.prototype.calculateCoordinates = function(distance) {
   var fraction = distance / this.length;
   return {
@@ -100,6 +112,12 @@ StraightSegment.prototype.calculateCoordinates = function(distance) {
 };
 
 
+// Class for a curved segment of track.
+// centerX/Y are the SVG coordinates of the center of the curve.
+// startDegrees is the bottom end of the track.
+// 0: East, 90: South, 180: West, 270 North
+// deltaDegrees is the relative arc (positive is clockwise) from startDegrees
+// to the top end of the track.
 var CurveSegment = function(centerX, centerY, startDegrees, deltaDegrees) {
   this.centerX = centerX;
   this.centerY = centerY;
@@ -111,6 +129,7 @@ var CurveSegment = function(centerX, centerY, startDegrees, deltaDegrees) {
 };
 CurveSegment.prototype = new AbstractSegment();
 
+// Calculate the X/Y SVG coordinates of a point 'distance' down this segment.
 CurveSegment.prototype.calculateCoordinates = function(distance) {
   var fraction = distance / this.length;
   var arc = (this.startDegrees + this.deltaDegrees * fraction);
@@ -121,46 +140,60 @@ CurveSegment.prototype.calculateCoordinates = function(distance) {
   };
 };
 
-// Turnout object.
+// Class for turnout.
+// `node` is the SVG group for the turnout.
+// `rootSegmentIndex` is the index of the track segment which connects to
+// the root of this turnout.
+// `straightSegmentIndex` is the index of the track segment forming
+// the straight section of this turnout.
+// `curveSegmentIndex` is the index of the track segment forming
+// the curved section of this turnout.
 var Turnout = function(node,
     rootSegmentIndex, straightSegmentIndex, curveSegmentIndex) {
-  // Get references to key nodes used in switching.
-  this.pointStraight_ = node.getElementsByClassName('pointStraight')[0];
-  this.pointCurve_ = node.getElementsByClassName('pointCurve')[0];
-  this.control_ = node.getElementsByClassName('control')[0];
-  var clickTarget = node.getElementsByClassName('clickTarget')[0];
-  clickTarget.addEventListener('click', this.toggle.bind(this));
   this.rootSegment_ = PATH_SEGMENTS[rootSegmentIndex];
   this.straightSegment_ = PATH_SEGMENTS[straightSegmentIndex];
   this.curveSegment_ = PATH_SEGMENTS[curveSegmentIndex];
-  this.set(true);
+  // Get references to key SVG nodes used in the UI for switching.
+  this.pointStraight_ = node.getElementsByClassName('pointStraight')[0];
+  this.pointCurve_ = node.getElementsByClassName('pointCurve')[0];
+  this.control_ = node.getElementsByClassName('control')[0];
+
+  var clickTarget = node.getElementsByClassName('clickTarget')[0];
+  clickTarget.addEventListener('click', this.toggle.bind(this));
+
+  this.set_(true);
 };
 
-// True is straight, false is curve.
-Turnout.prototype.set = function(state) {
+// Set the direction of this turnout.  True is straight, false is curve.
+Turnout.prototype.set_ = function(state) {
   this.state = state;
+  // Set the UI.
   if (state) {
     this.control_.setAttribute('cx', 9);
     this.pointStraight_.setAttribute('d', 'M 6,0 H 7 V 32 H 6 Z');
     this.pointCurve_.setAttribute('d', 'M 2.5,30.5 C 2.401,27.119 2.524,22.871 2.961,19.163 5.016,12.594 8.637,6.551 13.594,1.594 l 0.707,0.707 C 9.449,7.163 5.904,13.127 3.898,19.63 3.231,22.843 3.003,27.002 3,30.5 Z');
-    this.rootSegment_.nextSegment = this.straightSegment_;
   } else {
     this.control_.setAttribute('cx', 11);
     this.pointStraight_.setAttribute('d', 'M 6,0 H 7 L 7,20 5.5,30.5 H 5 L 6,20 Z');
     this.pointCurve_.setAttribute('d', 'M 1,32 C 1,20.596 5.53,9.658 13.594,1.594 l 0.707,0.707 C 6.49,10.128 2.066,20.811 2,32 Z');
-    this.rootSegment_.nextSegment = this.curveSegment_;
   }
+  // Relink the track segments.
+  this.rootSegment_.nextSegment =
+      state ? this.straightSegment_ : this.curveSegment_;
 };
 
+// Toggle this turnout's direction.  Plays sound.
 Turnout.prototype.toggle = function() {
   document.getElementById('click').play();
-  this.set(!this.state);
+  this.set_(!this.state);
 };
 
-// Vehicle object.
+
+// Class for a vehicle (either a locomotive or a car).
 var Vehicle = function(isLocomotive) {
   this.LENGTH = 14;
   this.WIDTH = 8;
+  this.nextVehicle = null;
   this.textNode_ = null;
   // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
@@ -185,7 +218,6 @@ var Vehicle = function(isLocomotive) {
     this.textNode_ = text;
     g.appendChild(text);
   }
-  g.style.display = 'none';
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
 
@@ -193,13 +225,14 @@ var Vehicle = function(isLocomotive) {
   this.distance_ = 0;
 };
 
+// Change the colour of this vehicle.  Takes a CSS colour.
 Vehicle.prototype.setColour = function(colour) {
   for (var i = 0; i < this.node.childNodes.length; i++) {
     this.node.childNodes[i].setAttribute('fill', colour);
   }
-  this.node.style.display = 'block';
 };
 
+// Write a number on the top of this car (generally 1-5) or undefined for none.
 Vehicle.prototype.setNumber = function(number) {
   var text = this.textNode_;
   while (text.firstChild) {
@@ -210,7 +243,16 @@ Vehicle.prototype.setNumber = function(number) {
   }
 };
 
-// Force move the vehicle to the specified location.  No checks.
+// Couple this locomotive or car to another car.  Forms a singly linked list.
+// Or to decouple, pass null.
+Vehicle.prototype.couple = function(nextVehicle) {
+  this.nextVehicle = nextVehicle;
+  if (nextVehicle) {
+    nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+  }
+};
+
+// Force move this vehicle to the specified location.  No checks.
 // Location is defined by the back axle.
 Vehicle.prototype.moveTo = function(segment, distance) {
   this.segment_ = segment;
@@ -218,6 +260,7 @@ Vehicle.prototype.moveTo = function(segment, distance) {
   this.moveBy(0);
 };
 
+// Move this vehicle up (positive) or down (negative) the track by `delta`.
 Vehicle.prototype.moveBy = function(delta) {
   if (delta >= 0) {  // Moving backwards (towards the buffers).
     var locBackAxle = this.segment_.walk(this.distance_, delta);
@@ -239,15 +282,17 @@ Vehicle.prototype.moveBy = function(delta) {
   angle = angle / Math.PI * 180;
   this.node.setAttribute('transform', 'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
       ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
-  return xyMid;
 };
 
+
+// Enough room for a 10 car train to drive offscreen.
+var HEADSHUNT_OVERFLOW = 10 * 16;
 
 // Coordinates of each section of track.
 // straight: startX, startY, deltaX, deltaY
 // curve: centerX, centerY, startDegrees, deltaDegrees
 var PATH_SEGMENTS = [
-  new StraightSegment(8, 102 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0:  Headshunt overflow
+  new StraightSegment(8, 102 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0: Headshunt overflow
   new StraightSegment(8, 102, 0, -2 * 16 + 1),          // 1:  Headshunt straight
   new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
   new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
@@ -260,32 +305,28 @@ var PATH_SEGMENTS = [
   new CurveSegment(104.568, 14.431, 135, -45),          // 10: Siding C curve
   new StraightSegment(104.568, 54.431, 16, 0)           // 11: Siding C straight
 ];
-// Link the segments together.
-function bilateralLink(i, j) {
-  PATH_SEGMENTS[i].nextSegment = PATH_SEGMENTS[j];
-  PATH_SEGMENTS[j].previousSegment = PATH_SEGMENTS[i];
-}
-bilateralLink(0, 1);
-bilateralLink(1, 2);
-bilateralLink(2, 3);
-bilateralLink(3, 4);
-bilateralLink(4, 5);
-bilateralLink(2, 6);  // Clobbers 2->3, leaves 3->2.
-bilateralLink(6, 7);
-bilateralLink(7, 8);
-bilateralLink(6, 9);  // Clobbers 6->7, leaves 7->6.
-bilateralLink(9, 10);
-bilateralLink(10, 11);
 
-// Set whether the train may enter the headshut's offscreen overflow section.
-function setHeadShuntOverflow(open) {
-  PATH_SEGMENTS[1].previousSegment = open ? PATH_SEGMENTS[0] : null;
-}
-
-
-// On page load, initialize the event handlers and show the start button.
+// On page load, draw the track, initialize event handlers, and reset the game.
 function init() {
   fixLinks();
+
+  // Link two track segments to each other in both directions.
+  // Forms a doubly linked list.
+  function bilateralLink(i, j) {
+    PATH_SEGMENTS[i].nextSegment = PATH_SEGMENTS[j];
+    PATH_SEGMENTS[j].previousSegment = PATH_SEGMENTS[i];
+  }
+  bilateralLink(0, 1);
+  bilateralLink(1, 2);
+  bilateralLink(2, 3);
+  bilateralLink(3, 4);
+  bilateralLink(4, 5);
+  bilateralLink(2, 6);  // Clobbers 2->3, leaves 3->2.
+  bilateralLink(6, 7);
+  bilateralLink(7, 8);
+  bilateralLink(6, 9);  // Clobbers 6->7, leaves 7->6.
+  bilateralLink(9, 10);
+  bilateralLink(10, 11);
 
   drawTrack('straight', 'translate(4, 87)');
   drawTrack('straight', 'translate(4, 71)');
@@ -321,21 +362,43 @@ function init() {
     var div = document.createElement('div');
     div.className = 'goalCar';
     div.appendChild(document.createTextNode(i || '\xa0'));
+    div.style.backgroundColor = i ? CAR_COLOURS[i - 1] : LOCO_COLOUR;
     document.getElementById('goalCars').appendChild(div);
   }
+
+  // Create all the vehicles.
   locomotive = new Vehicle(true);
+  locomotive.setColour(LOCO_COLOUR);
   for (var i = 0; i < CAR_COUNT; i++) {
     cars[i] = new Vehicle(false);
   }
+
   reset(location.hash.substring(1));
+
+  window.addEventListener('keypress', keypress);
+  window.addEventListener('keydown', keydown);
+  window.addEventListener('keyup', keyup);
 
   setInterval(update, 25);
 }
 window.addEventListener('load', init);
-window.addEventListener('keypress', keypress);
-window.addEventListener('keydown', keydown);
-window.addEventListener('keyup', keyup);
 
+// Draw a track segment onto the display.  Return the 'use' or 'g' node.
+function drawTrack(defId, transform) {
+  if (defId === 'turnout') {
+    // Turnouts need to be cloned since they have a moving control.
+    var node = document.getElementById(defId).cloneNode(true);
+  } else {
+    // Other track segments can just be 'use' nodes.
+    var node = document.createElementNS(SVG_NS, 'use');
+    node.setAttribute('href', '#' + defId);
+  }
+  node.setAttribute('transform', transform);
+  document.getElementById('trackGroup').appendChild(node);
+  return node;
+}
+
+// Handle keystrokes for toggling turnouts or activating the decouplers.
 function keypress(e) {
   if (e.key === '1') {
     turnouts[0].toggle();
@@ -348,36 +411,28 @@ function keypress(e) {
   }
 }
 
+// Handle the start of key presses for driving forwads or backwards.
 function keydown(e) {
   if (e.key === 'ArrowRight') {
+    document.getElementById('rightButton').className = 'active';
     drive(1);
   }
   if (e.key === 'ArrowLeft') {
+    document.getElementById('leftButton').className = 'active';
     drive(-1);
   }
 }
 
+// Handle the end of key presses for driving forwads or backwards.
 function keyup(e) {
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    document.getElementById('rightButton').className = '';
+    document.getElementById('leftButton').className = '';
     drive(0);
   }
 }
 
-function update() {
-  if (locoActualSpeed < locoDesiredSpeed) {
-    locoActualSpeed = Math.min(locoActualSpeed + ACCELERATION, locoDesiredSpeed);
-  } else if (locoActualSpeed > locoDesiredSpeed) {
-    locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
-  }
-  if (locoActualSpeed) {
-    locomotive.moveBy(locoActualSpeed);
-  }
-}
-
-function drive(direction) {
-  locoDesiredSpeed = MAX_SPEED * Math.sign(direction);
-}
-
+// Clear the state of the current game (if any), and start a new random game.
 function reset(opt_key) {
   // Use the key in the URL hash, if there is one.  Otherwise make a new one.
   var hashKey = Number(opt_key);
@@ -387,12 +442,6 @@ function reset(opt_key) {
     var key = Math.floor(Math.random() * PERMUTATIONS) + 1;
     location.hash = key;
   }
-
-  var goalCars = document.getElementsByClassName('goalCar');
-  for (var i = 0; i < goalCars.length - 1; i++) {
-    goalCars[i].style.backgroundColor = CAR_COLOURS[TRAIN_LENGTH - i - 1];
-  }
-  goalCars[i].style.backgroundColor = LOCO_COLOUR;
 
   // Decompose the key into car selection.
   key--;  // Decrement from 1-based to 0-based.
@@ -414,33 +463,55 @@ function reset(opt_key) {
       }
     }
   }
-  console.log(carOrder);
 
   setHeadShuntOverflow(false);
   // I don't think there's a need to reset the turnouts.
+
+  // Uncouple everything.
+  locomotive.couple(null);
+  for (var n = 0; n < CAR_COUNT; n++) {
+    cars[n].couple(null);
+  }
+
+  // Place the locomotive.
   locoActualSpeed = 0;
   locoDesiredSpeed = 0;
   locomotive.moveTo(PATH_SEGMENTS[2], 1);
-  locomotive.setColour(LOCO_COLOUR);
-  var offset = 15;
-  var carLocations = [
-    [PATH_SEGMENTS[4], 0 + offset],
-    [PATH_SEGMENTS[4], 16 + offset],
-    [PATH_SEGMENTS[5], 0 + offset],
-    [PATH_SEGMENTS[5], 16 + offset],
-    [PATH_SEGMENTS[5], 32 + offset],
-    [PATH_SEGMENTS[8], 0 + offset],
-    [PATH_SEGMENTS[8], 16 + offset],
-    [PATH_SEGMENTS[8], 32 + offset],
-    [PATH_SEGMENTS[10], 0 + offset],
-    [PATH_SEGMENTS[10], 16 + offset],
-    [PATH_SEGMENTS[11], 0 + offset]
+
+  // Place the cars.
+  // Tuples defining groups of cars:
+  // * Track segment to locate the first car on.
+  // * Distance between track segment zero and rear axle.
+  // * Number of cars in group.
+  var carGroups = [
+    [PATH_SEGMENTS[4], 14, 5],
+    [PATH_SEGMENTS[8], 15, 3],
+    [PATH_SEGMENTS[10], 14, 3]
   ];
-  for (var i = 0; i < cars.length; i++) {
-    cars[i].moveTo(carLocations[i][0], carLocations[i][1]);
-    cars[i].setColour(carOrder[i] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[i]]);
-    cars[i].setNumber(carOrder[i] === undefined ? undefined : carOrder[i] + 1);
+  var n = 0;
+  groupLoop: for (var i = 0; i < carGroups.length; i++) {
+    var carGroup = carGroups[i];
+    for (var j = 0; j < carGroup[2]; j++) {
+      if (j === 0) {
+        // First car in group is placed.
+        cars[n].moveTo(carGroup[0], carGroup[1]);
+      } else {
+        // Each subsequent car is coupled to the previous car.
+        cars[n - 1].couple(cars[n]);
+      }
+      cars[n].setColour(carOrder[n] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[n]]);
+      cars[n].setNumber(carOrder[n] === undefined ? undefined : carOrder[n] + 1);
+      n++;
+      if (n >= CAR_COUNT) {
+        break groupLoop;
+      }
+    }
   }
+}
+
+// Set whether the train may enter the headshut's offscreen overflow section.
+function setHeadShuntOverflow(open) {
+  PATH_SEGMENTS[1].previousSegment = open ? PATH_SEGMENTS[0] : null;
 }
 
 // Decompose the key into a sequence of digits.
@@ -471,17 +542,22 @@ function factorial(n) {
   return f;
 }
 
-// Draw a track segment onto the display.  Return the 'use' or 'g' node.
-function drawTrack(defId, transform) {
-  if (defId === 'turnout') {
-    // Turnouts need to be cloned since they have a moving control.
-    var node = document.getElementById(defId).cloneNode(true);
-  } else {
-    // Other track segments can just be 'use' nodes.
-    var node = document.createElementNS(SVG_NS, 'use');
-    node.setAttribute('href', '#' +  defId);
+// Every few miliseconds update the the animation.  Runs continuously.
+function update() {
+  if (locoActualSpeed < locoDesiredSpeed) {
+    locoActualSpeed = Math.min(locoActualSpeed + ACCELERATION, locoDesiredSpeed);
+  } else if (locoActualSpeed > locoDesiredSpeed) {
+    locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
   }
-  node.setAttribute('transform', transform);
-  document.getElementById('trackGroup').appendChild(node);
-  return node;
+  if (locoActualSpeed) {
+    locomotive.moveBy(locoActualSpeed);
+  }
+}
+
+// Control the locomotive's speed.
+// 0 is stop.
+// 1 is backwards (up/right towards the buffers).
+// -1 is forwards (down/left towards the headshunt).
+function drive(direction) {
+  locoDesiredSpeed = MAX_SPEED * Math.sign(direction);
 }

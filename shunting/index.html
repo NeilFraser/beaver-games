@@ -30,12 +30,17 @@
       #goalCars>div:last-child {
         border-radius: 5px 5px 15px 15px;
       }
+      button.active, #leftButton:active, #rightButton:active {
+        background-color: #Fff622 !important;
+        border-style: inset !important;
+      }
       #leftButton, #rightButton {
         background-color: #FE2;
         position: absolute;
         font-size: x-large;
         bottom: 1ex;
         border-radius: 5px;
+        border-style: outset;
       }
       #leftButton {
         left: 40%;
@@ -43,6 +48,7 @@
       #rightButton {
         right: 40%;
       }
+
       /* SVG elements */
       .sleeper {
         fill: #aaa;
