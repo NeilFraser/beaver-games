@@ -578,6 +578,7 @@ function keypress(e) {
         uncouplers[i].activate();
       }
     }
+    e.preventDefault();
   }
 }
 
@@ -587,10 +588,12 @@ function keydown(e) {
   if (e.key === 'ArrowRight') {
     document.getElementById('rightButton').className = 'active';
     drive(1);
+    e.preventDefault();
   }
   if (e.key === 'ArrowLeft') {
     document.getElementById('leftButton').className = 'active';
     drive(-1);
+    e.preventDefault();
   }
 }
 
@@ -601,6 +604,7 @@ function keyup(e) {
     document.getElementById('rightButton').className = '';
     document.getElementById('leftButton').className = '';
     drive(0);
+    e.preventDefault();
   }
 }
 
