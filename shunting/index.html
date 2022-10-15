@@ -1,8 +1,11 @@
+<!DOCTYPE html>
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
     <title>Beaver Games : Inglenook Shunting</title>
     <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="shunting.js"></script>
     <style>
       #mainTable {
         margin-left:auto;
@@ -73,20 +76,18 @@
         display: none;  /* comment out this line to see the paths */
         fill: none;
         stroke: #00f;
-        stroke-width: 0.1;
+        stroke-width: 0.1px;
       }
       .carNumber {
         fill: #fff;
-        font-size: 5;
+        font-size: 5px;
         user-select: none;
       }
       #couplerGroup>line {
         stroke: #666;
-        stroke-width: 2;
+        stroke-width: 2px;
       }
     </style>
-    <script src="../common/utils.js"></script>
-    <script src="shunting.js"></script>
   </head>
 
   <body>

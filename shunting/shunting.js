@@ -61,31 +61,29 @@ AbstractSegment.prototype.prevSegment = null;
 // Reference to the turnout this track segment belongs to (if any).
 AbstractSegment.prototype.turnout = null;
 
-// Starting on this track segment, and the specified 'startDistance' (measured
-// from the start of this segment), walk 'delta' (negative is towards the
-// headshunt, positive is towards the buffers).
+// Measuring from the start of this track segment, walk 'distance'
+// (negative is towards the headshunt, positive is towards the buffers).
 // Return a location tuple composed of the track segment and distance
 // (measured from the start of that segment).
 // If the walk exceeds the length of the track (e.g. hitting a buffer), return
-// the location of the end of the track.
-AbstractSegment.prototype.walk = function(startDistance, delta) {
-  var endDistance = startDistance + delta;
-  if (endDistance < 0) {
+// the location of the end of the track, as well as the difference between what
+// was requested vs what was obtained.
+AbstractSegment.prototype.walk = function(distance) {
+  if (distance < 0) {
     if (this.prevSegment) {
-      return this.prevSegment.walk(
-          startDistance + this.prevSegment.length, delta);
+      return this.prevSegment.walk(distance + this.prevSegment.length);
     }
-    // End of track (headshunt or turnout).
-    return [this, 0];
+    // End of track (headshunt).
+    return [this, 0, -distance];
   }
-  if (endDistance > this.length) {
+  if (distance > this.length) {
     if (this.nextSegment) {
-      return this.nextSegment.walk(startDistance - this.length, delta);
+      return this.nextSegment.walk(distance - this.length);
     }
     // End of track (buffer).
-    return [this, this.length];
+    return [this, this.length, distance - this.length];
   }
-  return [this, endDistance];
+  return [this, distance, 0];
 };
 
 // Calculate the X/Y SVG coordinates of a point 'distance' down this segment.
@@ -271,14 +269,23 @@ Vehicle.prototype.couple = function(nextVehicle) {
   this.coupler.style.visibility = 'visible';
 };
 
+// Length from the front of this vehicle to the end of the train.
+Vehicle.prototype.lengthToEnd = function() {
+  var len = this.LENGTH + 2;
+  if (this.nextVehicle) {
+    len += this.nextVehicle.lengthToEnd();
+  }
+  return len;
+};
+
 // Decouple this locomotive or care from another car.
 // Ok to call if not already coupled (does nothing).
 Vehicle.prototype.uncouple = function() {
   if (this.nextVehicle) {
-    if (nextVehicle.prevVehicle !== this) {
+    if (this.nextVehicle.prevVehicle !== this) {
       throw Error("nextVehicle wasn't connected to us");
     }
-    nextVehicle.prevVehicle = null;
+    this.nextVehicle.prevVehicle = null;
     trains.push(this.nextVehicle);
     this.nextVehicle = null;
   }
@@ -296,16 +303,29 @@ Vehicle.prototype.moveTo = function(segment, distance) {
 // Move this vehicle up (positive) or down (negative) the track by `delta`.
 Vehicle.prototype.moveBy = function(delta) {
   if (delta >= 0) {  // Moving backwards (towards the buffers).
-    var locBackAxle = this.segment_.walk(this.distance_, delta);
-    var locFrontAxle = locBackAxle[0].walk(locBackAxle[1], -2 * this.AXLE_DISTANCE);
+    if (!this.prevVehicle) {
+      var locTrainEnd = this.segment_.walk(this.distance_ + delta -
+          this.AXLE_DISTANCE - this.LENGTH / 2 + this.lengthToEnd());
+      if (locTrainEnd[2] !== 0) {
+        // Crashed into buffer.
+        locoActualSpeed = 0;
+        delta -= locTrainEnd[2];
+      }
+    }
+    var locBackAxle = this.segment_.walk(this.distance_ + delta);
+    var locFrontAxle = locBackAxle[0].walk(locBackAxle[1] - 2 * this.AXLE_DISTANCE);
   } else {  // Moving forwards (towards the headshunt).
-    var locFrontAxle = this.segment_.walk(this.distance_ - 2 * this.AXLE_DISTANCE, delta);
-    var locBackAxle = locFrontAxle[0].walk(locFrontAxle[1], 2 * this.AXLE_DISTANCE);
+    var locFrontAxle = this.segment_.walk(this.distance_ - 2 * this.AXLE_DISTANCE + delta);
+    var locBackAxle = locFrontAxle[0].walk(locFrontAxle[1] + 2 * this.AXLE_DISTANCE);
     var backSegment = locBackAxle[0];
     if (!this.prevVehicle && backSegment.turnout &&
         backSegment.prevSegment.nextSegment !== backSegment) {
       // We are a locomotive running through a turnout switched the wrong way.
       backSegment.turnout.toggle();
+    }
+    if (locFrontAxle[2] !== 0) {
+      // Crashed into end of headshunt.
+      locoActualSpeed = 0;
     }
   }
   this.segment_ = locBackAxle[0];
@@ -349,13 +369,13 @@ var PATH_SEGMENTS = [
   new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
   new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
   new CurveSegment(70.627, 48.372, 225, 45),            // 4:  Siding A curve
-  new StraightSegment(70.627, 8.372, 3 * 16, 0),        // 5:  Siding A straight
+  new StraightSegment(70.627, 8.372, 3 * 16 + 3, 0),    // 5:  Siding A straight
   new CurveSegment(48, 71, 225, 45),                    // 6:  Turnout #1 curve
   new StraightSegment(48, 31, 2 * 16, 0),               // 7:  Turnout #2 straight
-  new StraightSegment(48 + 2 * 16, 31, 3 * 16, 0),      // 8:  Siding B
+  new StraightSegment(48 + 2 * 16, 31, 3 * 16 + 3, 0),  // 8:  Siding B
   new CurveSegment(48, 71, 270, 45),                    // 9:  Turnout #2 curve
   new CurveSegment(104.568, 14.431, 135, -45),          // 10: Siding C curve
-  new StraightSegment(104.568, 54.431, 16, 0)           // 11: Siding C straight
+  new StraightSegment(104.568, 54.431, 16 + 3, 0)       // 11: Siding C straight
 ];
 
 // On page load, draw the track, initialize event handlers, and reset the game.
