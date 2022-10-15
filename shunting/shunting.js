@@ -50,6 +50,9 @@ var allCars = [];
 var carOrder = [];
 var trains = [];
 
+var timeStart;
+var timePid;
+
 
 // Abstract class for a track segment.
 var AbstractSegment = function() {};
@@ -542,7 +545,7 @@ function init() {
   window.addEventListener('keydown', keydown);
   window.addEventListener('keyup', keyup);
 
-  setInterval(update, 25);
+  setInterval(updateTrains, 25);
 }
 window.addEventListener('load', init);
 
@@ -686,6 +689,9 @@ function reset(opt_key) {
       }
     }
   }
+  timeStart = Date.now();
+  timePid = setInterval(updateTimer, 1000);
+  updateTimer();
   controlsActive = true;
 }
 
@@ -723,7 +729,7 @@ function factorial(n) {
 }
 
 // Every few miliseconds update the the animation.  Runs continuously.
-function update() {
+function updateTrains() {
   // Accelerate/decelerate towards the desired speed.
   if (locoActualSpeed < locoDesiredSpeed) {
     locoActualSpeed = Math.min(locoActualSpeed + locoAcceleration, locoDesiredSpeed);
@@ -752,6 +758,25 @@ function createSvgElement(name) {
   return document.createElementNS(SVG_NS, name);
 }
 
+function updateTimer() {
+  var time = Math.round((Date.now() - timeStart) / 1000);
+  var seconds = time % 60;
+  var time = time - seconds;
+  var minutes = time % 60;
+  var hours = time - minutes;
+  if (seconds < 10) {
+    seconds = '0' + seconds;
+  }
+  if (minutes < 10) {
+    minutes = '0' + minutes;
+  }
+  var timeStr = minutes + ':' + seconds;
+  if (hours) {
+    timeStr = hours + ':' + timeStr;
+  }
+  document.getElementById('timer').textContent = timeStr;
+}
+
 // Check to see if the locomotive is pulling cars 1-5.
 // If so, drive off into the sunset (actually the headshunt overflow).
 function checkWin() {
@@ -765,6 +790,7 @@ function checkWin() {
   if (vehicle.nextVehicle) return;
 
   controlsActive = false;
+  clearTimeout(timePid);
   drive(0);
 
   var audio = document.getElementById('win');

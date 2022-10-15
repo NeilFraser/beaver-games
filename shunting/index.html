@@ -73,6 +73,9 @@
         outline: none;
         width: 50px;
       }
+      #timer {
+        font-size: large;
+      }
 
       /* SVG elements */
       svg {
@@ -130,10 +133,11 @@
             <h3>Build this train:</h3>
             <div id="goalCars"></div>
             <p><button onclick="reset(); this.blur()">New Train</button></p>
+            <p id="timer"></p>
           </td>
           <td id="centerCell">
-          <button id="leftButton" onmousedown="drive(-1)" onmouseup="drive(0)"><div></div></button>
-          <button id="rightButton" onmousedown="drive(1)" onmouseup="drive(0)"><div></div></button>
+            <button id="leftButton" onmousedown="drive(-1)" onmouseup="drive(0)"><div></div></button>
+            <button id="rightButton" onmousedown="drive(1)" onmouseup="drive(0)"><div></div></button>
 <svg
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns="http://www.w3.org/2000/svg"
