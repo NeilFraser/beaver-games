@@ -761,9 +761,9 @@ function createSvgElement(name) {
 function updateTimer() {
   var time = Math.round((Date.now() - timeStart) / 1000);
   var seconds = time % 60;
-  var time = time - seconds;
+  var time = (time - seconds) / 60;
   var minutes = time % 60;
-  var hours = time - minutes;
+  var hours = (time - minutes) / 60;
   if (seconds < 10) {
     seconds = '0' + seconds;
   }
