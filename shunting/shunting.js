@@ -1,6 +1,6 @@
 /**
  * @license
- * Copyright 2020 Neil Fraser
+ * Copyright 2022 Neil Fraser
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -191,14 +191,13 @@ Uncoupler.prototype.activate = function() {
 Uncoupler.prototype.getCar = function() {
   for (var i = 0; i < allCars.length; i++) {
     var car = allCars[i];
-    if (car.frontSegment_ === this.trackSegment_ && car.frontDistance_ < 4) {
+    if (car.frontSegment_ === this.trackSegment_ && car.frontDistance_ < 5) {
       // There is a car in range.
       return car.prevVehicle;  // Might be null.
     }
   }
   return null;
 };
-
 
 
 // Class for turnout.
