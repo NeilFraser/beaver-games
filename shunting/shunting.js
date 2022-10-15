@@ -167,7 +167,7 @@ var Turnout = function(node,
   clickTarget.addEventListener('click', this.toggle.bind(this));
   // Is there a locomotive or car on this turnout?
   this.hasVehicle = false;
-  this.set_(true);
+  this.set_(false);
 };
 
 // Set the direction of this turnout.  True is straight, false is curve.
@@ -233,8 +233,10 @@ var Vehicle = function(isLocomotive) {
   this.coupler = document.createElementNS(SVG_NS, 'line');
   document.getElementById('couplerGroup').appendChild(this.coupler);
 
-  this.segment_ = null;
-  this.distance_ = 0;
+  this.frontSegment_ = null;
+  this.frontDistance_ = 0;
+  this.backSegment_ = null;
+  this.backDistance_ = 0;
 };
 
 // Change the colour of this vehicle.  Takes a CSS colour.
@@ -262,20 +264,11 @@ Vehicle.prototype.couple = function(nextVehicle) {
   }
   this.nextVehicle = nextVehicle;
   nextVehicle.prevVehicle = this;
-  nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+  nextVehicle.moveTo(this.backSegment_, this.backDistance_ + this.LENGTH + 2);
   var n = trains.indexOf(nextVehicle);
   if (n === -1) throw Error("Vehicle wasn't a train")
   trains.splice(n, 1);
   this.coupler.style.visibility = 'visible';
-};
-
-// Length from the front of this vehicle to the end of the train.
-Vehicle.prototype.lengthToEnd = function() {
-  var len = this.LENGTH + 2;
-  if (this.nextVehicle) {
-    len += this.nextVehicle.lengthToEnd();
-  }
-  return len;
 };
 
 // Decouple this locomotive or care from another car.
@@ -292,11 +285,20 @@ Vehicle.prototype.uncouple = function() {
   this.coupler.style.visibility = 'hidden';
 };
 
+// Length from the front of this vehicle to the end of the train.
+Vehicle.prototype.lengthToEnd = function() {
+  var len = this.LENGTH + 2;
+  if (this.nextVehicle) {
+    len += this.nextVehicle.lengthToEnd();
+  }
+  return len;
+};
+
 // Force move this vehicle to the specified location.  No checks.
 // Location is defined by the back axle.
 Vehicle.prototype.moveTo = function(segment, distance) {
-  this.segment_ = segment;
-  this.distance_ = distance;
+  this.backSegment_ = segment;
+  this.backDistance_ = distance;
   this.moveBy(0);
 };
 
@@ -304,7 +306,7 @@ Vehicle.prototype.moveTo = function(segment, distance) {
 Vehicle.prototype.moveBy = function(delta) {
   if (delta >= 0) {  // Moving backwards (towards the buffers).
     if (!this.prevVehicle) {
-      var locTrainEnd = this.segment_.walk(this.distance_ + delta -
+      var locTrainEnd = this.backSegment_.walk(this.backDistance_ + delta -
           this.AXLE_DISTANCE - this.LENGTH / 2 + this.lengthToEnd());
       if (locTrainEnd[2] !== 0) {
         // Crashed into buffer.
@@ -312,10 +314,11 @@ Vehicle.prototype.moveBy = function(delta) {
         delta -= locTrainEnd[2];
       }
     }
-    var locBackAxle = this.segment_.walk(this.distance_ + delta);
+    var locBackAxle = this.backSegment_.walk(this.backDistance_ + delta);
     var locFrontAxle = locBackAxle[0].walk(locBackAxle[1] - 2 * this.AXLE_DISTANCE);
   } else {  // Moving forwards (towards the headshunt).
-    var locFrontAxle = this.segment_.walk(this.distance_ - 2 * this.AXLE_DISTANCE + delta);
+    var locFrontAxle =
+        this.backSegment_.walk(this.backDistance_ - 2 * this.AXLE_DISTANCE + delta);
     var locBackAxle = locFrontAxle[0].walk(locFrontAxle[1] + 2 * this.AXLE_DISTANCE);
     var backSegment = locBackAxle[0];
     if (!this.prevVehicle && backSegment.turnout &&
@@ -328,10 +331,12 @@ Vehicle.prototype.moveBy = function(delta) {
       locoActualSpeed = 0;
     }
   }
-  this.segment_ = locBackAxle[0];
-  this.distance_ = locBackAxle[1];
-  if (this.segment_.turnout) {
-    this.segment_.turnout.hasVehicle = true;
+  this.frontSegment_ = locFrontAxle[0];
+  this.frontDistance_ = locFrontAxle[1];
+  this.backSegment_ = locBackAxle[0];
+  this.backDistance_ = locBackAxle[1];
+  if (this.backSegment_.turnout) {
+    this.backSegment_.turnout.hasVehicle = true;
   }
 
   var xyFrontAxle = locFrontAxle[0].calculateCoordinates(locFrontAxle[1]);
@@ -349,10 +354,28 @@ Vehicle.prototype.moveBy = function(delta) {
   var angle = -Math.atan2(xyBackAxle.x - xyFrontAxle.x, xyBackAxle.y - xyFrontAxle.y);
   angle = angle / Math.PI * 180;
   this.node.setAttribute('transform',
-      'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ')' +
-      ' translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
+      'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ') ' +
+      'translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
   if (this.nextVehicle) {
-    this.nextVehicle.moveTo(this.segment_, this.distance_ + this.LENGTH + 2);
+    this.nextVehicle.moveTo(this.backSegment_, this.backDistance_ + this.LENGTH + 2);
+  }
+  // Couple to any train we ran into.
+  if (delta > 0) {
+    for (var i = 0; i < trains.length; i++) {
+      var train = trains[i];
+      if (train.frontSegment_ === locTrainEnd[0] &&
+          train.frontDistance_ <= locTrainEnd[1]) {
+        var lastCar = this;
+        while (lastCar.nextVehicle) {
+          lastCar = lastCar.nextVehicle;
+        }
+        var audio = document.getElementById('couple');
+        audio.volume = 0.2;
+        audio.play();
+        lastCar.couple(train);
+        locoActualSpeed = 0;
+      }
+    }
   }
 };
 
