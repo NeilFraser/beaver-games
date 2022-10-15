@@ -10,9 +10,6 @@
  */
 'use strict';
 
-// Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
-
 // Standard Lego curve radius.
 var RADIUS = 40;
 
@@ -37,17 +34,22 @@ var PERMUTATIONS = factorial(CAR_COUNT) / factorial(CAR_COUNT - TRAIN_LENGTH);
 
 // Speed of locomotive.
 var MAX_SPEED = 1;
-var ACCELERATION = 0.05;
 
 // Array of both turnouts.
 var turnouts = [];
+// Array of all three uncouplers.
+var uncouplers = [];
+var controlsActive = false;
 
 var locomotive = null;
 var locoActualSpeed = 0;
 var locoDesiredSpeed = 0;
+var locoAcceleration = 0.05;
 // Array of all eight cars.
 var allCars = [];
+var carOrder = [];
 var trains = [];
+
 
 // Abstract class for a track segment.
 var AbstractSegment = function() {};
@@ -143,6 +145,62 @@ CurveSegment.prototype.calculateCoordinates = function(distance) {
 };
 
 
+// Class for an uncoupler.
+// `node` is the SVG group for the uncoupler.
+// `trackSegmentIndex` is the index of the track segment that will contian the
+// car to be uncoupled.
+var Uncoupler = function(node, trackSegmentIndex) {
+  this.node_ = node;
+  this.trackSegment_ = PATH_SEGMENTS[trackSegmentIndex];
+
+  // Create control target (needs to be above the train layer).
+  // <rect class="clickTarget" width="4" height="12" x="78" y="25" rx="1" />
+  var rect = createSvgElement('rect');
+  rect.setAttribute('class', 'clickTarget');
+  rect.setAttribute('width', 4);
+  rect.setAttribute('height', 12);
+  rect.setAttribute('x', 78);
+  rect.setAttribute('y', 25);
+  rect.setAttribute('rx', 1);
+  rect.setAttribute('transform', this.node_.getAttribute('transform'));
+  document.getElementById('uncouplerControlGroup').appendChild(rect);
+  rect.addEventListener('click', this.activate.bind(this));
+};
+
+// Activate this uncoupler.  Plays sound.
+Uncoupler.prototype.activate = function() {
+  if (!controlsActive) return;
+  var audio = document.getElementById('uncouple');
+  audio.volume = 0.5;
+  audio.play();
+  var node = this.node_;
+  node.firstElementChild.setAttribute('transform', 'translate(0, 1)');
+  node.lastElementChild.setAttribute('transform', 'translate(0, -1)');
+  setTimeout(function() {
+    node.firstElementChild.removeAttribute('transform');
+    node.lastElementChild.removeAttribute('transform');
+  }, 250);
+  var car = this.getCar();
+  if (car) {
+    car.uncouple();
+    checkWin();
+  }
+};
+
+// Is there a car in range of this uncoupler?  Return the front car.
+Uncoupler.prototype.getCar = function() {
+  for (var i = 0; i < allCars.length; i++) {
+    var car = allCars[i];
+    if (car.frontSegment_ === this.trackSegment_ && car.frontDistance_ < 4) {
+      // There is a car in range.
+      return car.prevVehicle;  // Might be null.
+    }
+  }
+  return null;
+};
+
+
+
 // Class for turnout.
 // `node` is the SVG group for the turnout.
 // `rootSegmentIndex` is the index of the track segment which connects to
@@ -206,22 +264,22 @@ var Vehicle = function(isLocomotive) {
   this.textNode_ = null;
   // Distance from midpoint to front or back axle.
   this.AXLE_DISTANCE = 6;
-  var g = document.createElementNS(SVG_NS, 'g');
-  var rect = document.createElementNS(SVG_NS, 'rect');
+  var g = createSvgElement('g');
+  var rect = createSvgElement('rect');
   rect.setAttribute('rx', 1);
   rect.setAttribute('width', this.WIDTH);
   g.appendChild(rect);
   if (isLocomotive) {
     rect.setAttribute('height', this.LENGTH - 3);
     rect.setAttribute('y', 3);
-    var head = document.createElementNS(SVG_NS, 'rect');
+    var head = createSvgElement('rect');
     g.appendChild(head);
     head.setAttribute('height', 6);
     head.setAttribute('width', this.WIDTH);
     head.setAttribute('rx', 3);
   } else {
     rect.setAttribute('height', this.LENGTH);
-    var text = document.createElementNS(SVG_NS, 'text');
+    var text = createSvgElement('text');
     text.setAttribute('class', 'carNumber');
     text.setAttribute('transform', 'translate(5.4, 5.3) rotate(180)');
     this.textNode_ = text;
@@ -230,7 +288,7 @@ var Vehicle = function(isLocomotive) {
   document.getElementById('trainGroup').appendChild(g);
   this.node = g;
 
-  this.coupler = document.createElementNS(SVG_NS, 'line');
+  this.coupler = createSvgElement('line');
   document.getElementById('couplerGroup').appendChild(this.coupler);
 
   this.frontSegment_ = null;
@@ -271,7 +329,7 @@ Vehicle.prototype.couple = function(nextVehicle) {
   this.coupler.style.visibility = 'visible';
 };
 
-// Decouple this locomotive or care from another car.
+// Decouple this locomotive or car from another car behind it.
 // Ok to call if not already coupled (does nothing).
 Vehicle.prototype.uncouple = function() {
   if (this.nextVehicle) {
@@ -374,6 +432,7 @@ Vehicle.prototype.moveBy = function(delta) {
         audio.play();
         lastCar.couple(train);
         locoActualSpeed = 0;
+        checkWin();
       }
     }
   }
@@ -447,9 +506,18 @@ function init() {
   drawTrack('straight', 'rotate(90, 35.068, 85.5)');
   drawTrack('buffer', 'rotate(90, 37.568, 88)');
 
+  var uncoupler1Node = drawTrack('uncoupler', 'rotate(-45, 48, 71)');
+  var uncoupler2Node = drawTrack('uncoupler', '');
+  var uncoupler3Node = drawTrack('uncoupler', 'rotate(45, 64, 32.372)');
+
   turnouts.push(
       new Turnout(turnout1Node, 2, 3, 6),
       new Turnout(turnout2Node, 6, 7, 9));
+
+  uncouplers.push(
+      new Uncoupler(uncoupler1Node, 4),
+      new Uncoupler(uncoupler2Node, 8),
+      new Uncoupler(uncoupler3Node, 10));
 
   // Create goal visualization.
   for (var i = TRAIN_LENGTH; i >= 0; i--) {
@@ -481,12 +549,14 @@ window.addEventListener('load', init);
 
 // Draw a track segment onto the display.  Return the 'use' or 'g' node.
 function drawTrack(defId, transform) {
-  if (defId === 'turnout') {
-    // Turnouts need to be cloned since they have a moving control.
+  if (defId === 'turnout' || defId === 'uncoupler') {
+    // Turnouts and uncouplers need to be cloned as they have moving controls.
     var node = document.getElementById(defId).cloneNode(true);
+    node.setAttribute('class', node.id);
+    node.removeAttribute('id');
   } else {
     // Other track segments can just be 'use' nodes.
-    var node = document.createElementNS(SVG_NS, 'use');
+    var node = createSvgElement('use');
     node.setAttribute('href', '#' + defId);
   }
   node.setAttribute('transform', transform);
@@ -494,8 +564,9 @@ function drawTrack(defId, transform) {
   return node;
 }
 
-// Handle keystrokes for toggling turnouts or activating the decouplers.
+// Handle keystrokes for toggling turnouts or activating the uncouplers.
 function keypress(e) {
+  if (!controlsActive) return;
   if (e.key === '1') {
     turnouts[0].toggle();
   }
@@ -503,12 +574,17 @@ function keypress(e) {
     turnouts[1].toggle();
   }
   if (e.key === ' ') {
-    // TODO Decouplers!
+    for (var i = 0; i < uncouplers.length; i++) {
+      if (uncouplers[i].getCar()) {
+        uncouplers[i].activate();
+      }
+    }
   }
 }
 
 // Handle the start of key presses for driving forwads or backwards.
 function keydown(e) {
+  if (!controlsActive) return;
   if (e.key === 'ArrowRight') {
     document.getElementById('rightButton').className = 'active';
     drive(1);
@@ -521,6 +597,7 @@ function keydown(e) {
 
 // Handle the end of key presses for driving forwads or backwards.
 function keyup(e) {
+  if (!controlsActive) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     document.getElementById('rightButton').className = '';
     document.getElementById('leftButton').className = '';
@@ -546,7 +623,7 @@ function reset(opt_key) {
   // E.g. [2, 2, 1] means first car in train is car #2, second car is the new
   // car #2 (after removing or skipping over the previously selected one), the
   // third car is car #1.
-  var carOrder = new Array(CAR_COUNT);
+  carOrder = new Array(CAR_COUNT);
   for (var i = 0; i < digits.length; i++) {
     var digit = digits[i];
     for (var j = 0; j < carOrder.length; j++) {
@@ -573,6 +650,7 @@ function reset(opt_key) {
   locoActualSpeed = 0;
   locoDesiredSpeed = 0;
   locomotive.moveTo(PATH_SEGMENTS[2], 1);
+  locoAcceleration = 0.05;
 
   // Place the cars.
   // Tuples defining groups of cars:
@@ -595,14 +673,17 @@ function reset(opt_key) {
         // Each subsequent car is coupled to the previous car.
         allCars[n - 1].couple(allCars[n]);
       }
-      allCars[n].setColour(carOrder[n] === undefined ? SKIP_COLOUR : CAR_COLOURS[carOrder[n]]);
-      allCars[n].setNumber(carOrder[n] === undefined ? undefined : carOrder[n] + 1);
+      allCars[n].setColour(carOrder[n] === undefined ?
+          SKIP_COLOUR : CAR_COLOURS[carOrder[n]]);
+      allCars[n].setNumber(carOrder[n] === undefined ?
+          undefined : carOrder[n] + 1);
       n++;
       if (n >= CAR_COUNT) {
         break groupLoop;
       }
     }
   }
+  controlsActive = true;
 }
 
 // Set whether the train may enter the headshut's offscreen overflow section.
@@ -642,9 +723,9 @@ function factorial(n) {
 function update() {
   // Accelerate/decelerate towards the desired speed.
   if (locoActualSpeed < locoDesiredSpeed) {
-    locoActualSpeed = Math.min(locoActualSpeed + ACCELERATION, locoDesiredSpeed);
+    locoActualSpeed = Math.min(locoActualSpeed + locoAcceleration, locoDesiredSpeed);
   } else if (locoActualSpeed > locoDesiredSpeed) {
-    locoActualSpeed = Math.max(locoActualSpeed - ACCELERATION, locoDesiredSpeed);
+    locoActualSpeed = Math.max(locoActualSpeed - locoAcceleration, locoDesiredSpeed);
   }
   if (locoActualSpeed) {
     for (var i = 0; i < turnouts.length; i++) {
@@ -660,4 +741,36 @@ function update() {
 // -1 is forwards (down/left towards the headshunt).
 function drive(direction) {
   locoDesiredSpeed = MAX_SPEED * Math.sign(direction);
+}
+
+// Create an SVG elemest of the named type.
+function createSvgElement(name) {
+  var SVG_NS = 'http://www.w3.org/2000/svg';
+  return document.createElementNS(SVG_NS, name);
+}
+
+// Check to see if the locomotive is pulling cars 1-5.
+// If so, drive off into the sunset (actually the headshunt overflow).
+function checkWin() {
+  var vehicle = locomotive;
+  for (var i = 0; i < TRAIN_LENGTH; i++) {
+    vehicle = vehicle.nextVehicle;
+    if (!vehicle) return;
+    var orderIndex = carOrder.indexOf(i);
+    if (vehicle !== allCars[orderIndex]) return;
+  }
+  if (vehicle.nextVehicle) return;
+
+  controlsActive = false;
+  drive(0);
+
+  var audio = document.getElementById('win');
+  audio.volume = 0.5;
+  audio.play();
+
+  setTimeout(function() {
+   locoAcceleration = 0.01;
+   setHeadShuntOverflow(true);
+    drive(-1);
+  }, 1000);
 }

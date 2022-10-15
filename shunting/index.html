@@ -53,6 +53,9 @@
       }
 
       /* SVG elements */
+      svg {
+        margin-bottom: -4px;
+      }
       .sleeper {
         fill: #aaa;
       }
@@ -71,6 +74,11 @@
       .clickTarget {
         opacity: 0;
         cursor: pointer;
+      }
+      .uncoupler>path {
+        fill: #FE2;
+        stroke:#888;
+        stroke-width: 0.2;
       }
       #trackPath {
         display: none;  /* comment out this line to see the paths */
@@ -159,6 +167,11 @@
       <path class="rail" d="M 6,32 C 6,21.922 10.004,12.256 17.13,5.13 l 0.707,0.707 C 10.898,12.776 7.066,22.137 7,32 Z" />
       <rect class="clickTarget" width="14.5" height="14" x="-1" y="20" rx="4" />
     </g>
+
+    <g id="uncoupler">
+      <path d="m 80,27 1,-2 h -2 z" />
+      <path d="m 80,35 1,2 h -2 z" />
+    </g>
   </defs>
 
   <g id="trackGroup"></g>
@@ -166,6 +179,8 @@
   <g id="couplerGroup"></g>
 
   <g id="trainGroup"></g>
+
+  <g id="uncouplerControlGroup"></g>
 
   <g id="trackPath">
     <circle cx="48" cy="71" r="40" />
@@ -202,5 +217,6 @@
     <audio id="click" src="click.mp3"></audio>
     <audio id="couple" src="couple.mp3"></audio>
     <audio id="uncouple" src="uncouple.mp3"></audio>
+    <audio id="win" src="win.mp3"></audio>
   </body>
 </html>
