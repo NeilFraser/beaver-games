@@ -34,11 +34,11 @@
         border-radius: 5px 5px 15px 15px;
       }
       button.active, #leftButton:active, #rightButton:active {
-        background-color: #Fff622 !important;
-        border-style: inset !important;
+        opacity: 0.7;
+        border: 1px solid #000 !important;
       }
       #leftButton, #rightButton {
-        background-color: #FE2;
+        background-color: #f0d010;
         position: absolute;
         font-size: x-large;
         bottom: 1ex;
@@ -50,6 +50,28 @@
       }
       #rightButton {
         right: 40%;
+      }
+      #leftButton>div {
+        background-position: 0 0;
+      }
+      #rightButton>div {
+        background-position: -20px 0;
+      }
+      #centerCell button>div {
+        background-image: url('arrows.png');
+        display: inline-block;
+        height: 20px;
+        width: 20px;
+      }
+      #centerCell button {
+        border: 1px solid #fff;
+        border-radius: 5px;
+        color: #fff;
+        font-size: large;
+        height: 40px;
+        margin: 3px;
+        outline: none;
+        width: 50px;
       }
 
       /* SVG elements */
@@ -66,7 +88,7 @@
         fill: #D02E2B;
       }
       .control {
-        fill: #FE2;
+        fill: #f0d010;
       }
       .controlBG {
         fill: #666;
@@ -76,7 +98,7 @@
         cursor: pointer;
       }
       .uncoupler>path {
-        fill: #FE2;
+        fill: #f0d010;
         stroke:#888;
         stroke-width: 0.2;
       }
@@ -110,8 +132,8 @@
             <p><button onclick="reset(); this.blur()">New Train</button></p>
           </td>
           <td id="centerCell">
-          <button id="leftButton" onmousedown="drive(-1)" onmouseup="drive(0)">&larr;</button>
-          <button id="rightButton" onmousedown="drive(1)" onmouseup="drive(0)">&rarr;</button>
+          <button id="leftButton" onmousedown="drive(-1)" onmouseup="drive(0)"><div></div></button>
+          <button id="rightButton" onmousedown="drive(1)" onmouseup="drive(0)"><div></div></button>
 <svg
     xmlns:xlink="http://www.w3.org/1999/xlink"
     xmlns="http://www.w3.org/2000/svg"
