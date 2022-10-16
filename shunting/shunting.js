@@ -561,6 +561,14 @@ function init() {
 }
 window.addEventListener('load', init);
 
+// When pushing the left/right drive buttons on mobile, don't select text as
+// a result of a long-press.
+document.addEventListener('selectionchange', function(e) {
+  if (locoDesiredSpeed) {
+    window.getSelection().removeAllRanges();
+  }
+});
+
 // Draw a track segment onto the display.  Return the 'use' or 'g' node.
 function drawTrack(defId, transform) {
   if (defId === 'turnout' || defId === 'uncoupler') {
@@ -598,29 +606,30 @@ function keypress(e) {
   }
 }
 
-// Handle the start of key presses for driving forwads or backwards.
+// Handle the start of key presses for driving forwards or backwards.
 function keydown(e) {
   if (!controlsActive) return;
   if (e.key === 'ArrowRight') {
     document.getElementById('rightButton').className = 'active';
     drive(1);
+    // Don't scroll the page.
     e.preventDefault();
   }
   if (e.key === 'ArrowLeft') {
     document.getElementById('leftButton').className = 'active';
     drive(-1);
+    // Don't scroll the page.
     e.preventDefault();
   }
 }
 
-// Handle the end of key presses for driving forwads or backwards.
+// Handle the end of key presses for driving forwards or backwards.
 function keyup(e) {
   if (!controlsActive) return;
   if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
     document.getElementById('rightButton').className = '';
     document.getElementById('leftButton').className = '';
     drive(0);
-    e.preventDefault();
   }
 }
 
@@ -628,14 +637,12 @@ function keyup(e) {
 function leftButtonDown(e) {
   if (!controlsActive) return;
   drive(-1);
-  e.preventDefault();
 }
 
 // Handle pushing the right button.
 function rightButtonDown(e) {
   if (!controlsActive) return;
   drive(1);
-  e.preventDefault();
 }
 
 // Handle releasing either the left or right button.
