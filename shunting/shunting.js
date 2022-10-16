@@ -544,6 +544,18 @@ function init() {
   window.addEventListener('keypress', keypress);
   window.addEventListener('keydown', keydown);
   window.addEventListener('keyup', keyup);
+  var leftButton = document.getElementById('leftButton');
+  leftButton.addEventListener('mousedown', leftButtonDown);
+  leftButton.addEventListener('touchstart', leftButtonDown);
+  leftButton.addEventListener('mouseup', buttonUp);
+  leftButton.addEventListener('touchend', buttonUp);
+  leftButton.addEventListener('touchcancel', buttonUp);
+  var rightButton = document.getElementById('rightButton');
+  rightButton.addEventListener('mousedown', rightButtonDown);
+  rightButton.addEventListener('touchstart', rightButtonDown);
+  rightButton.addEventListener('mouseup', buttonUp);
+  rightButton.addEventListener('touchend', buttonUp);
+  rightButton.addEventListener('touchcancel', buttonUp);
 
   setInterval(updateTrains, 25);
 }
@@ -610,6 +622,26 @@ function keyup(e) {
     drive(0);
     e.preventDefault();
   }
+}
+
+// Handle pushing the left button.
+function leftButtonDown(e) {
+  if (!controlsActive) return;
+  drive(-1);
+  e.preventDefault();
+}
+
+// Handle pushing the right button.
+function rightButtonDown(e) {
+  if (!controlsActive) return;
+  drive(1);
+  e.preventDefault();
+}
+
+// Handle releasing either the left or right button.
+function buttonUp(e) {
+  if (!controlsActive) return;
+  drive(0);
 }
 
 // Clear the state of the current game (if any), and start a new random game.
