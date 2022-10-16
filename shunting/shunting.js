@@ -569,10 +569,11 @@ function drawTrack(defId, transform) {
 // Handle keystrokes for toggling turnouts or activating the uncouplers.
 function keypress(e) {
   if (!controlsActive) return;
-  if (e.key === '1') {
+  // Accomodate French keyboard which has different keys.
+  if (e.key === '1' || e.key === '&') {
     turnouts[0].toggle();
   }
-  if (e.key === '2') {
+  if (e.key === '2' || e.key === 'é') {
     turnouts[1].toggle();
   }
   if (e.key === ' ') {
