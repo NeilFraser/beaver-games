@@ -613,6 +613,7 @@ function keyup(e) {
 
 // Clear the state of the current game (if any), and start a new random game.
 function reset(opt_key) {
+  clearTimeout(timePid);
   // Use the key in the URL hash, if there is one.  Otherwise make a new one.
   var hashKey = Number(opt_key);
   if (hashKey > 0 && hashKey <= PERMUTATIONS) {
