@@ -185,9 +185,9 @@ Uncoupler.prototype.activate = function() {
   }, 250);
   var car = this.getCar();
   if (car) {
-    if (locoActualSpeed > 0) {
-      // Train is backing up and will probably recouple instantly.
-      // This is annoying, so stop movement.
+    if (locoActualSpeed > 0 && locoDesiredSpeed <= 0) {
+      // Train is backing up (but slowing down) and will probably recouple
+      // instantly.  This is annoying, so stop movement.
       locoActualSpeed = 0;
     }
     car.uncouple();
