@@ -2,6 +2,8 @@
 
 Try them out:  https://beaver.games/
 
+Introductory video: https://youtu.be/vMNo9T7vtPg
+
 A collection of simple games for young children.  Specifically, these are games
 written for my daughter to play.  The general principles are:
 
