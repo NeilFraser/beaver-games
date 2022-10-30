@@ -264,13 +264,13 @@ Turnout.prototype.toggle = function() {
 
 // Class for a vehicle (either a locomotive or a car).
 var Vehicle = function(isLocomotive) {
-  this.LENGTH = 14;
+  this.LENGTH = isLocomotive ? 16 : 14;
   this.WIDTH = 8;
   this.nextVehicle = null;
   this.prevVehicle = null;
   this.textNode_ = null;
   // Distance from midpoint to front or back axle.
-  this.AXLE_DISTANCE = 6;
+  this.AXLE_DISTANCE = this.LENGTH / 2 - 1;
   var g = createSvgElement('g');
   var rect = createSvgElement('rect');
   rect.setAttribute('rx', 1);
@@ -298,6 +298,7 @@ var Vehicle = function(isLocomotive) {
   this.coupler = createSvgElement('line');
   document.getElementById('couplerGroup').appendChild(this.coupler);
 
+  // Locations of the front and rear axles on the track.
   this.frontSegment_ = null;
   this.frontDistance_ = 0;
   this.backSegment_ = null;
@@ -329,7 +330,8 @@ Vehicle.prototype.couple = function(nextVehicle) {
   }
   this.nextVehicle = nextVehicle;
   nextVehicle.prevVehicle = this;
-  nextVehicle.moveTo(this.backSegment_, this.backDistance_ + this.LENGTH + 2);
+  nextVehicle.moveTo(this.backSegment_,
+      this.backDistance_ + nextVehicle.LENGTH + 2);
   var n = trains.indexOf(nextVehicle);
   if (n === -1) throw Error("Vehicle wasn't a train")
   trains.splice(n, 1);
@@ -422,7 +424,8 @@ Vehicle.prototype.moveBy = function(delta) {
       'rotate(' + angle + ', ' + xyMid.x + ',' + xyMid.y + ') ' +
       'translate(' + (xyMid.x - this.WIDTH / 2) + ',' + (xyMid.y - this.LENGTH / 2) + ')');
   if (this.nextVehicle) {
-    this.nextVehicle.moveTo(this.backSegment_, this.backDistance_ + this.LENGTH + 2);
+    this.nextVehicle.moveTo(this.backSegment_,
+        this.backDistance_ + this.nextVehicle.LENGTH + 2);
   }
   // Couple to any train we ran into.
   if (delta > 0) {
@@ -453,8 +456,8 @@ var HEADSHUNT_OVERFLOW = 10 * 16;
 // straight: startX, startY, deltaX, deltaY
 // curve: centerX, centerY, startDegrees, deltaDegrees
 var PATH_SEGMENTS = [
-  new StraightSegment(8, 102 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0: Headshunt overflow
-  new StraightSegment(8, 102, 0, -2 * 16 + 1),          // 1:  Headshunt straight
+  new StraightSegment(8, 104 + HEADSHUNT_OVERFLOW, 0, -HEADSHUNT_OVERFLOW), // 0: Headshunt overflow
+  new StraightSegment(8, 104, 0, -2 * 16),              // 1:  Headshunt straight
   new CurveSegment(48, 71, 180, 45),                    // 2:  Headshunt curve
   new StraightSegment(19.716, 42.716, 22.627, -22.628), // 3:  Turnout #1 straight
   new CurveSegment(70.627, 48.372, 225, 45),            // 4:  Siding A curve
@@ -489,6 +492,7 @@ function init() {
   bilateralLink(9, 10);
   bilateralLink(10, 11);
 
+  drawTrack('straight', 'translate(4, 103)');
   drawTrack('straight', 'translate(4, 87)');
   drawTrack('straight', 'translate(4, 71)');
   drawTrack('curve', 'translate(4, 51)');
