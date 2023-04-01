@@ -17,11 +17,11 @@ var RADIUS = 40;
 var LOCO_COLOUR = '#178F47';
 // Car colour (light blue trending to dark blue).
 var CAR_COLOURS = [
-  '#7B9AFF',  /* HSV: 226, 52, 100 */
-  '#6E90FF',  /* HSV: 226, 57, 100 */
-  '#6186FF',  /* HSV: 226, 62, 100 */
-  '#547DFF',  /* HSV: 226, 67, 100 */
-  '#4873FF'   /* HSV: 226, 72, 100 */
+  '#7B9AFF',  /* HSV: 226, 52%, 100% */
+  '#6E90FF',  /* HSV: 226, 57%, 100% */
+  '#6186FF',  /* HSV: 226, 62%, 100% */
+  '#547DFF',  /* HSV: 226, 67%, 100% */
+  '#4873FF'   /* HSV: 226, 72%, 100% */
 ];
 // Colour of extra cars not part of the train (darkest blue).
 var SKIP_COLOUR = '#2E5FFF';  /* HSV: 226, 82, 100 */

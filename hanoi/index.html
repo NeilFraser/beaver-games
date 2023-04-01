@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+    <title>Beaver Games : Hanoi</title>
+    <link rel="stylesheet" href="../common/style.css">
+    <script src="../common/utils.js"></script>
+    <script src="hanoi.js"></script>
+    <style>
+      #disks {
+        float: right;
+      }
+      #canvasDiv {
+        text-align: center;
+      }
+      #canvas {
+        border: 1px solid #888;
+      }
+      #instructions {
+        font-size: small;
+        font-style: italic;
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <select id="disks">
+      <option value=4>Easy</option>
+      <option value=5>Normal</option>
+      <option value=6>Hard</option>
+    </select>
+    <h1><a href="../">Beaver Games</a> : Hanoi</h1>
+
+    <div id="canvasDiv">
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div id="instructions">
+      Move the stack of disks to another pile.  Large disks can't be placed on small
+      disks.  Use the mouse or the keys 1,2,3 to pick up a disk and place it.
+    </div>
+  </body>
+</html>
