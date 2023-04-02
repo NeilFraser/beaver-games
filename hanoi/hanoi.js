@@ -22,6 +22,7 @@ var disks = [];
 var pegX = [];
 var pegs = [[], [], []];
 var selectedDisk = undefined;
+var lastCompletePeg = 0;
 
 // Start-up initialization code.  Run once.
 function init() {
@@ -37,7 +38,7 @@ function init() {
   registerOptions('disks');
 
   // Create the disks.
-  for (var i = totalDisks; i >= 0; i--) {
+  for (var i = totalDisks - 1; i >= 0; i--) {
     new Disk(i, totalDisks);
   }
 
@@ -120,10 +121,21 @@ function input(n) {
     peg.push(selectedDisk);
     selectedDisk.peg = n;
     selectedDisk = undefined;
+    checkWin();
   } else {
     // Might be undefined.
     selectedDisk = peg.pop();
   }
+}
+
+function checkWin() {
+  for (var i = 0; i < pegs.length; i++) {
+    if (lastCompletePeg !== i && pegs[i].length === totalDisks) {
+      lastCompletePeg = i;
+      document.getElementById('win').play();
+    }
+  }
+
 }
 
 function Disk(n, total) {
@@ -134,9 +146,12 @@ function Disk(n, total) {
   this.peg = 0;  // 0, 1, 2
   pegs[this.peg].push(this);
   disks.push(this);
-  var saturation = 0.5 + (0.25 * n / total);
-  this.fillColour = hsvToHex(226, saturation, 255);
-  this.strokeColour = hsvToHex(226, saturation, 191);
+  if (n === 0) {
+    this.fillColour = '#F0A609';
+  } else {
+    this.fillColour = n % 2 ? '#178F47' : '#2E5FFF';
+  }
+  this.strokeColour = '#666';
 }
 
 Disk.prototype.drawDisk = function(degrees) {
@@ -186,77 +201,4 @@ function drawSpot() {
   ctx.beginPath();
   ctx.ellipse(0, bottomY, radius, height, 0, 0, 2 * Math.PI);
   ctx.stroke();
-};
-
-/**
- * Converts a colour from RGB to hex representation.
- *   r: Amount of red, int between 0 and 255.
- *   g: Amount of green, int between 0 and 255.
- *   b: Amount of blue, int between 0 and 255.
- * Returns a hex representation of the colour, e.g. '#0088ff'.
- */
-function rgbToHex(r, g, b) {
-  var rgb = (r << 16) | (g << 8) | b;
-  if (r < 0x10) {
-    return '#' + (0x1000000 | rgb).toString(16).substr(1);
-  }
-  return '#' + rgb.toString(16);
-}
-
-/**
- * Converts an HSV triplet to hex representation.
- *   h: Hue value in [0, 360].
- *   s: Saturation value in [0, 1].
- *   v: Brightness in [0, 255].
- * Returns a hex representation of the colour, e.g. '#0088ff'.
- */
-function hsvToHex(h, s, v) {
-  var red = 0;
-  var green = 0;
-  var blue = 0;
-  if (s == 0) {
-    red = v;
-    green = v;
-    blue = v;
-  } else {
-    var sextant = Math.floor(h / 60);
-    var remainder = (h / 60) - sextant;
-    var val1 = v * (1 - s);
-    var val2 = v * (1 - (s * remainder));
-    var val3 = v * (1 - (s * (1 - remainder)));
-    switch (sextant) {
-      case 1:
-        red = val2;
-        green = v;
-        blue = val1;
-        break;
-      case 2:
-        red = val1;
-        green = v;
-        blue = val3;
-        break;
-      case 3:
-        red = val1;
-        green = val2;
-        blue = v;
-        break;
-      case 4:
-        red = val3;
-        green = val1;
-        blue = v;
-        break;
-      case 5:
-        red = v;
-        green = val1;
-        blue = val2;
-        break;
-      case 6:
-      case 0:
-        red = v;
-        green = val3;
-        blue = val1;
-        break;
-    }
-  }
-  return rgbToHex(Math.floor(red), Math.floor(green), Math.floor(blue));
 };
