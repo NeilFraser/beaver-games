@@ -11,9 +11,11 @@
 'use strict';
 
 // For Easy/Normal/Hard modes.
-var HEIGHTS = [12, 16, 24];
-var WIDTHS = [24, 32, 48];
-var SQUARE_SIZES = [30, 25, 20];
+var HEIGHTS = [12, 24, 48];
+var WIDTHS = [24, 48, 96];
+var SQUARE_SIZES = [30, 20, 15];
+var SPEEDS = [0, 0.5, 0.75];
+var SPEED;
 // Number of rows.
 var HEIGHT;
 // Number of columns.
@@ -60,6 +62,7 @@ function init() {
   HEIGHT = HEIGHTS[difficulty];
   WIDTH = WIDTHS[difficulty];
   SQUARE_SIZE = SQUARE_SIZES[difficulty];
+  SPEED = SPEEDS[difficulty];
   var svg = document.getElementById('landscape');
   svg.setAttribute('height', SQUARE_SIZE * HEIGHT + 1);
   svg.setAttribute('width', SQUARE_SIZE * WIDTH + 1);
@@ -184,7 +187,11 @@ function initMazeStep() {
     draw(cell.x - 1, cell.y);
     draw(cell.x, cell.y + 1);
     draw(cell.x, cell.y - 1);
-    setTimeout(initMazeStep, 0);
+    if (Math.random() < SPEED) {
+      initMazeStep();
+    } else {
+      setTimeout(initMazeStep, 0);
+    }
   } else {
     initMazeStep();
   }
