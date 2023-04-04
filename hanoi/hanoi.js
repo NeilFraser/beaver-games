@@ -147,11 +147,18 @@ function Disk(n, total) {
   pegs[this.peg].push(this);
   disks.push(this);
   if (n === 0) {
+    // Orange top block.
     this.fillColour = '#F0A609';
+    this.strokeColour = '#A37106';
+  } else if (n % 2) {
+    // Green even blocks.
+    this.fillColour = '#178F47';
+    this.strokeColour = '#0E5B2D';
   } else {
-    this.fillColour = n % 2 ? '#178F47' : '#2E5FFF';
+    // Blue odd blocks.
+    this.fillColour = '#2E5FFF';
+    this.strokeColour = '#1B3899';
   }
-  this.strokeColour = '#666';
 }
 
 Disk.prototype.drawDisk = function(degrees) {
