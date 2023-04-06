@@ -12,10 +12,12 @@
 
 var canvas;
 var ctx;
-var canvasHeight = 512;
-var canvasWidth = 1024;
-var diskThickness = 25;
-var viewAngle = 10;  // Degrees.
+var CANVAS_HEIGHT = 512;
+var CANVAS_WIDTH = 1024;
+var DISK_THICKNESS = 25;
+var VIEW_ANGLE = 10;  // Degrees.
+var RAISE_HEIGHT = DISK_THICKNESS;
+var SPEED = 50;  // Larger is faster.
 
 var totalDisks = 5;
 var disks = [];
@@ -37,57 +39,70 @@ function init() {
   }
   registerOptions('disks');
 
+
+  // Calculate the x locations of the three pegs.
+  for (var i = 0; i < pegs.length; i++) {
+    pegX[i] = CANVAS_WIDTH / pegs.length * i + CANVAS_WIDTH / (pegs.length * 2);
+  }
+
   // Create the disks.
   for (var i = totalDisks - 1; i >= 0; i--) {
     new Disk(i, totalDisks);
   }
 
-  // Calculate the x locations of the three pegs.
-  for (var i = 0; i < pegs.length; i++) {
-    pegX[i] = canvasWidth / pegs.length * i + canvasWidth / (pegs.length * 2);
-  }
-
   document.addEventListener('keypress', onKeypress);
   canvas = document.getElementById('canvas');
   canvas.addEventListener('click', onClick);
-  canvas.setAttribute('height', canvasHeight);
-  canvas.setAttribute('width', canvasWidth);
+  canvas.setAttribute('height', CANVAS_HEIGHT);
+  canvas.setAttribute('width', CANVAS_WIDTH);
   ctx = canvas.getContext('2d');
   requestAnimationFrame(frame);
 }
 window.addEventListener('load', init);
 
-var startTime;
+var lastTime;
 
 function frame(timestamp) {
-  if (startTime === undefined) {
-    startTime = timestamp;
+  var delta;
+  if (lastTime === undefined) {
+    delta = 0;
+  } else {
+    var elapsedTime = timestamp - lastTime;
+    delta = SPEED / elapsedTime;
   }
-  var elapsedTime = timestamp - startTime;
-  var angle = elapsedTime / 10 % 360;
+  lastTime = timestamp;
 
   canvas.width = canvas.width;  // Clear the canvas.
 
-  ctx.translate(0, canvasHeight * 0.8);
+  ctx.translate(0, CANVAS_HEIGHT * 0.8);
   for (var i = 0; i < pegs.length; i++) {
     ctx.save();
     ctx.translate(pegX[i], 0);
     drawSpot();
+    ctx.restore();
     for (var j = 0; j < pegs[i].length; j++) {
       var disk = pegs[i][j];
+      var deltaX = delta;
+      var deltaY = delta * disk.targetRatio;
+      if (disk.x === undefined) {
+        disk.x = disk.targetX;
+      } else if (disk.targetX > disk.x) {
+        disk.x = Math.min(disk.x + deltaX, disk.targetX);
+      } else if (disk.targetX < disk.x) {
+        disk.x = Math.max(disk.x - deltaX, disk.targetX);
+      }
+      if (disk.y === undefined) {
+        disk.y = disk.targetY;
+      } else if (disk.targetY > disk.y) {
+        disk.y = Math.min(disk.y + deltaY, disk.targetY);
+      } else if (disk.targetY < disk.y) {
+        disk.y = Math.max(disk.y - deltaY, disk.targetY);
+      }
       ctx.save();
-      ctx.translate(0, -j * diskThickness);
-      disk.drawDisk(viewAngle);
+      ctx.translate(disk.x, -disk.y);
+      disk.drawDisk(VIEW_ANGLE);
       ctx.restore();
     }
-    ctx.restore();
-  }
-
-  if (selectedDisk) {
-    ctx.save();
-    ctx.translate(pegX[selectedDisk.peg], (pegs[selectedDisk.peg].length + 1) * -diskThickness);
-    selectedDisk.drawDisk(viewAngle);
-    ctx.restore();
   }
 
   requestAnimationFrame(frame);
@@ -96,7 +111,7 @@ function frame(timestamp) {
 // Event handler for mouse clicks.
 function onClick(e) {
   // Divide the canvas into thirds.
-  var third = Math.floor(e.offsetX / canvasWidth * pegs.length)
+  var third = Math.floor(e.offsetX / CANVAS_WIDTH * pegs.length)
   third = Math.min(pegs.length - 1, Math.max(0, third));
   input(third);
 }
@@ -113,18 +128,31 @@ function onKeypress(e) {
 function input(n) {
   var peg = pegs[n];
   if (selectedDisk) {
+    // Verify we aren't placing a big disk on a smaller one.
     var topDisk = peg[peg.length - 1];
     if (topDisk && (topDisk.n < selectedDisk.n)) {
-      // Can't place a big disk on a smaller one.
       return;
     }
+
+    // Remove the selected disk from its current peg (should be the top disk).
+    var oldPeg = pegs[selectedDisk.peg];
+    var i = oldPeg.indexOf(selectedDisk);
+    oldPeg.splice(i, 1);
+
     peg.push(selectedDisk);
     selectedDisk.peg = n;
+    selectedDisk.isRaised = false;
+    selectedDisk.setTarget();
     selectedDisk = undefined;
+
     checkWin();
   } else {
     // Might be undefined.
-    selectedDisk = peg.pop();
+    selectedDisk = peg[peg.length - 1];
+    if (selectedDisk) {
+      selectedDisk.isRaised = true;
+      selectedDisk.setTarget();
+    }
   }
 }
 
@@ -132,7 +160,10 @@ function checkWin() {
   for (var i = 0; i < pegs.length; i++) {
     if (lastCompletePeg !== i && pegs[i].length === totalDisks) {
       lastCompletePeg = i;
-      document.getElementById('win').play();
+      // Slight delay to let the animation for this move to play.
+      setTimeout(function() {
+        document.getElementById('win').play();
+      }, 500);
     }
   }
 
@@ -140,10 +171,15 @@ function checkWin() {
 
 function Disk(n, total) {
   this.n = n;
-  var maxRadius = canvasWidth / 6;
+  var maxRadius = CANVAS_WIDTH / 6;
   var minRadius = maxRadius / 10;
   this.radius = (maxRadius - minRadius) / (total + 2) * (n + 1) + minRadius;
   this.peg = 0;  // 0, 1, 2
+  this.isRaised = false;
+  this.x = undefined;
+  this.y = undefined;
+  this.targetX = undefined;
+  this.targetY = undefined;
   pegs[this.peg].push(this);
   disks.push(this);
   if (n === 0) {
@@ -159,6 +195,7 @@ function Disk(n, total) {
     this.fillColour = '#2E5FFF';
     this.strokeColour = '#1B3899';
   }
+  this.setTarget();
 }
 
 Disk.prototype.drawDisk = function(degrees) {
@@ -169,7 +206,7 @@ Disk.prototype.drawDisk = function(degrees) {
   var radians = degrees / 180 * Math.PI
   var ratio = Math.sin(radians);
   var height = Math.abs(this.radius * ratio);
-  var halfVisualThickness = Math.cos(radians) * ((diskThickness - 1) / 2);
+  var halfVisualThickness = Math.cos(radians) * ((DISK_THICKNESS - 1) / 2);
   var topY = degrees > 180 ? halfVisualThickness : -halfVisualThickness;
   var bottomY = -topY;
 
@@ -194,16 +231,34 @@ Disk.prototype.drawDisk = function(degrees) {
   ctx.stroke();
 };
 
+Disk.prototype.setTarget = function() {
+  this.targetX = pegX[this.peg];
+  this.targetY = pegs[this.peg].indexOf(this) * DISK_THICKNESS;
+  if (this.isRaised) {
+    this.targetY += RAISE_HEIGHT;
+  }
+  var deltaX = this.targetX - this.x;
+  var deltaY = this.targetY - this.y;
+  if (deltaX === 0) {
+    // Straight up or down.
+    this.targetRatio = 1;
+  } else {
+    // Moving to a new peg.
+    this.targetRatio = Math.abs(deltaY / deltaX);
+  }
+  console.log(this.targetRatio);
+};
+
 function drawSpot() {
   ctx.strokeStyle = '#ccc';
   ctx.lineWidth = 1;
 
-  var radians = viewAngle / 180 * Math.PI
+  var radians = VIEW_ANGLE / 180 * Math.PI
   var ratio = Math.sin(radians);
   var radius = disks[0].radius;
   var height = Math.abs(radius * ratio);
-  var halfVisualThickness = Math.cos(radians) * ((diskThickness - 1) / 2);
-  var bottomY = viewAngle > 180 ? -halfVisualThickness : halfVisualThickness;
+  var halfVisualThickness = Math.cos(radians) * ((DISK_THICKNESS - 1) / 2);
+  var bottomY = VIEW_ANGLE > 180 ? -halfVisualThickness : halfVisualThickness;
 
   ctx.beginPath();
   ctx.ellipse(0, bottomY, radius, height, 0, 0, 2 * Math.PI);
