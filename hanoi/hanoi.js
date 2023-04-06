@@ -17,7 +17,7 @@ var CANVAS_WIDTH = 1024;
 var DISK_THICKNESS = 25;
 var VIEW_ANGLE = 10;  // Degrees.
 var RAISE_HEIGHT = DISK_THICKNESS;
-var SPEED = 50;  // Larger is faster.
+var SPEED = 1.0;  // Smaller is faster.
 
 var totalDisks = 5;
 var disks = [];
@@ -68,7 +68,7 @@ function frame(timestamp) {
     delta = 0;
   } else {
     var elapsedTime = timestamp - lastTime;
-    delta = elapsedTime ? SPEED / elapsedTime : 0;
+    delta = elapsedTime ? elapsedTime / SPEED : 0;
   }
   lastTime = timestamp;
 
