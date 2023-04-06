@@ -68,18 +68,23 @@ function frame(timestamp) {
     delta = 0;
   } else {
     var elapsedTime = timestamp - lastTime;
-    delta = SPEED / elapsedTime;
+    delta = elapsedTime ? SPEED / elapsedTime : 0;
   }
   lastTime = timestamp;
 
   canvas.width = canvas.width;  // Clear the canvas.
 
   ctx.translate(0, CANVAS_HEIGHT * 0.8);
+  // Draw the spots.
   for (var i = 0; i < pegs.length; i++) {
     ctx.save();
     ctx.translate(pegX[i], 0);
     drawSpot();
     ctx.restore();
+  }
+
+  // Draw the disks.
+  for (var i = 0; i < pegs.length; i++) {
     for (var j = 0; j < pegs[i].length; j++) {
       var disk = pegs[i][j];
       var deltaX = delta;
@@ -246,7 +251,6 @@ Disk.prototype.setTarget = function() {
     // Moving to a new peg.
     this.targetRatio = Math.abs(deltaY / deltaX);
   }
-  console.log(this.targetRatio);
 };
 
 function drawSpot() {
