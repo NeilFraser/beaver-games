@@ -87,21 +87,28 @@ function frame(timestamp) {
   for (var i = 0; i < pegs.length; i++) {
     for (var j = 0; j < pegs[i].length; j++) {
       var disk = pegs[i][j];
+
       var deltaX = delta;
-      var deltaY = delta * disk.targetRatio;
-      if (disk.x === undefined) {
-        disk.x = disk.targetX;
-      } else if (disk.targetX > disk.x) {
+      if (disk.targetX > disk.x) {
         disk.x = Math.min(disk.x + deltaX, disk.targetX);
       } else if (disk.targetX < disk.x) {
         disk.x = Math.max(disk.x - deltaX, disk.targetX);
       }
-      if (disk.y === undefined) {
-        disk.y = disk.targetY;
-      } else if (disk.targetY > disk.y) {
-        disk.y = Math.min(disk.y + deltaY, disk.targetY);
-      } else if (disk.targetY < disk.y) {
-        disk.y = Math.max(disk.y - deltaY, disk.targetY);
+
+      if (disk.sourceX === disk.targetX) {
+        // Straight up or down.
+        if (disk.targetY > disk.y) {
+          disk.y = Math.min(disk.y + delta, disk.targetY);
+        } else if (disk.targetY < disk.y) {
+          disk.y = Math.max(disk.y - delta, disk.targetY);
+        }
+      } else {
+        // Moving linearly to a new peg.
+        var distanceX = disk.targetX - disk.sourceX;
+        var distanceY = disk.targetY - disk.sourceY;
+        var m = distanceY / distanceX;
+        var y = m * (disk.x - disk.targetX) + disk.targetY;
+        disk.y = y;
       }
       ctx.save();
       ctx.translate(disk.x, -disk.y);
@@ -185,6 +192,8 @@ function Disk(n, total) {
   this.y = undefined;
   this.targetX = undefined;
   this.targetY = undefined;
+  this.sourceX = undefined;
+  this.sourceY = undefined;
   pegs[this.peg].push(this);
   disks.push(this);
   if (n === 0) {
@@ -239,17 +248,16 @@ Disk.prototype.drawDisk = function(degrees) {
 Disk.prototype.setTarget = function() {
   this.targetX = pegX[this.peg];
   this.targetY = pegs[this.peg].indexOf(this) * DISK_THICKNESS;
+  if (this.x === undefined) {
+    this.x = this.targetX;
+  }
+  this.sourceX = this.x;
+  if (this.y === undefined) {
+    this.y = this.targetY;
+  }
+  this.sourceY = this.y;
   if (this.isRaised) {
     this.targetY += RAISE_HEIGHT;
-  }
-  var deltaX = this.targetX - this.x;
-  var deltaY = this.targetY - this.y;
-  if (deltaX === 0) {
-    // Straight up or down.
-    this.targetRatio = 1;
-  } else {
-    // Moving to a new peg.
-    this.targetRatio = Math.abs(deltaY / deltaX);
   }
 };
 
