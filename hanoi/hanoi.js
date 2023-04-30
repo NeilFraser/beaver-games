@@ -103,11 +103,15 @@ function frame(timestamp) {
           disk.y = Math.max(disk.y - delta, disk.targetY);
         }
       } else {
-        // Moving linearly to a new peg.
+        // Moving parabolically to a new peg.
         var distanceX = disk.targetX - disk.sourceX;
-        var distanceY = disk.targetY - disk.sourceY;
-        var m = distanceY / distanceX;
-        var y = m * (disk.x - disk.targetX) + disk.targetY;
+        var peakX = disk.sourceX + distanceX / 2;
+        var averageY = (disk.targetY + disk.sourceY) / 2;
+        var peakY = averageY + Math.abs(distanceX / 4);
+        var y = computeParabolaY(disk.x,
+            disk.sourceX, disk.sourceY,
+            peakX, peakY,
+            disk.targetX, disk.targetY);
         disk.y = y;
       }
       ctx.save();
@@ -118,6 +122,17 @@ function frame(timestamp) {
   }
 
   requestAnimationFrame(frame);
+}
+
+// Compute parabola using the x value and three points.
+function computeParabolaY(x, x1, y1, x2, y2, x3, y3) {
+  var denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
+  var a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
+  var b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) /
+      denom;
+  var c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 *
+      (x1 - x2) * y3) / denom;
+  return a * x * x + b * x + c;
 }
 
 // Event handler for mouse clicks.
