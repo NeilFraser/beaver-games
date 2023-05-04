@@ -87,7 +87,8 @@ function frame(timestamp) {
   for (var i = 0; i < pegs.length; i++) {
     for (var j = 0; j < pegs[i].length; j++) {
       var disk = pegs[i][j];
-      var viewAngle = VIEW_ANGLE;
+      var pitchDegrees = VIEW_ANGLE;
+      var rollDegrees = 0;
 
       var deltaX = delta;
       if (disk.targetX > disk.x) {
@@ -104,25 +105,31 @@ function frame(timestamp) {
           disk.y = Math.max(disk.y - delta, disk.targetY);
         }
       } else {
-        // Moving parabolically to a new peg.
         var distanceX = disk.targetX - disk.sourceX;
+        // Flip disk in flight if it is its first move and not the top disk.
+        var peakDenominator = 4;
+        if (disk.isFirstMove && disk.n !== 0) {
+          var distanceRatio = (disk.x - disk.sourceX) / distanceX;
+          pitchDegrees -= distanceRatio * (VIEW_ANGLE * 2);
+          rollDegrees = distanceRatio * 180;
+          if (distanceX < 0) rollDegrees *= -1;
+          // Raise the arc a bit if there's a flip.
+          peakDenominator = 3;
+        }
+
+        // Moving parabolically to a new peg.
         var peakX = disk.sourceX + distanceX / 2;
         var averageY = (disk.targetY + disk.sourceY) / 2;
-        var peakY = averageY + Math.abs(distanceX / 4);
+        var peakY = averageY + Math.abs(distanceX / peakDenominator);
         var y = computeParabolaY(disk.x,
             disk.sourceX, disk.sourceY,
             peakX, peakY,
             disk.targetX, disk.targetY);
         disk.y = y;
-        // Flip disk in flight if it is its first move and not the top disk.
-        if (disk.isFirstMove && disk.n !== 0) {
-          var disanceRatio = (disk.x - disk.sourceX) / distanceX;
-          viewAngle += disanceRatio * 180;
-        }
       }
       ctx.save();
       ctx.translate(disk.x, -disk.y);
-      disk.drawDisk(viewAngle);
+      disk.drawDisk(pitchDegrees, rollDegrees);
       ctx.restore();
     }
   }
@@ -246,18 +253,23 @@ function Disk(n, total) {
   this.setTarget();
 }
 
-Disk.prototype.drawDisk = function(degrees) {
+Disk.prototype.drawDisk = function(pitchDegrees, rollDegrees) {
+  if (pitchDegrees < 0) pitchDegrees += 360;
+  if (rollDegrees < 0) rollDegrees += 360;
+  var pitchRadians = pitchDegrees / 180 * Math.PI;
+  var rollRadians = rollDegrees / 180 * Math.PI;
+
   ctx.fillStyle = this.fillColour;
   ctx.strokeStyle = this.strokeColour;
   ctx.lineWidth = 1;
 
-  var radians = degrees / 180 * Math.PI
-  var ratio = Math.sin(radians);
+  var ratio = Math.sin(pitchRadians);
   var height = Math.abs(this.radius * ratio);
-  var halfVisualThickness = Math.cos(radians) * ((DISK_THICKNESS - 1) / 2);
-  var topY = degrees > 180 ? halfVisualThickness : -halfVisualThickness;
+  var halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
+  var topY = pitchDegrees > 180 ? halfVisualThickness : -halfVisualThickness;
   var bottomY = -topY;
 
+  ctx.rotate(rollRadians);
   ctx.beginPath();
   ctx.ellipse(0, bottomY, this.radius, height, 0, 0, 2 * Math.PI);
   ctx.fill();
@@ -299,11 +311,11 @@ function drawSpot() {
   ctx.strokeStyle = '#ccc';
   ctx.lineWidth = 1;
 
-  var radians = VIEW_ANGLE / 180 * Math.PI
-  var ratio = Math.sin(radians);
+  var pitchRadians = VIEW_ANGLE / 180 * Math.PI;
+  var ratio = Math.sin(pitchRadians);
   var radius = disks[0].radius;
   var height = Math.abs(radius * ratio);
-  var halfVisualThickness = Math.cos(radians) * ((DISK_THICKNESS - 1) / 2);
+  var halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
   var bottomY = VIEW_ANGLE > 180 ? -halfVisualThickness : halfVisualThickness;
 
   ctx.beginPath();
