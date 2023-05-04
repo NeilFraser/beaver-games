@@ -87,6 +87,7 @@ function frame(timestamp) {
   for (var i = 0; i < pegs.length; i++) {
     for (var j = 0; j < pegs[i].length; j++) {
       var disk = pegs[i][j];
+      var viewAngle = VIEW_ANGLE;
 
       var deltaX = delta;
       if (disk.targetX > disk.x) {
@@ -113,10 +114,15 @@ function frame(timestamp) {
             peakX, peakY,
             disk.targetX, disk.targetY);
         disk.y = y;
+        // Flip disk in flight if it is its first move and not the top disk.
+        if (disk.isFirstMove && disk.n !== 0) {
+          var disanceRatio = (disk.x - disk.sourceX) / distanceX;
+          viewAngle += disanceRatio * 180;
+        }
       }
       ctx.save();
       ctx.translate(disk.x, -disk.y);
-      disk.drawDisk(VIEW_ANGLE);
+      disk.drawDisk(viewAngle);
       ctx.restore();
     }
   }
@@ -170,8 +176,13 @@ function input(n) {
     selectedDisk.peg = n;
     selectedDisk.isRaised = false;
     selectedDisk.setTarget();
+    if (oldPeg !== peg) {
+      if (selectedDisk.hasMoved) {
+        selectedDisk.isFirstMove = false;
+      }
+      selectedDisk.hasMoved = true;
+    }
     selectedDisk = undefined;
-
     checkWin();
   } else {
     // Might be undefined.
@@ -191,6 +202,12 @@ function checkWin() {
       setTimeout(function() {
         document.getElementById('win').play();
       }, 500);
+
+      // Reset disk move status.
+      for (var i = 0; i < totalDisks; i++) {
+        disks[i].hasMoved = false;
+        disks[i].isFirstMove = true;
+      }
     }
   }
 
@@ -209,6 +226,8 @@ function Disk(n, total) {
   this.targetY = undefined;
   this.sourceX = undefined;
   this.sourceY = undefined;
+  this.hasMoved = false;
+  this.isFirstMove = true;
   pegs[this.peg].push(this);
   disks.push(this);
   if (n === 0) {
