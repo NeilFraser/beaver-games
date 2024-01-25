@@ -142,7 +142,7 @@ function init() {
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
   registerOptions('difficulty');
 
-  initSvgGrid();
+  initSvgMarkers();
 
   document.addEventListener('keydown', keyDown);
   document.addEventListener('keyup', keyUp);
@@ -213,12 +213,12 @@ function createShape() {
   }
 }
 
-// Draw the grid markers on the board.
-function initSvgGrid() {
-  var grid = document.getElementById('grid');
-  if (!grid) throw Error('No grid SVG element found.');
-  // <line class="grid" x1="19" y1="20" x2="21" y2="20"/>
-  // <line class="grid" x1="20" y1="19" x2="20" y2="21"/>
+// Draw the '+' markers on the board.
+function initSvgMarkers() {
+  var markers = document.getElementById('markers');
+  if (!markers) throw Error('No markers SVG element found.');
+  // <line x1="19" y1="20" x2="21" y2="20"/>
+  // <line x1="20" y1="19" x2="20" y2="21"/>
   var LEN = 2;
   for (var x = 0; x <= COLUMNS; x++) {
     var matrixX = BORDER_WIDTH + x * SQUARE_SIZE;
@@ -229,15 +229,13 @@ function initSvgGrid() {
       line.setAttribute('y1', matrixY);
       line.setAttribute('x2', matrixX + LEN);
       line.setAttribute('y2', matrixY);
-      line.classList.add('grid');
-      grid.appendChild(line);
+      markers.appendChild(line);
       line = document.createElementNS(SVG_NS, 'line');
       line.setAttribute('x1', matrixX);
       line.setAttribute('y1', matrixY - LEN);
       line.setAttribute('x2', matrixX);
       line.setAttribute('y2', matrixY + LEN);
-      line.classList.add('grid');
-      grid.appendChild(line);
+      markers.appendChild(line);
     }
   }
 }
