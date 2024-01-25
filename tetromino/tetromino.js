@@ -128,7 +128,8 @@ var speed;
 function recalculateSpeed() {
   var level = Math.ceil((lines + 1) / 10);
   level = Math.max(level, START_LEVEL);
-  speed = Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000;
+  // Without the max(..., 0), speed goes -Infinity when level passes 1151.
+  speed = Math.max(Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000, 0);
 }
 
 // Initialize the board and start the game.
