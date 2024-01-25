@@ -248,6 +248,7 @@ function initDataGrid() {
   }
 }
 
+// Create one empty row of nulls for the grid.
 function newDataRow() {
   var row = [];
   for (var x = 0; x < COLUMNS; x++) {
@@ -504,7 +505,9 @@ function identifyFullLines(callback) {
   for (var i = 0; i < fullLines.length; i++) {
     var y = fullLines[i];
     for (var x = 0; x < grid[y].length; x++) {
-      deleteBlocks.push(grid[y][x]);
+      if (grid[y][x] !== null) {
+        deleteBlocks.push(grid[y][x]);
+      }
     }
   }
   // Highlight full lines.
