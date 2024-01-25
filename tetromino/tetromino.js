@@ -671,6 +671,7 @@ function createBlock() {
 
 // Move the current shape down one row.
 function actionDown() {
+  if (!currentShape) return;
   currentShape.currentY--;
   var oldCoords = currentShape.coords;
   currentShape.coords = moveCoords(currentShape.coords, 0, -1);
@@ -686,6 +687,7 @@ function actionDown() {
 
 // Move the current shape right or left one column.
 function actionMove(right) {
+  if (!currentShape) return;
   var dx = right ? 1 : -1;
   var oldCoords = currentShape.coords;
   currentShape.coords = moveCoords(currentShape.coords, dx, 0);
@@ -702,6 +704,7 @@ function actionMove(right) {
 
 // Drop the current shape to the bottom, and lock it in place.
 function actionDrop() {
+  if (!currentShape) return;
   do {
     var oldCoords = currentShape.coords;
     currentShape.coords = moveCoords(currentShape.coords, 0, -1);
@@ -715,6 +718,7 @@ function actionDrop() {
 
 // Rotate the current shape clockwise or counter-clockwise.
 function actionRotate(ccw) {
+  if (!currentShape) return;
   var oldRotation = currentShape.currentRotation;
   var oldCoords = currentShape.coords;
   var oldX = currentShape.currentX;
