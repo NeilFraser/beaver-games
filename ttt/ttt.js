@@ -16,12 +16,11 @@ var EMPTY = 0;
 var O_VALUE = 1;
 var TIE = 2;
 
+// The internal representation of the board.
 var board = [];
 
-// The internal representation of the board.
-var board;
-
 // Whose turn, X or O?
+// Either X_VALUE (-1) or Y_VALUE (1).
 var turn;
 
 // Human goes first on first game (but this is negated at the start).
@@ -318,6 +317,7 @@ function keyDown(e) {
   }
 }
 
+// On page load, initialize the event handlers.
 function init() {
   fixLinks();
 

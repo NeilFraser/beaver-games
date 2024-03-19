@@ -262,7 +262,7 @@ function newDataRow() {
 var CurrentShape = function(type) {
   this.shape = SHAPES[type];
   if (!this.shape) {
-    throw new Error('Unknown type: ' + type);
+    throw Error('Unknown type: ' + type);
   }
   this.type = type;
   this.g = document.createElementNS(SVG_NS, 'g');

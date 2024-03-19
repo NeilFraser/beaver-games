@@ -347,7 +347,7 @@ sequenceDetonations.lastY = NaN;
 function detonateWithGraphics(x, y) {
   var square = liveField.getSquare(x, y);
   if (!square.isOverloaded()) {
-    throw new Error("Can't blow up non-overloaded square.");
+    throw Error("Can't blow up non-overloaded square.");
   }
   timeoutPID = setTimeout(implodeStep_.bind(null, square, square.neighbourCount), 100);
 }
@@ -631,7 +631,7 @@ Field.prototype.simulate = function(x, y, who) {
 Field.prototype.detonateLogically = function(x, y) {
   var square = this.squares_[x][y];
   if (!square.isOverloaded()) {
-    throw new Error("Can't blow up non-overloaded square.");
+    throw Error("Can't blow up non-overloaded square.");
   }
   var neighbours = this.getNeighbours(x, y);
   square.bombs -= neighbours.length;

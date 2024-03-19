@@ -554,7 +554,7 @@ AbstractAnimatable.prototype.callDispose = function() {
 
 // Stub for dispose method.
 AbstractAnimatable.prototype.dispose = function() {
-  throw new Error('Implemented by sub-class.');
+  throw Error('Implemented by sub-class.');
 };
 
 // Constructor for a new shell (bullet).
