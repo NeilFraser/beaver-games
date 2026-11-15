@@ -11,50 +11,50 @@
 'use strict';
 
 // For Easy/Normal/Hard modes.
-var HEIGHTS = [12, 24, 48];
-var WIDTHS = [24, 48, 96];
-var SQUARE_SIZES = [30, 20, 15];
-var SPEEDS = [0, 0.5, 0.75];
-var SPEED;
+const HEIGHTS = [12, 24, 48];
+const WIDTHS = [24, 48, 96];
+const SQUARE_SIZES = [30, 20, 15];
+const SPEEDS = [0, 0.5, 0.75];
+let SPEED;
 // Number of rows.
-var HEIGHT;
+let HEIGHT;
 // Number of columns.
-var WIDTH;
+let WIDTH;
 
 // Height and width of a single cell.
-var SQUARE_SIZE;
+let SQUARE_SIZE;
 
 // Is the game running?
-var isRunning = false;
+let isRunning = false;
 
 // Is the start button visible?
-var isStartVisible = true;
+let isStartVisible = true;
 
 // 2D array of walls (true if wall, false if path).
-var walls = [];
+const walls = [];
 
 // Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Array of coordinates that the avatar moved.
-var avatarPath = [];
+let avatarPath = [];
 
 // Object with x/y coordinates of avatar.
-var avatar = {x: 0, y: 0};
+let avatar = {x: 0, y: 0};
 
 // Object with x/y coordinates of goal.
-var goal = null;
+let goal = null;
 
 // Randomly selected origin point for growing the maze.
-var originX, originY;
+let originX, originY;
 
 // Start-up initialization code.  Run once.
 function init() {
   fixLinks();
 
   // Configure difficulty mode.
-  var m = document.cookie.match(/difficulty=([012])/);
-  var difficulty = Number(m ? m[1] : 0);
+  const m = document.cookie.match(/difficulty=([012])/);
+  const difficulty = Number(m ? m[1] : 0);
   document.getElementById('difficulty').selectedIndex = difficulty;
   registerOptions('difficulty');
 
@@ -63,7 +63,7 @@ function init() {
   WIDTH = WIDTHS[difficulty];
   SQUARE_SIZE = SQUARE_SIZES[difficulty];
   SPEED = SPEEDS[difficulty];
-  var svg = document.getElementById('landscape');
+  const svg = document.getElementById('landscape');
   svg.setAttribute('height', SQUARE_SIZE * HEIGHT + 1);
   svg.setAttribute('width', SQUARE_SIZE * WIDTH + 1);
 
@@ -84,7 +84,7 @@ window.addEventListener('load', init);
 // Hide the start button.
 // Clicking a button is needed to authorize the browser to play sounds.  :(
 function startButton() {
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = 'none';
   isStartVisible = false;
 }
@@ -92,7 +92,7 @@ function startButton() {
 // Clear any existing maze.  Create a new maze.
 function initMaze() {
   // Clear old SVG walls and goal.
-  var g = document.getElementById('wallLayer');
+  let g = document.getElementById('wallLayer');
   while (g.firstChild) {
     g.removeChild(g.firstChild);
   }
@@ -105,12 +105,9 @@ function initMaze() {
     g.removeChild(g.firstChild);
   }
   // Initialize the wall grid to be solid.
-  walls.length = 0;
-  for (var x = 0; x < WIDTH; x++) {
-    walls[x] = [];
-    for (var y = 0; y < HEIGHT; y++) {
-      walls[x][y] = true;
-    }
+  walls.length = WIDTH;
+  for (let x = 0; x < WIDTH; x++) {
+    walls[x] = new Array(HEIGHT).fill(true);
   }
 
   // Use the avatar/goal location in the previous maze as the origin for the
@@ -126,29 +123,29 @@ function startGame() {
   // Choose the goal coordinates.
   goal = findEnd(originX, originY);
   // Draw the goal.
-  var g = document.getElementById('goalLayer');
-  var element = document.createElementNS(SVG_NS, 'circle');
-  element.setAttribute('r', SQUARE_SIZE / 4);
-  element.setAttribute('cx', goal.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
-  element.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
-  element.id = 'goal';
-  g.appendChild(element);
+  const goalLayer = document.getElementById('goalLayer');
+  const goalElement = document.createElementNS(SVG_NS, 'circle');
+  goalElement.setAttribute('r', SQUARE_SIZE / 4);
+  goalElement.setAttribute('cx', goal.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  goalElement.setAttribute('cy', goal.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  goalElement.id = 'goal';
+  goalLayer.appendChild(goalElement);
 
   // Choose the avatar coordinates.
   avatar = findEnd(goal.x, goal.y);
   avatarPath = [{x: avatar.x, y: avatar.y}];
   // Draw the avatar.
-  var g = document.getElementById('avatarLayer');
-  var element = document.createElementNS(SVG_NS, 'path');
-  element.style.strokeWidth = (SQUARE_SIZE / 6) + 'px';
-  element.id = 'avatarPath';
-  g.appendChild(element);
-  var element = document.createElementNS(SVG_NS, 'circle');
-  element.setAttribute('r', SQUARE_SIZE / 4);
-  element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
-  element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
-  element.id = 'avatar';
-  g.appendChild(element);
+  const avatarLayer = document.getElementById('avatarLayer');
+  const avatarPathElement = document.createElementNS(SVG_NS, 'path');
+  avatarPathElement.style.strokeWidth = (SQUARE_SIZE / 6) + 'px';
+  avatarPathElement.id = 'avatarPath';
+  avatarLayer.appendChild(avatarPathElement);
+  const avatarElement = document.createElementNS(SVG_NS, 'circle');
+  avatarElement.setAttribute('r', SQUARE_SIZE / 4);
+  avatarElement.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  avatarElement.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+  avatarElement.id = 'avatar';
+  avatarLayer.appendChild(avatarElement);
 
   // Allow user input.
   isRunning = true;
@@ -161,10 +158,10 @@ function initMazeStep() {
     startGame();
     return;
   }
-  var randomIndex = Math.floor(Math.random() * initMaze.horizon.length);
-  var cell = initMaze.horizon.splice(randomIndex, 1)[0];
+  const randomIndex = Math.floor(Math.random() * initMaze.horizon.length);
+  const cell = initMaze.horizon.splice(randomIndex, 1)[0];
 
-  var wallCount =
+  const wallCount =
     isWall(cell.x + 1, cell.y, true) + isWall(cell.x - 1, cell.y, true) +
     isWall(cell.x, cell.y + 1, true) + isWall(cell.x, cell.y - 1, true);
   if (wallCount >= 3) {
@@ -202,14 +199,14 @@ function draw(x, y) {
   if (isWall(x, y, true)) {
     return;  // No path here.
   }
-  var layer = document.getElementById('wallLayer');
-  var oldElement = document.getElementById(x + '_' + y);
+  const layer = document.getElementById('wallLayer');
+  const oldElement = document.getElementById(x + '_' + y);
   if (oldElement) {
     layer.removeChild(oldElement);
   }
-  var g = document.createElementNS(SVG_NS, 'g');
+  const g = document.createElementNS(SVG_NS, 'g');
   // Every cell has a circle in the middle.
-  var element = document.createElementNS(SVG_NS, 'circle');
+  const element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('r', SQUARE_SIZE / 4);
   element.setAttribute('cx', SQUARE_SIZE / 2);
   element.setAttribute('cy', SQUARE_SIZE / 2);
@@ -217,7 +214,7 @@ function draw(x, y) {
   g.appendChild(element);
   // Add the north, south, east and west paths as needed.
   if (!isWall(x - 1, y, true)) {
-    var element = document.createElementNS(SVG_NS, 'rect');
+    const element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE / 2);
     element.setAttribute('x', -1);
@@ -226,7 +223,7 @@ function draw(x, y) {
     g.appendChild(element);
   }
   if (!isWall(x + 1, y, true)) {
-    var element = document.createElementNS(SVG_NS, 'rect');
+    const element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE / 2);
     element.setAttribute('x', SQUARE_SIZE / 2);
@@ -235,7 +232,7 @@ function draw(x, y) {
     g.appendChild(element);
   }
   if (!isWall(x, y - 1, true)) {
-    var element = document.createElementNS(SVG_NS, 'rect');
+    const element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE / 2);
     element.setAttribute('x', SQUARE_SIZE / 4);
@@ -244,7 +241,7 @@ function draw(x, y) {
     g.appendChild(element);
   }
   if (!isWall(x, y + 1, true)) {
-    var element = document.createElementNS(SVG_NS, 'rect');
+    const element = document.createElementNS(SVG_NS, 'rect');
     element.setAttribute('height', SQUARE_SIZE / 2);
     element.setAttribute('width', SQUARE_SIZE  / 2);
     element.setAttribute('x', SQUARE_SIZE / 4);
@@ -260,23 +257,23 @@ function draw(x, y) {
 
 // Spider the maze to find the furthest point from the provided start point.
 function findEnd(startX, startY) {
-  var end = null;
-  var endSteps = 0;
-  var visited = new Set();
-  var queue = new Map();
+  let end = null;
+  let endSteps = 0;
+  const visited = new Set();
+  const queue = new Map();
   queue.set(startX + ' ' + startY, 0);
   while (queue.size) {
-    var xys_ = queue.entries().next().value;
-    var xy = xys_[0];
-    var steps = Number(xys_[1]) + 1;
+    const xys_ = queue.entries().next().value;
+    const xy = xys_[0];
+    const steps = Number(xys_[1]) + 1;
     queue.delete(xy);
     if (visited.has(xy)) {
       continue;
     }
     visited.add(xy);
-    var xy_ = xy.split(' ');
-    var x = Number(xy_[0]);
-    var y = Number(xy_[1]);
+    const xy_ = xy.split(' ');
+    const x = Number(xy_[0]);
+    const y = Number(xy_[1]);
     if (isWall(x, y, true)) {
       continue;
     }
@@ -335,18 +332,18 @@ function keyDown(e) {
 
 // Move the avatar one step.
 function move(dx, dy) {
-  var newX = avatar.x + dx;
-  var newY = avatar.y + dy;
+  const newX = avatar.x + dx;
+  const newY = avatar.y + dy;
   if (isWall(newX, newY, true)) {
     return;
   }
   avatar.x = newX;
   avatar.y = newY;
-  var element = document.getElementById('avatar');
+  const element = document.getElementById('avatar');
   element.setAttribute('cx', avatar.x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   element.setAttribute('cy', avatar.y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
 
-  var lastSpot = avatarPath[avatarPath.length - 2];
+  const lastSpot = avatarPath[avatarPath.length - 2];
   if (lastSpot && lastSpot.x === newX && lastSpot.y === newY) {
     avatarPath.pop();
   } else {
@@ -364,12 +361,13 @@ function move(dx, dy) {
 
 // Render the avatar's path.
 function drawPath() {
-  var d = [];
-  for (var i = 0; i < avatarPath.length; i++) {
+  const d = [];
+  for (let i = 0; i < avatarPath.length; i++) {
+    // First path element is 'move', following ones are 'line'.
     d.push(i ? 'L' : 'M',
            avatarPath[i].x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5,
            avatarPath[i].y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   }
-  var element = document.getElementById('avatarPath');
+  const element = document.getElementById('avatarPath');
   element.setAttribute('d', d.join(' '));
 }

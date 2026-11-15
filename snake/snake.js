@@ -12,11 +12,11 @@
 
 
 // Height and width of playing board.
-var HEIGHT = 20;
-var WIDTH = 30;
+const HEIGHT = 20;
+const WIDTH = 30;
 
 // Enum of directions.  The integer values map into the 'deltas' array.
-var directions = {
+const directions = {
   LEFT: 0,
   RIGHT: 1,
   UP: 2,
@@ -24,7 +24,7 @@ var directions = {
 };
 
 // X/Y deltas for each direction.
-var deltas = [
+const deltas = [
   [-1, 0],
   [1, 0],
   [0, -1],
@@ -32,39 +32,39 @@ var deltas = [
 ];
 
 // Enum of results for a move.
-var moveResult = {
+const moveResult = {
   FREE: 0,
   FOOD: 1,
   CRASH: 2
 };
 
 // Milliseconds between each step.
-var SPEED;
+let SPEED;
 
 // Minimum distance between food and board edges.
-var foodMargin = 0;
+let foodMargin = 0;
 
 // Array of snake objects.
-var snakes = [];
+const snakes = [];
 
 // Currently running snake.
-var snakeIndex = 0;
+let snakeIndex = 0;
 
 // Running task for executing steps.
-var pid;
+let pid;
 
 // Is the game running?
-var isRunning = false;
+let isRunning = false;
 
 // Is there a second player?
-var player2 = false;
+let player2 = false;
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
-  var difficultyIndex = m ? m[1] : 0;
+  let m = document.cookie.match(/difficulty=([012])/);
+  const difficultyIndex = m ? m[1] : 0;
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
   SPEED = [400, 200, 100][difficultyIndex];
   // Easy - Food is never next to a wall.
@@ -91,13 +91,13 @@ window.addEventListener('load', init);
 
 // Create the DOM for the playing board.  Only done one.
 function injectTable() {
-  var count = 0;
-  var table = document.getElementById('grid');
-  for (var y = 0; y < HEIGHT; y++) {
-    var tr = document.createElement('tr');
-    for (var x = 0; x < WIDTH; x++) {
+  let count = 0;
+  const table = document.getElementById('grid');
+  for (let y = 0; y < HEIGHT; y++) {
+    const tr = document.createElement('tr');
+    for (let x = 0; x < WIDTH; x++) {
       count++;
-      var td = document.createElement('td');
+      const td = document.createElement('td');
       td.id = x + '_' + y;
       td.className = ((x + y) % 2) ? 'even' : 'odd';
       tr.appendChild(td);
@@ -108,15 +108,15 @@ function injectTable() {
 
 // Create the borders.  Only done once.
 function initBorders() {
-  var doorWidth = 3;  // Approximately one half the width of the door.
-  for (var x = 0; x < WIDTH; x++) {
+  const doorWidth = 3;  // Approximately one half the width of the door.
+  for (let x = 0; x < WIDTH; x++) {
     if (Math.abs(x - WIDTH / 2) < doorWidth) {
       continue;
     }
     getCell([x, 0]).className = 'border';
     getCell([x, HEIGHT - 1]).className = 'border';
   }
-  for (var y = 1; y < HEIGHT - 1; y++) {
+  for (let y = 1; y < HEIGHT - 1; y++) {
     if (Math.abs(y - HEIGHT / 2) < doorWidth) {
       continue;
     }
@@ -128,23 +128,23 @@ function initBorders() {
 // Clear temporary CSS classes (e.g. snake, food) from a cell.
 // Preserve permanent CSS classes (e.g. even/odd, border).
 function clearCell(td) {
-  var classes = ['food', 'snake', 'player1', 'player2',
+  const classeNames = ['food', 'snake', 'player1', 'player2',
     'dir-0', 'dir-1', 'dir-2', 'dir-3',
     'head', 'body', 'turn-ccw', 'turn-cw', 'tail'];
-  for (var i = 0; i < classes.length; i++) {
-    td.classList.remove(classes[i]);
+  for (const className of classeNames) {
+    td.classList.remove(className);
   }
 }
 
 // Clear any existing data, and configure a new game.
 function resetGame() {
-  for (var y = 0; y < HEIGHT; y++) {
-    for (var x = 0; x < WIDTH; x++) {
+  for (let y = 0; y < HEIGHT; y++) {
+    for (let x = 0; x < WIDTH; x++) {
       clearCell(getCell([x, y]));
     }
   }
   snakes.length = 0;
-  var snake = new Snake(1);
+  let snake = new Snake(1);
   snake.direction = directions.RIGHT;
   snakes.push(snake);
   snake.setHead(Math.floor(WIDTH / 2) - 2, Math.floor(HEIGHT / 2) - 1);
@@ -156,10 +156,10 @@ function resetGame() {
     snake.setHead(Math.floor(WIDTH / 2) + 2, Math.floor(HEIGHT / 2) + 1);
   }
   // Start snake with a length of three (one head, plus two steps),
-  for (var i = 0; i < snakes.length; i++) {
-    snakes[i].step(true);
-    snakes[i].step(true);
-    snakes[i].step(false);
+  for (const snake of snakes) {
+    snake.step(true);
+    snake.step(true);
+    snake.step(false);
   }
   // Start with two foods on the board.
   addFood();
@@ -179,14 +179,14 @@ function keyPress(e) {
 // Show the start button and disable the controls.
 function showStart() {
   document.body.className = '';
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = '';
 }
 
 // Hide the start button, and start the interval.
 function startGame() {
   resetGame();
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = 'none';
   isRunning = true;
   pid = setInterval(step, SPEED / snakes.length);
@@ -203,11 +203,12 @@ function step() {
 
 // Add an new food square somewhere randomly on the board.
 function addFood() {
-  var count = 0;
+  let count = 0;
+  let x, y, cell;
   do {
-    var x = Math.floor(Math.random() * (WIDTH - foodMargin * 2) + foodMargin);
-    var y = Math.floor(Math.random() * (HEIGHT - foodMargin * 2) + foodMargin);
-    var cell = getCell([x, y]);
+    x = Math.floor(Math.random() * (WIDTH - foodMargin * 2) + foodMargin);
+    y = Math.floor(Math.random() * (HEIGHT - foodMargin * 2) + foodMargin);
+    cell = getCell([x, y]);
     if (count++ > HEIGHT * WIDTH * 10) {
       // Can't find a place to place food.  End game.
       clearInterval(pid);
@@ -241,7 +242,7 @@ function crash() {
 // With this, the player will hear to apple
 // eating sounds.
 function playEatSound() {
-  var apple = document.getElementById('apple');
+  const apple = document.getElementById('apple');
   if (!apple.paused) {
     apple.pause();
     apple.currentTime = 0;
@@ -251,7 +252,7 @@ function playEatSound() {
 
 // Animate the destruction of the current snake.
 function disolveSnake() {
-  var snake = snakes[snakeIndex];
+  const snake = snakes[snakeIndex];
   if (snake.coordinates.length > 2) {
     snake.shrink();
     setTimeout(disolveSnake, 100);
@@ -334,14 +335,14 @@ function Snake(playerNumber) {
 // Set the snake's head to the given coordinates.
 // Returns the result of this move (crash, food or free).
 Snake.prototype.setHead = function(x, y) {
-  var newHead = getCell([x, y]);
+  const newHead = getCell([x, y]);
   if (newHead.classList.contains('border') ||
       newHead.classList.contains('snake')) {
     return moveResult.CRASH;
   }
   if (this.coordinates.length) {
-    var oldHeadXY = this.coordinates[this.coordinates.length - 1];
-    var oldHead = getCell(oldHeadXY);
+    const oldHeadXY = this.coordinates[this.coordinates.length - 1];
+    const oldHead = getCell(oldHeadXY);
     oldHead.classList.remove('head');
     oldHead.classList.add('body');
   }
@@ -360,9 +361,9 @@ Snake.prototype.setHead = function(x, y) {
 // Move the head in the given direction.
 // Returns the result of this move (crash, food or free).
 Snake.prototype.moveHead = function(dxy) {
-  var headXY = this.coordinates[this.coordinates.length - 1];
-  var x = headXY[0] + dxy[0];
-  var y = headXY[1] + dxy[1];
+  const headXY = this.coordinates[this.coordinates.length - 1];
+  let x = headXY[0] + dxy[0];
+  let y = headXY[1] + dxy[1];
   if (x < 0) {
     x += WIDTH;
   } else if (x >= WIDTH) {
@@ -379,8 +380,8 @@ Snake.prototype.moveHead = function(dxy) {
 // Execute a single step.
 // If 'initialGrow' is present and true, let the snake grow by one.
 Snake.prototype.step = function(initialGrow) {
-  var ccw = undefined;
-  var newDirection = this.directionQueue.shift();
+  let ccw = undefined;
+  const newDirection = this.directionQueue.shift();
   if (newDirection !== undefined && newDirection !== this.direction) {
     ccw =
         (this.direction === directions.LEFT && newDirection === directions.DOWN) ||
@@ -389,9 +390,9 @@ Snake.prototype.step = function(initialGrow) {
         (this.direction === directions.UP && newDirection === directions.LEFT);
     this.direction = newDirection;
   }
-  var oldHeadXY = this.coordinates[this.coordinates.length - 1];
-  var oldHeadCell = getCell(oldHeadXY);
-  var result = this.moveHead(deltas[this.direction]);
+  const oldHeadXY = this.coordinates[this.coordinates.length - 1];
+  const oldHeadCell = getCell(oldHeadXY);
+  const result = this.moveHead(deltas[this.direction]);
   if (result == moveResult.CRASH) {
     crash();
     return;
@@ -405,11 +406,11 @@ Snake.prototype.step = function(initialGrow) {
     oldHeadCell.classList.remove('body');
     oldHeadCell.classList.add(ccw ? 'turn-ccw' : 'turn-cw');
     // Turn the direction of this cell, to match the head.
-    var newHeadXY = this.coordinates[this.coordinates.length - 1];
-    var newHeadXY = getCell(newHeadXY);
-    for (var d = 0; d < 4; d++) {
+    const newHeadXY = this.coordinates[this.coordinates.length - 1];
+    const newHeadCell = getCell(newHeadXY);
+    for (let d = 0; d < 4; d++) {
       oldHeadCell.classList.remove('dir-' + d);
-      if (newHeadXY.classList.contains('dir-' + d)) {
+      if (newHeadCell.classList.contains('dir-' + d)) {
         oldHeadCell.classList.add('dir-' + d);
       }
     }
@@ -418,11 +419,11 @@ Snake.prototype.step = function(initialGrow) {
 
 // Delete the tail by one square.  Used when moving forward, or dissolving.
 Snake.prototype.shrink = function() {
-  var oldTail = this.coordinates.shift();
-  var oldTailCell = getCell(oldTail);
+  const oldTail = this.coordinates.shift();
+  const oldTailCell = getCell(oldTail);
   clearCell(oldTailCell);
-  var newTail = this.coordinates[0];
-  var newTailCell = getCell(newTail);
+  const newTail = this.coordinates[0];
+  const newTailCell = getCell(newTail);
   newTailCell.classList.remove('body');
   newTailCell.classList.remove('turn-ccw');
   newTailCell.classList.remove('turn-cw');
@@ -431,7 +432,7 @@ Snake.prototype.shrink = function() {
 
 // Add the player's new direction to the queue of direction changes.
 Snake.prototype.pushDirection = function(newDirection) {
-  var last = this.directionQueue[this.directionQueue.length - 1];
+  let last = this.directionQueue[this.directionQueue.length - 1];
   if (last === undefined) {
     last = this.direction;
   }

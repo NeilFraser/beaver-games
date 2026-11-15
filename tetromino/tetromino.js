@@ -13,34 +13,34 @@
 
 // The game has three modes: Waiting on start button, interactive play,
 // and stopped.
-var modes = {
+const modes = {
   START: -1,
   PLAYING: 0,
   STOPPED: 1
 };
-var mode = modes.START;
+let mode = modes.START;
 
 // Level to jump to when starting a game.  Set by the difficulty dropdown.
-var START_LEVEL;
+let START_LEVEL;
 
 // Height and width of a block.
-var SQUARE_SIZE = 25;
+const SQUARE_SIZE = 25;
 
 // Width of side and bottom borders.
-var BORDER_WIDTH = 9.5;
+const BORDER_WIDTH = 9.5;
 
 // Number of playfield columns.
-var COLUMNS = 10;
+const COLUMNS = 10;
 // Number of fully visible playfield rows.
-var ROWS = 20;
+const ROWS = 20;
 // Partial visibility of top-most playfield row.
-var TOP_ROW_HEIGHT = 5.5;
+const TOP_ROW_HEIGHT = 5.5;
 
 // Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Directions to try kicking a rotated 'T/L/J/S/Z' shape that collides.
-var STANDARD_KICKS = {
+const STANDARD_KICKS = {
   '0>1': [[-1, 0], [-1, 1], [0,-2], [-1,-2]],
   '1>0': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
   '1>2': [[ 1, 0], [ 1,-1], [0, 2], [ 1, 2]],
@@ -52,7 +52,7 @@ var STANDARD_KICKS = {
 };
 
 // Directions to try kicking a rotated 'I' shape that collides.
-var I_KICKS = {
+const I_KICKS = {
   '0>1': [[-2, 0], [ 1, 0], [-2,-1], [ 1, 2]],
   '1>0': [[ 2, 0], [-1, 0], [ 2, 1], [-1,-2]],
   '1>2': [[-1, 0], [ 2, 0], [-1, 2], [ 2,-1]],
@@ -65,7 +65,7 @@ var I_KICKS = {
 
 // Describes all seven tetromino shapes.  Each shape has four X/Y coordinate
 // pairs, a centre of rotation, and optional rotation kicks.
-var SHAPES = {
+const SHAPES = {
   'O': {
     coords: [[0, 0], [1, 0], [0, 1], [1, 1]],
     rotation: [0.5, 0.5],
@@ -104,29 +104,29 @@ var SHAPES = {
 };
 
 // Animation frame PID for the current shape.
-var currentShapePid = 0;
+let currentShapePid = 0;
 
 // Currently active O/I/T/L/J/S/Z shape.
-var currentShape = null;
+let currentShape = null;
 
 // Name of the next shape (O/I/T/L/J/S/Z).
-var nextShapeName = '';
+let nextShapeName = '';
 
 // 2D array of placed SVG blocks in the playing field.
-var grid = [];
+const grid = [];
 
 // PID of interval timer that periodically moves the current shape down.
-var fallPid = 0;
+let fallPid = 0;
 
 // Number of completed lines that have been cleared so far.
-var lines = 0;
+let lines = 0;
 
 // Milliseconds between move-down steps.
-var speed;
+let speed;
 
 // Compute the pause in milliseconds between move-down steps.
 function recalculateSpeed() {
-  var level = Math.ceil((lines + 1) / 10);
+  let level = Math.ceil((lines + 1) / 10);
   level = Math.max(level, START_LEVEL);
   // Without the max(..., 0), speed goes -Infinity when level passes 1151.
   speed = Math.max(Math.pow(0.8 - ((level - 1) * 0.007), level - 1) * 1000, 0);
@@ -136,8 +136,8 @@ function recalculateSpeed() {
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
-  var difficultyIndex = m ? m[1] : 0;
+  const m = document.cookie.match(/difficulty=([012])/);
+  const difficultyIndex = m ? m[1] : 0;
   // Starting level for easy, normal and hard modes.
   START_LEVEL = [1, 4, 8][difficultyIndex];
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
@@ -157,14 +157,14 @@ window.addEventListener('load', init);
 function showStart() {
   cancelAnimationFrame(currentShapePid);
   document.body.className = '';
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = '';
   mode = modes.START;
 }
 
 // Hide the start button, and start the game.
 function startGame() {
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = 'none';
 
   lines = 0;
@@ -175,7 +175,7 @@ function startGame() {
   if (currentShape) {
     currentShape.destroy();
   }
-  var matrix = document.getElementById('matrix');
+  const matrix = document.getElementById('matrix');
   while (matrix.firstChild) {
     matrix.removeChild(matrix.firstChild);
   }
@@ -187,7 +187,7 @@ function startGame() {
 // Create new shape on the board.
 function createShape() {
   currentShape = new CurrentShape(nextShapeName);
-  var svg = document.getElementById('shape');
+  const svg = document.getElementById('shape');
   svg.appendChild(currentShape.g);
   updateNextShape();
   printDebug();
@@ -216,16 +216,16 @@ function createShape() {
 
 // Draw the '+' markers on the board.
 function initSvgMarkers() {
-  var markers = document.getElementById('markers');
+  const markers = document.getElementById('markers');
   if (!markers) throw Error('No markers SVG element found.');
   // <line x1="19" y1="20" x2="21" y2="20"/>
   // <line x1="20" y1="19" x2="20" y2="21"/>
-  var LEN = 2;
-  for (var x = 0; x <= COLUMNS; x++) {
-    var matrixX = BORDER_WIDTH + x * SQUARE_SIZE;
-    for (var y = 0; y <= ROWS; y++) {
-      var matrixY = TOP_ROW_HEIGHT + y * SQUARE_SIZE;
-      var line = document.createElementNS(SVG_NS, 'line');
+  const LEN = 2;
+  for (let x = 0; x <= COLUMNS; x++) {
+    const matrixX = BORDER_WIDTH + x * SQUARE_SIZE;
+    for (let y = 0; y <= ROWS; y++) {
+      const matrixY = TOP_ROW_HEIGHT + y * SQUARE_SIZE;
+      let line = document.createElementNS(SVG_NS, 'line');
       line.setAttribute('x1', matrixX - LEN);
       line.setAttribute('y1', matrixY);
       line.setAttribute('x2', matrixX + LEN);
@@ -244,22 +244,18 @@ function initSvgMarkers() {
 // Initialize the 2D data grid with nulls.
 function initDataGrid() {
   grid.length = 0;
-  for (var y = 0; y < ROWS + 4; y++) {
+  for (let y = 0; y < ROWS + 4; y++) {
     grid[y] = newDataRow();
   }
 }
 
 // Create one empty row of nulls for the grid.
 function newDataRow() {
-  var row = [];
-  for (var x = 0; x < COLUMNS; x++) {
-    row[x] = null;
-  }
-  return row;
+  return new Array(COLUMNS).fill(null);
 }
 
 // Constructor for shape currently in play.
-var CurrentShape = function(type) {
+const CurrentShape = function(type) {
   this.shape = SHAPES[type];
   if (!this.shape) {
     throw Error('Unknown type: ' + type);
@@ -269,9 +265,9 @@ var CurrentShape = function(type) {
   this.transforms = [];
   this.coords = [];
   // Create a block at each of the four shape coordinates.
-  for (var i = 0, coord; (coord = this.shape.coords[i]); i++) {
+  for (let i = 0, coord; (coord = this.shape.coords[i]); i++) {
     this.coords[i] = [coord[0], coord[1]];
-    var b = createBlock();
+    const b = createBlock();
     b.setAttribute('x', SQUARE_SIZE * coord[0]);
     b.setAttribute('y', SQUARE_SIZE * coord[1]);
     b.classList.add('type_' + type);
@@ -279,7 +275,7 @@ var CurrentShape = function(type) {
   }
   // Flip the shape over since the original shape coordinates are origin
   // top-left, whereas the data grid is origin bottom-left.
-  for (var i = 0, coord; (coord = this.coords[i]); i++) {
+  for (const coord of this.coords) {
     coord[1] = -coord[1];
   }
   // Position shape at starting point.
@@ -296,10 +292,10 @@ var CurrentShape = function(type) {
 
 // Compute width of shape.  Used for centering the shape when first created.
 CurrentShape.prototype.getWidth = function() {
-  var left = Infinity;
-  var right = -Infinity;
-  for (var i = 0; i < this.coords.length; i++) {
-    var x = this.coords[i][0];
+  let left = Infinity;
+  let right = -Infinity;
+  for (const coord of this.coords) {
+    const x = coord[0];
     left = Math.min(left, x);
     right = Math.max(right, x);
   }
@@ -309,9 +305,9 @@ CurrentShape.prototype.getWidth = function() {
 // Compute the bottom of shape.  Used for vertical positioning of the shape
 // when first created.
 CurrentShape.prototype.getBottom = function() {
-  var bottom = Infinity;
-  for (var i = 0; i < this.coords.length; i++) {
-    var y = this.coords[i][1];
+  let bottom = Infinity;
+  for (const coord of this.coords) {
+    const y = coord[1];
     bottom = Math.min(bottom, y);
   }
   return bottom;
@@ -320,13 +316,13 @@ CurrentShape.prototype.getBottom = function() {
 CurrentShape.prototype.addTransform = function(animate) {
   if (!animate) {
     // Terminate all previous animations.
-    for (var i = 0, transform; (transform = this.transforms[i]); i++) {
+    for (const transform of this.transforms) {
       if (typeof transform === 'object') {
         transform.startTime = -Infinity;
       }
     }
   }
-  var newTransform = new TransformData();
+  const newTransform = new TransformData();
 
   newTransform.toX = (this.currentX - this.oldX) * SQUARE_SIZE;
   newTransform.toY = -((this.currentY - ROWS) - (this.oldY - ROWS)) * SQUARE_SIZE;
@@ -334,16 +330,16 @@ CurrentShape.prototype.addTransform = function(animate) {
 
   // Reverse/swap directions so that translations aren't affected by the sum of
   // prior rotations.
-  var quad = quadrant(this.currentRotation);
+  const quad = quadrant(this.currentRotation);
   if (quad === 1) {
-    var swap = newTransform.toX;
+    const swap = newTransform.toX;
     newTransform.toX = newTransform.toY;
     newTransform.toY = -swap;
   } else if (quad === 2) {
     newTransform.toX *= -1;
     newTransform.toY *= -1;
   } else if (quad === 3) {
-    var swap = newTransform.toX;
+    const swap = newTransform.toX;
     newTransform.toX = -newTransform.toY;
     newTransform.toY = swap;
   }
@@ -367,7 +363,7 @@ CurrentShape.prototype.addTransform = function(animate) {
 
 // Set the SVG transforms for the shape currently in play.
 CurrentShape.prototype.setTransforms = function() {
-  var transformStrings = [
+  const transformStrings = [
     'translate(' + BORDER_WIDTH + ',' + (-2 * SQUARE_SIZE + TOP_ROW_HEIGHT) + ')'
   ];
   for (var i = 0; i < this.transforms.length; i++) {
@@ -375,11 +371,11 @@ CurrentShape.prototype.setTransforms = function() {
     if (typeof transform === 'string') {
       transformStrings.push(transform);
     } else {
-      var transformString = '';
+      let transformString = '';
       if (transform.nowRotation) {
-        var rotationPoint = this.shape.rotation;
-        var cx = (rotationPoint[0] + 0.5) * SQUARE_SIZE;
-        var cy = (rotationPoint[1] + 0.5) * SQUARE_SIZE;
+        const rotationPoint = this.shape.rotation;
+        const cx = (rotationPoint[0] + 0.5) * SQUARE_SIZE;
+        const cy = (rotationPoint[1] + 0.5) * SQUARE_SIZE;
         transformString += 'rotate(' + transform.nowRotation + ',' + cx + ',' + cy + ')';
       }
       if (transform.nowX || transform.nowY) {
@@ -398,9 +394,9 @@ CurrentShape.prototype.setTransforms = function() {
 // Does this shape intersect with any existing blocks on the board,
 // or extends beyond the board?
 CurrentShape.prototype.isCollided = function() {
-  for (var i = 0, coord; (coord = this.coords[i]); i++) {
-    var x = coord[0];
-    var y = coord[1];
+  for (const coord of this.coords) {
+    const x = coord[0];
+    const y = coord[1];
     if (y < 0) {
       return true;  // Under the floor.
     }
@@ -413,9 +409,9 @@ CurrentShape.prototype.isCollided = function() {
 
 // Is this shape sitting on the bottom or on another block.
 CurrentShape.prototype.isSurfaced = function() {
-  for (var i = 0, coord; (coord = this.coords[i]); i++) {
-    var x = coord[0];
-    var y = coord[1] - 1;
+  for (const coord of this.coords) {
+    const x = coord[0];
+    const y = coord[1] - 1;
     if (y < 0) {
       return true;  // On the bottom.
     }
@@ -457,8 +453,8 @@ CurrentShape.prototype.destroy = function() {
 function lockDown() {
   clearInterval(fallPid);
   // Check for "lock out" game over condition (whole shape above skyline).
-  var below = false;
-  for (var i = 0, coord; (coord = currentShape.coords[i]); i++) {
+  let below = false;
+  for (const coord of currentShape.coords) {
     if (coord[1] < ROWS) {
       below = true;
       break;
@@ -470,11 +466,11 @@ function lockDown() {
     return;
   }
   // Create static blocks which look identical to the fallen shape.
-  var g = document.getElementById('matrix');
-  for (var i = 0, coord; (coord = currentShape.coords[i]); i++) {
-    var x = coord[0];
-    var y = coord[1];
-    var b = createBlock();
+  const g = document.getElementById('matrix');
+  for (const coord of currentShape.coords) {
+    const x = coord[0];
+    const y = coord[1];
+    const b = createBlock();
     b.setAttribute('x', SQUARE_SIZE * x + BORDER_WIDTH);
     b.setAttribute('y', SQUARE_SIZE * (ROWS - y - 1) + TOP_ROW_HEIGHT);
     b.classList.add('type_' + currentShape.type);
@@ -488,9 +484,9 @@ function lockDown() {
 
 // Identify which lines are full.
 function identifyFullLines(callback) {
-  var fullLines = [];
+  const fullLines = [];
   for (var y = 0; y < grid.length; y++) {
-    if (grid[y].indexOf(null) === -1) {
+    if (!grid[y].includes(null)) {
       fullLines.push(y);
     }
   }
@@ -502,12 +498,11 @@ function identifyFullLines(callback) {
   mode = modes.STOPPED;
   // Compile list of all blocks to delete.
   recalculateSpeed();
-  var deleteBlocks = [];
-  for (var i = 0; i < fullLines.length; i++) {
-    var y = fullLines[i];
-    for (var x = 0; x < grid[y].length; x++) {
-      if (grid[y][x] !== null) {
-        deleteBlocks.push(grid[y][x]);
+  const deleteBlocks = [];
+  for (const y of fullLines) {
+    for (const block of grid[y]) {
+      if (block !== null) {
+        deleteBlocks.push(block);
       }
     }
   }
@@ -520,22 +515,21 @@ function identifyFullLines(callback) {
 function deleteFullLines(fullLines, deleteBlocks, callback) {
   document.getElementById('click').play();
   // Delete the SVG elements.
-  for (var i = 0, block; (block = deleteBlocks[i]); i++) {
+  for (const block of deleteBlocks) {
     block.parentNode.removeChild(block);
   }
   // Update display.
   lines += fullLines.length;
   document.getElementById('lines').textContent = lines;
   // Mark start/end points on all moving blocks.
-  var dropHeight = 0;
-  for (var y = 0; y < grid.length; y++) {
-    if (fullLines.indexOf(y) !== -1) {
+  let dropHeight = 0;
+  for (let y = 0; y < grid.length; y++) {
+    if (fullLines.includes(y)) {
       // This whole line will be deleted, increment the drop height and skip.
       dropHeight++;
       continue;
     }
-    for (var x = 0; x < grid[y].length; x++) {
-      var block = grid[y][x];
+    for (const block of grid[y]) {
       if (block) {
         if (dropHeight === 0) {
           // Clear any previous move flags from this block.
@@ -543,8 +537,8 @@ function deleteFullLines(fullLines, deleteBlocks, callback) {
           delete block.dataset.endY;
         } else {
           // Flag this block to move.
-          var startY = Number(block.getAttribute('y'));
-          var endY = startY + (dropHeight * SQUARE_SIZE);
+          const startY = Number(block.getAttribute('y'));
+          const endY = startY + (dropHeight * SQUARE_SIZE);
           block.dataset.startY = startY;
           block.dataset.endY = endY;
         }
@@ -552,7 +546,7 @@ function deleteFullLines(fullLines, deleteBlocks, callback) {
     }
   }
   // Clear the lines in the grid.
-  for (var i = fullLines.length - 1; i >= 0; i--) {
+  for (let i = fullLines.length - 1; i >= 0; i--) {
     grid.splice(fullLines[i], 1);
     grid.push(newDataRow());
   }
@@ -560,26 +554,25 @@ function deleteFullLines(fullLines, deleteBlocks, callback) {
   setTimeout(callback, FULL_LINE_TIME);
 }
 
-var FULL_LINE_TIME = 250;
+const FULL_LINE_TIME = 250;
 
 function animateFullLines(time) {
   if (animateFullLines.startTime === undefined) {
     animateFullLines.startTime = time;
   }
-  var elapsed = time - animateFullLines.startTime;
-  var ratio = elapsed / FULL_LINE_TIME;
+  const elapsed = time - animateFullLines.startTime;
+  let ratio = elapsed / FULL_LINE_TIME;
   if (ratio >= 1) {
     animateFullLines.startTime = undefined;
     ratio = 1;
   } else {
     requestAnimationFrame(animateFullLines);
   }
-  for (var y = 0; y < grid.length; y++) {
-    for (var x = 0; x < grid[y].length; x++) {
-      var block = grid[y][x];
+  for (const row of grid) {
+    for (const block of row) {
       if (block && 'startY' in block.dataset) {
-        var startY = Number(block.dataset.startY);
-        var endY = Number(block.dataset.endY);
+        const startY = Number(block.dataset.startY);
+        const endY = Number(block.dataset.endY);
         block.setAttribute('y', (endY - startY) * ratio + startY);
       }
     }
@@ -599,7 +592,7 @@ function fail() {
 // Use a bag so that equal distributions are guaranteed.
 function randomShapeName() {
   if (randomShapeName.bag_.length === 0) {
-    var types = Object.keys(SHAPES);
+    const types = Object.keys(SHAPES);
     shuffleArray(types);
     randomShapeName.bag_ = types;
   }
@@ -609,19 +602,19 @@ randomShapeName.bag_ = [];
 
 // Replace the 'next shape' display with a new shape.
 function updateNextShape() {
-  var svg = document.getElementById('next');
+  const svg = document.getElementById('next');
   // Delete existing shape.
   while (svg.firstChild) {
     svg.removeChild(svg.firstChild);
   }
   // Add the new shape.
   nextShapeName = randomShapeName();
-  var shape = new CurrentShape(nextShapeName);
+  const shape = new CurrentShape(nextShapeName);
   svg.appendChild(shape.g);
 }
 
 // Constructor for one shape transformation.
-var TransformData = function() {
+const TransformData = function() {
   this.nowX = NaN;
   this.toX = NaN;
   this.nowY = NaN;
@@ -635,8 +628,7 @@ var TransformData = function() {
 function animateStep(time) {
   currentShapePid = requestAnimationFrame(animateStep);
   if (!currentShape) return;
-  for (var i = 0; i < currentShape.transforms.length; i++) {
-    var transform = currentShape.transforms[i];
+  for (const transform of currentShape.transforms) {
     if (typeof transform === 'string') {
       // This transform is complete and has been statically computed.
       continue;
@@ -645,8 +637,8 @@ function animateStep(time) {
       // First frame for this transform.
       transform.startTime = time;
     }
-    var animationDuration = Math.min(speed * 0.8, 100);
-    var ratio = Math.min(1, (time - transform.startTime) / animationDuration);
+    const animationDuration = Math.min(speed * 0.8, 100);
+    const ratio = Math.min(1, (time - transform.startTime) / animationDuration);
     transform.nowX = ratio * transform.toX;
     transform.nowY = ratio * transform.toY;
     transform.nowRotation = ratio * transform.toRotation;
@@ -662,7 +654,7 @@ function animateStep(time) {
 // Create one SVG block.  Four of these in a group make up one falling shape.
 // The fixed blocks on the board are individual blocks.
 function createBlock() {
-  var block = document.createElementNS(SVG_NS, 'rect');
+  const block = document.createElementNS(SVG_NS, 'rect');
   block.setAttribute('height', SQUARE_SIZE);
   block.setAttribute('width', SQUARE_SIZE);
   block.setAttribute('rx', SQUARE_SIZE / 10);
@@ -674,7 +666,7 @@ function createBlock() {
 function actionDown() {
   if (!currentShape) return;
   currentShape.currentY--;
-  var oldCoords = currentShape.coords;
+  const oldCoords = currentShape.coords;
   currentShape.coords = moveCoords(currentShape.coords, 0, -1);
   if (currentShape.isCollided()) {  // Oops, abort.
     currentShape.coords = oldCoords;
@@ -689,8 +681,8 @@ function actionDown() {
 // Move the current shape right or left one column.
 function actionMove(right) {
   if (!currentShape) return;
-  var dx = right ? 1 : -1;
-  var oldCoords = currentShape.coords;
+  const dx = right ? 1 : -1;
+  const oldCoords = currentShape.coords;
   currentShape.coords = moveCoords(currentShape.coords, dx, 0);
   currentShape.currentX += dx;
   if (currentShape.isCollided()) {  // Oops, abort.
@@ -706,8 +698,9 @@ function actionMove(right) {
 // Drop the current shape to the bottom, and lock it in place.
 function actionDrop() {
   if (!currentShape) return;
+  let oldCoords;
   do {
-    var oldCoords = currentShape.coords;
+    oldCoords = currentShape.coords;
     currentShape.coords = moveCoords(currentShape.coords, 0, -1);
     currentShape.currentY--;
   } while (!currentShape.isCollided());
@@ -720,26 +713,26 @@ function actionDrop() {
 // Rotate the current shape clockwise or counter-clockwise.
 function actionRotate(ccw) {
   if (!currentShape) return;
-  var oldRotation = currentShape.currentRotation;
-  var oldCoords = currentShape.coords;
-  var oldX = currentShape.currentX;
-  var oldY = currentShape.currentY;
+  const oldRotation = currentShape.currentRotation;
+  const oldCoords = currentShape.coords;
+  const oldX = currentShape.currentX;
+  const oldY = currentShape.currentY;
   currentShape.currentRotation += ccw ? -1 : 1;
-  var rotationPoint = currentShape.shape.rotation;
-  var cx = currentShape.currentX + rotationPoint[0];
-  var cy = currentShape.currentY - rotationPoint[1] + 1;
+  const rotationPoint = currentShape.shape.rotation;
+  const cx = currentShape.currentX + rotationPoint[0];
+  const cy = currentShape.currentY - rotationPoint[1] + 1;
   currentShape.coords = rotateCoords(currentShape.coords, ccw, cx, cy);
   if (currentShape.isCollided()) {
     // Simple rotation failed.  Try kicking the rotated shape around.
     if (!currentShape.shape.kicks) throw Error('Kicks not found.');
-    var oldQuadrant = quadrant(currentShape.oldRotation);
-    var newQuadrant = quadrant(currentShape.currentRotation);
-    var kickList = currentShape.shape.kicks[oldQuadrant + '>' + newQuadrant];
+    const oldQuadrant = quadrant(currentShape.oldRotation);
+    const newQuadrant = quadrant(currentShape.currentRotation);
+    const kickList = currentShape.shape.kicks[oldQuadrant + '>' + newQuadrant];
     if (!kickList) throw Error('Matching kick not found.');
-    var preKickCoords = currentShape.coords;
-    var preKickX = currentShape.currentX;
-    var preKickY = currentShape.currentY;
-    for (var i = 0, kick; (kick = kickList[i]); i++) {
+    const preKickCoords = currentShape.coords;
+    const preKickX = currentShape.currentX;
+    const preKickY = currentShape.currentY;
+    for (const kick of kickList) {
       currentShape.coords = moveCoords(currentShape.coords, kick[0], kick[1]);
       currentShape.currentX += kick[0];
       currentShape.currentY += kick[1];
@@ -764,7 +757,7 @@ function actionRotate(ccw) {
 }
 
 // Current state of the keyboard.
-var keyStatus = {
+const keyStatus = {
   'ArrowLeft': false,
   'ArrowRight': false
 };
@@ -850,9 +843,9 @@ function keyPress(e) {
 }
 
 // Timeout PID for initial delay before an auto-repeat.
-var autoRepeatInitPid = 0;
+let autoRepeatInitPid = 0;
 // Interval PID for executing an auto-repeat.
-var autoRepeatMovePid = 0;
+let autoRepeatMovePid = 0;
 
 // Wait a third of a second, then start the auto-repeat.
 function initAutoRepeat(key) {
@@ -873,18 +866,12 @@ function stopAutoRepeat() {
 // Change the list of X/Y coordinates by rotating them 90 degrees around a point.
 // Returns a new list of coordinates, does not modify the original list.
 function rotateCoords(coords, ccw, cx, cy) {
-  var newCoords = new Array(coords.length);
-  for (var i = 0; i < coords.length; i++) {
-    var oldX = coords[i][0] - cx;
-    var oldY = coords[i][1] - cy;
-    var newX, newY;
-    if (ccw) {
-      newX = -oldY;
-      newY = oldX;
-    } else {
-      newX = oldY;
-      newY = -oldX;
-    }
+  const newCoords = new Array(coords.length);
+  for (let i = 0; i < coords.length; i++) {
+    const oldX = coords[i][0] - cx;
+    const oldY = coords[i][1] - cy;
+    const newX = ccw ? -oldY : oldY;
+    const newY = ccw ? oldX : -oldX;
     newCoords[i] = [newX + cx, newY + cy];
   }
   return newCoords;
@@ -894,8 +881,8 @@ function rotateCoords(coords, ccw, cx, cy) {
 // Change the list of X/Y coordinates by a horizontal and/or vertical offset.
 // Returns a new list of coordinates, does not modify the original list.
 function moveCoords(coords, dx, dy) {
-  var newCoords = new Array(coords.length);
-  for (var i = 0; i < coords.length; i++) {
+  const newCoords = new Array(coords.length);
+  for (let i = 0; i < coords.length; i++) {
     newCoords[i] = [coords[i][0] + dx, coords[i][1] + dy];
   }
   return newCoords;
@@ -913,27 +900,27 @@ function quadrant(n) {
 
 // Randomize array in-place using Durstenfeld shuffle algorithm.
 function shuffleArray(array) {
-  for (var i = array.length - 1; i > 0; i--) {
-    var j = Math.floor(Math.random() * (i + 1));
-    var temp = array[i];
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = array[i];
     array[i] = array[j];
     array[j] = temp;
   }
 }
 
 function printDebug() {
-  var table = [];
-  for (var y = 0; y < grid.length; y++) {
-    var row = '';
-    for (var x = 0; x < grid[y].length; x++) {
+  const table = [];
+  for (let y = 0; y < grid.length; y++) {
+    let row = '';
+    for (let x = 0; x < grid[y].length; x++) {
       row += grid[y][x] ? 'X' : (y < ROWS ? '·' : ' ');
     }
     table.push(row);
   }
-  for (var i = 0, coord; (coord = currentShape.coords[i]); i++) {
-    var x = coord[0];
-    var y = coord[1];
-    var row = table[y];
+  for (const coord of currentShape.coords) {
+    const x = coord[0];
+    const y = coord[1];
+    const row = table[y];
     table[y] = row.substring(0, x) + 'O' + row.substring(x + 1);
   }
   table.reverse();

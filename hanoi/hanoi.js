@@ -10,43 +10,43 @@
  */
 'use strict';
 
-var canvas;
-var ctx;
-var CANVAS_HEIGHT = 512;
-var CANVAS_WIDTH = 1024;
-var DISK_THICKNESS = 25;
-var VIEW_ANGLE = 10;  // Degrees.
-var RAISE_HEIGHT = DISK_THICKNESS;
-var SPEED = 1.0;  // Smaller is faster.
+let canvas;
+let ctx;
+const CANVAS_HEIGHT = 512;
+const CANVAS_WIDTH = 1024;
+const DISK_THICKNESS = 25;
+const VIEW_ANGLE = 10;  // Degrees.
+const RAISE_HEIGHT = DISK_THICKNESS;
+const SPEED = 1.0;  // Smaller is faster.
 
-var totalDisks = 5;
-var pegX = [];  // Horizontal locations of the three pegs.
-var pegs = [[], [], []];  // Each peg holds an array of disks.
-var selectedDisk = undefined;  // Currently raised disk.
-var lastCompletePeg = 0;  // Which peg last held the entire stack.
+let totalDisks = 5;
+const pegX = [];  // Horizontal locations of the three pegs.
+const pegs = [[], [], []];  // Each peg holds an array of disks.
+let selectedDisk = undefined;  // Currently raised disk.
+let lastCompletePeg = 0;  // Which peg last held the entire stack.
 
 // Start-up initialization code.  Run once.
 function init() {
   fixLinks();
 
   // Configure difficulty mode.
-  var m = document.cookie.match(/disks=(\d+)/);
-  var cookieDisks = m ? Number(m[1]) : 0;
+  const m = document.cookie.match(/disks=(\d+)/);
+  const cookieDisks = m ? Number(m[1]) : 0;
   totalDisks = cookieDisks > 0 ? cookieDisks : totalDisks;
-  var options =  document.getElementById('disks').options;
-  for (var i = 0; i < options.length; i++) {
-    options[i].selected = (options[i].value == totalDisks);
+  const options =  document.getElementById('disks').options;
+  for (const option of options) {
+    option.selected = (option.value == totalDisks);
   }
   registerOptions('disks');
 
 
   // Calculate the x locations of the three pegs.
-  for (var i = 0; i < pegs.length; i++) {
+  for (let i = 0; i < pegs.length; i++) {
     pegX[i] = CANVAS_WIDTH / pegs.length * i + CANVAS_WIDTH / (pegs.length * 2);
   }
 
   // Create the disks.
-  for (var i = totalDisks - 1; i >= 0; i--) {
+  for (let i = totalDisks - 1; i >= 0; i--) {
     new Disk(i, totalDisks);
   }
 
@@ -60,24 +60,19 @@ function init() {
 }
 window.addEventListener('load', init);
 
-var lastTime;
+let lastTime;
 
 // Clear and redraw everything.  One animation frame.
 function frame(timestamp) {
-  var delta;
-  if (lastTime === undefined) {
-    delta = 0;
-  } else {
-    var elapsedTime = timestamp - lastTime;
-    delta = elapsedTime ? elapsedTime / SPEED : 0;
-  }
+  const elapsedTime = lastTime === undefined ? 0 : timestamp - lastTime;
+  const delta = elapsedTime ? elapsedTime / SPEED : 0;
   lastTime = timestamp;
 
   canvas.width = canvas.width;  // Clear the canvas.
 
   ctx.translate(0, CANVAS_HEIGHT * 0.8);
   // Draw the landing spots.
-  for (var i = 0; i < pegs.length; i++) {
+  for (let i = 0; i < pegs.length; i++) {
     ctx.save();
     ctx.translate(pegX[i], 0);
     drawSpot();
@@ -85,13 +80,12 @@ function frame(timestamp) {
   }
 
   // Draw the disks.
-  for (var i = 0; i < pegs.length; i++) {
-    for (var j = 0; j < pegs[i].length; j++) {
-      var disk = pegs[i][j];
-      var pitchDegrees = VIEW_ANGLE;
-      var rollDegrees = 0;
+  for (const peg of pegs) {
+    for (const disk of peg) {
+      let pitchDegrees = VIEW_ANGLE;
+      let rollDegrees = 0;
 
-      var deltaX = delta;
+      const deltaX = delta;
       if (disk.targetX > disk.x) {
         disk.x = Math.min(disk.x + deltaX, disk.targetX);
       } else if (disk.targetX < disk.x) {
@@ -106,11 +100,11 @@ function frame(timestamp) {
           disk.y = Math.max(disk.y - delta, disk.targetY);
         }
       } else {
-        var distanceX = disk.targetX - disk.sourceX;
+        const distanceX = disk.targetX - disk.sourceX;
         // Flip disk in flight if it is its first move and not the top disk.
-        var peakDenominator = 4;
+        let peakDenominator = 4;
         if (disk.isFirstMove && disk.n !== 0) {
-          var distanceRatio = (disk.x - disk.sourceX) / distanceX;
+          const distanceRatio = (disk.x - disk.sourceX) / distanceX;
           pitchDegrees -= distanceRatio * (VIEW_ANGLE * 2);
           rollDegrees = distanceRatio * 180;
           if (distanceX < 0) rollDegrees *= -1;
@@ -119,10 +113,10 @@ function frame(timestamp) {
         }
 
         // Moving parabolically to a new peg.
-        var peakX = disk.sourceX + (distanceX / 2);
-        var averageY = (disk.targetY + disk.sourceY) / 2;
-        var peakY = averageY + Math.abs(distanceX / peakDenominator);
-        var y = computeParabolaY(disk.x,
+        const peakX = disk.sourceX + (distanceX / 2);
+        const averageY = (disk.targetY + disk.sourceY) / 2;
+        const peakY = averageY + Math.abs(distanceX / peakDenominator);
+        const y = computeParabolaY(disk.x,
             disk.sourceX, disk.sourceY,
             peakX, peakY,
             disk.targetX, disk.targetY);
@@ -140,11 +134,11 @@ function frame(timestamp) {
 
 // Compute parabola using the x value and three points.
 function computeParabolaY(x, x1, y1, x2, y2, x3, y3) {
-  var denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
-  var a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
-  var b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) /
+  const denom = (x1 - x2) * (x1 - x3) * (x2 - x3);
+  const a = (x3 * (y2 - y1) + x2 * (y1 - y3) + x1 * (y3 - y2)) / denom;
+  const b = (x3 * x3 * (y1 - y2) + x2 * x2 * (y3 - y1) + x1 * x1 * (y2 - y3)) /
       denom;
-  var c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 *
+  const c = (x2 * x3 * (x2 - x3) * y1 + x3 * x1 * (x3 - x1) * y2 + x1 * x2 *
       (x1 - x2) * y3) / denom;
   return a * x * x + b * x + c;
 }
@@ -152,14 +146,14 @@ function computeParabolaY(x, x1, y1, x2, y2, x3, y3) {
 // Event handler for mouse clicks.
 function onClick(e) {
   // Divide the canvas into thirds.
-  var third = Math.floor(e.offsetX / CANVAS_WIDTH * pegs.length)
+  let third = Math.floor(e.offsetX / CANVAS_WIDTH * pegs.length)
   third = Math.min(pegs.length - 1, Math.max(0, third));
   input(third);
 }
 
 // Event handler for '1', '2', '3' keys.
 function onKeypress(e) {
-  var third = Number(e.key);
+  const third = Number(e.key);
   if (third > 0 && third <= pegs.length) {
     input(third - 1);
   }
@@ -167,17 +161,17 @@ function onKeypress(e) {
 
 // User has signaled a move to/from this peg.
 function input(n) {
-  var peg = pegs[n];
+  const peg = pegs[n];
   if (selectedDisk) {
     // Verify we aren't placing a big disk on a smaller one.
-    var topDisk = peg[peg.length - 1];
+    const topDisk = peg[peg.length - 1];
     if (topDisk && (topDisk.n < selectedDisk.n)) {
       return;
     }
 
     // Remove the selected disk from its current peg (should be the top disk).
-    var oldPeg = pegs[selectedDisk.peg];
-    var i = oldPeg.indexOf(selectedDisk);
+    const oldPeg = pegs[selectedDisk.peg];
+    const i = oldPeg.indexOf(selectedDisk);
     oldPeg.splice(i, 1);
 
     peg.push(selectedDisk);
@@ -205,8 +199,9 @@ function input(n) {
 // Are all the completely disks stacked in on a new peg?
 // If so, play the win sound.
 function checkWin() {
-  for (var i = 0; i < pegs.length; i++) {
-    if (lastCompletePeg !== i && pegs[i].length === totalDisks) {
+  for (let i = 0; i < pegs.length; i++) {
+    const peg = pegs[i];
+    if (lastCompletePeg !== i && peg.length === totalDisks) {
       lastCompletePeg = i;
       // Slight delay to let the animation for this move to play out.
       setTimeout(function() {
@@ -214,9 +209,9 @@ function checkWin() {
       }, 500);
 
       // Reset disk move status.
-      for (var j = 0; j < pegs[i].length; j++) {
-        pegs[i][j].hasMoved = false;
-        pegs[i][j].isFirstMove = true;
+      for (const disk of peg) {
+        disk.hasMoved = false;
+        disk.isFirstMove = true;
       }
     }
   }
@@ -226,8 +221,8 @@ function checkWin() {
 // Class for a disk.
 function Disk(n, total) {
   this.n = n;  // 0 is the smallest disk.
-  var maxRadius = CANVAS_WIDTH / 6;
-  var minRadius = maxRadius / 10;
+  const maxRadius = CANVAS_WIDTH / 6;
+  const minRadius = maxRadius / 10;
   this.radius = (maxRadius - minRadius) / (total + 2) * (n + 1) + minRadius;
   this.peg = 0;  // 0, 1, or 2
   this.isRaised = false;
@@ -263,19 +258,19 @@ function Disk(n, total) {
 Disk.prototype.drawDisk = function(pitchDegrees, rollDegrees) {
   if (pitchDegrees < 0) pitchDegrees += 360;
   if (rollDegrees < 0) rollDegrees += 360;
-  var pitchRadians = pitchDegrees / 180 * Math.PI;
-  var rollRadians = rollDegrees / 180 * Math.PI;
+  const pitchRadians = pitchDegrees / 180 * Math.PI;
+  const rollRadians = rollDegrees / 180 * Math.PI;
 
   ctx.fillStyle = this.fillColour;
   ctx.strokeStyle = this.strokeColour;
   ctx.lineWidth = 1;
 
-  var radius = this.radius;
-  var ratio = Math.sin(pitchRadians);
-  var height = Math.abs(radius * ratio);
-  var halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
-  var topY = pitchDegrees > 180 ? halfVisualThickness : -halfVisualThickness;
-  var bottomY = -topY;
+  const radius = this.radius;
+  const ratio = Math.sin(pitchRadians);
+  const height = Math.abs(radius * ratio);
+  const halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
+  const topY = pitchDegrees > 180 ? halfVisualThickness : -halfVisualThickness;
+  const bottomY = -topY;
 
   ctx.rotate(rollRadians);
   ctx.beginPath();
@@ -320,18 +315,18 @@ Disk.prototype.setTarget = function() {
 // Draw a landing spot for one peg.
 function drawSpot() {
   // Find the radius of the largest disk.
-  var radius = 0;
-  for (var i = 0; i < pegs.length; i++) {
-    if (pegs[i][0]) {
-      radius = Math.max(radius, pegs[i][0].radius);
+  let radius = 0;
+  for (const peg of pegs) {
+    if (peg[0]) {
+      radius = Math.max(radius, peg[0].radius);
     }
   }
 
-  var pitchRadians = VIEW_ANGLE / 180 * Math.PI;
-  var ratio = Math.sin(pitchRadians);
-  var height = Math.abs(radius * ratio);
-  var halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
-  var bottomY = VIEW_ANGLE > 180 ? -halfVisualThickness : halfVisualThickness;
+  const pitchRadians = VIEW_ANGLE / 180 * Math.PI;
+  const ratio = Math.sin(pitchRadians);
+  const height = Math.abs(radius * ratio);
+  const halfVisualThickness = Math.cos(pitchRadians) * ((DISK_THICKNESS - 1) / 2);
+  const bottomY = VIEW_ANGLE > 180 ? -halfVisualThickness : halfVisualThickness;
 
   ctx.strokeStyle = '#ccc';
   ctx.lineWidth = 1;

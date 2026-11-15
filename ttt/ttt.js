@@ -11,34 +11,34 @@
 'use strict';
 
 
-var X_VALUE = -1;
-var EMPTY = 0;
-var O_VALUE = 1;
-var TIE = 2;
+const X_VALUE = -1;
+const EMPTY = 0;
+const O_VALUE = 1;
+const TIE = 2;
 
 // The internal representation of the board.
-var board = [];
+let board = [];
 
 // Whose turn, X or O?
 // Either X_VALUE (-1) or Y_VALUE (1).
-var turn;
+let turn;
 
 // Human goes first on first game (but this is negated at the start).
-var cpuFirst = true;
+let cpuFirst = true;
 
 // Is the human allowed to click?
-var enabled;
+let enabled;
 
 // One of three difficulty levels (0, 1, 2).
 // 0: always play a move that wins.  -- Disabled (doesn't force player to think)
 // 1: failing a win, play a blocking move.
 // 2: play a perfect game.
-var DIFFICULTY;
+let DIFFICULTY;
 
 // Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 // Namespace for XLink attributes.
-var XLINK_NS = 'http://www.w3.org/1999/xlink';
+const XLINK_NS = 'http://www.w3.org/1999/xlink';
 
 // A blank square was clicked.
 function squareClick(e) {
@@ -46,8 +46,8 @@ function squareClick(e) {
     return;
   }
   // Extract the ID from the parent SVG.
-  var svg = e.target.parentNode;
-  var i = Number(svg.id.substring(3));
+  const svg = e.target.parentNode;
+  const i = Number(svg.id.substring(3));
   humanPlay(i);
 }
 
@@ -69,13 +69,7 @@ function randomElement(list) {
 
 // Computer moves.
 function computerPlay() {
-  var result;
-  if (DIFFICULTY === 2) {
-    // Solve the game.
-    result = dream(turn, board)[0];
-  } else {
-    result = lookAhead();
-  }
+  const result = DIFFICULTY === 2 ? dream(turn, board)[0] : lookAhead();
   draw(result);
   enabled = true;
   drawScore();
@@ -83,8 +77,8 @@ function computerPlay() {
 
 // Draw a move at the specified spot.
 function draw(i) {
-  var oldUse = document.querySelector('#svg' + i + '>use');
-  var newUse = document.createElementNS(SVG_NS, 'use');
+  const oldUse = document.querySelector('#svg' + i + '>use');
+  const newUse = document.createElementNS(SVG_NS, 'use');
   newUse.setAttributeNS(XLINK_NS, 'href', '#generic-' +
       (turn == X_VALUE ? 'x' : 'o') + '-' +
       ((cpuFirst ? turn === X_VALUE : turn === O_VALUE)  ? 'cpu' : 'human'));
@@ -99,18 +93,18 @@ function draw(i) {
 // Here be recursive dragons.
 // Return a tuple: where to move, and expected result.
 function dream(x_o, board) {
-  var state = boardState(board);
+  const state = boardState(board);
   if (state !== EMPTY) {
     return [-1, state];
   }
-  var wins = [];
-  var ties = [];
-  var losses = [];
-  for (var i = 0; i < 9; i++) {
+  const wins = [];
+  const ties = [];
+  const losses = [];
+  for (let i = 0; i < 9; i++) {
     if (board[i] === EMPTY) {
-      var dreamBoard = board.slice();
+      const dreamBoard = board.slice();
       dreamBoard[i] = x_o;
-      var result = dream(invert(x_o), dreamBoard)[1];
+      const result = dream(invert(x_o), dreamBoard)[1];
       if (result === x_o) {
         wins.push(i);
       } else if (result === TIE) {
@@ -130,25 +124,23 @@ function dream(x_o, board) {
 
 // Look for a winning move, and optionally a blocking move.
 function lookAhead() {
-  var wins = [];
-  var blocks = [];
-  var empty = [];
-  var nextTurn = invert(turn);
-  for (var i = 0; i < 9; i++) {
+  const wins = [];
+  const blocks = [];
+  const empty = [];
+  const nextTurn = invert(turn);
+  for (let i = 0; i < 9; i++) {
     if (board[i] === EMPTY) {
       empty.push(i);
-      var dreamBoard = board.slice();
+      const dreamBoard = board.slice();
       dreamBoard[i] = turn;
-      var state = boardState(dreamBoard);
-      if (state === turn) {
+      if (boardState(dreamBoard) === turn) {
         // Winning move found.
         wins.push(i);
       }
       if (DIFFICULTY === 1) {
-        dreamBoard = board.slice();
+        const dreamBoard = board.slice();
         dreamBoard[i] = nextTurn;
-        var state = boardState(dreamBoard);
-        if (state === nextTurn) {
+        if (boardState(dreamBoard) === nextTurn) {
           // Blocking move found.
           blocks.push(i);
         }
@@ -171,13 +163,13 @@ function invert(x_o) {
 // Given a board, has X or O won (X_VALUE and O_VALUE),
 // or is in full (TIE), or still playable (EMPTY)?
 function boardState(board) {
-  for (var i = 0; i < 3; i++) {
+  for (let i = 0; i < 3; i++) {
     if (board[i] !== EMPTY &&
         board[i] === board[i + 3] && board[i] === board[i + 6]) {
       return board[i];
     }
   }
-  for (var i = 0; i < 9; i += 3) {
+  for (let i = 0; i < 9; i += 3) {
     if (board[i] !== EMPTY &&
         board[i] === board[i + 1] && board[i] === board[i + 2]) {
       return board[i];
@@ -189,7 +181,7 @@ function boardState(board) {
       return board[4];
     }
   }
-  if (board.indexOf(EMPTY) !== -1) {
+  if (board.includes(EMPTY)) {
     return EMPTY;
   }
   return TIE;
@@ -198,8 +190,8 @@ function boardState(board) {
 // Add UI elements to end the game.
 function drawScore() {
   // Print text message.
-  var state = boardState(board);
-  var text = '';
+  const state = boardState(board);
+  let text = '';
   if (state === (cpuFirst ? X_VALUE : O_VALUE)) {
     text = 'Computer wins.';
     document.getElementById('fail').play();
@@ -217,9 +209,9 @@ function drawScore() {
   // Draw a winning stroke.
   // <line x1="5%" y1="5%" x2="95%" y2="95%" id="win" />
   if (state === X_VALUE || state === O_VALUE) {
-    var x1, y1, x2, y2;
+    let x1, y1, x2, y2;
     // Vertical.
-    for (var i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
       if (board[i] !== EMPTY &&
           board[i] === board[i + 3] && board[i] === board[i + 6]) {
         x1 = ['16.7%', '50%', '83.3%'][i];
@@ -229,7 +221,7 @@ function drawScore() {
       }
     }
     // Horizontal.
-    for (var i = 0; i < 9; i += 3) {
+    for (let i = 0; i < 9; i += 3) {
       if (board[i] !== EMPTY &&
           board[i] === board[i + 1] && board[i] === board[i + 2]) {
         x1 = '5%';
@@ -251,7 +243,7 @@ function drawScore() {
       x2 = '95%';
       y2 = '5%';
     }
-    var line = document.getElementById('win');
+    const line = document.getElementById('win');
     line.setAttribute('x1', x1);
     line.setAttribute('y1', y1);
     line.setAttribute('x2', x2);
@@ -260,22 +252,22 @@ function drawScore() {
   }
 
   // Lock up the human if there is nowhere to play.
-  if (state != EMPTY) {
+  if (state !== EMPTY) {
     enabled = false;
   }
 }
 
 function reset() {
   // Destroy all previous Xs and Os.
-  var junkList = document.querySelectorAll('#ttt>svg>use');
-  for (var i = 0, junk; (junk = junkList[i]); i++) {
+  const junkList = document.querySelectorAll('#ttt>svg>use');
+  for (const junk of junkList) {
     junk.parentNode.removeChild(junk);
   }
 
   // Fill each square with a blank rectangle and a click handler.
-  for (var i = 0; i < 9; i++) {
-    var svg = document.getElementById('svg' + i);
-    var use = document.createElementNS(SVG_NS, 'use');
+  for (let i = 0; i < 9; i++) {
+    const svg = document.getElementById('svg' + i);
+    const use = document.createElementNS(SVG_NS, 'use');
     use.setAttributeNS(XLINK_NS, 'href', '#generic-square');
     svg.appendChild(use);
 
@@ -308,7 +300,7 @@ function keyDown(e) {
     e.preventDefault();
   }
   if (e.code >= 'Numpad1' && e.code <= 'Numpad9') {
-    var i = Number(e.code.slice(-1));
+    let i = Number(e.code.slice(-1));
     // Convert from 789/456/123 layout to 0-8.
     i = [null, 6, 7, 8, 3, 4, 5, 0, 1, 2][i];
     if (enabled && board[i] === EMPTY) {
@@ -321,7 +313,7 @@ function keyDown(e) {
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([12])/);
+  const m = document.cookie.match(/difficulty=([12])/);
   DIFFICULTY = Number(m ? m[1] : 1);
   document.getElementById('difficulty').selectedIndex = DIFFICULTY - 1;
   registerOptions('difficulty');

@@ -13,66 +13,66 @@
 
 // The game has three modes: Waiting on start button, interactive play,
 // and stopped.
-var modes = {
+const modes = {
   START: -1,
   PLAYING: 0,
   STOPPED: 1
 };
-var mode = modes.START;
+let mode = modes.START;
 
-var JUMP_HEIGHT = 40;
+const JUMP_HEIGHT = 40;
 
 // Master speed multiplier.  1 is normal, smaller is slower, larger is faster.
-var SPEED = NaN;
+let SPEED = NaN;
 
 // Speed multipliers for easy, normal and hard modes.
-var SPEEDS = [0.7, 1, 2];
+const SPEEDS = [0.7, 1, 2];
 
 // Number of obstacles left to clear.
-var obstacleCountdown = NaN;
+let obstacleCountdown = NaN;
 
 // Number of obstacles to clear for easy, normal and hard modes.
-var OBSTACLE_COUNTS = [10, 20, 30];
+const OBSTACLE_COUNTS = [10, 20, 30];
 
 // Difficulty level (0,1,2).
-var difficultyIndex = NaN;
+let difficultyIndex = NaN;
 
 // Number of ms per pixel.
-var SCROLL_SPEED = 6;
+const SCROLL_SPEED = 6;
 
 // Number of ms from ground to apogee.
-var HALF_JUMP_DURATION = 500;
+const HALF_JUMP_DURATION = 500;
 
 // Min and max times between obstacles.
-var MIN_OBSTACLE_INTERVAL = 1000;
-var MAX_OBSTACLE_INTERVAL = 2000;
+const MIN_OBSTACLE_INTERVAL = 1000;
+const MAX_OBSTACLE_INTERVAL = 2000;
 
 // Vertical (y) location of ground.
-var GROUND_LEVEL = 140;
+const GROUND_LEVEL = 140;
 
 // Height of dinosaur when standing.
-var STAND_HEIGHT = 40;
+const STAND_HEIGHT = 40;
 
 // Height of dinosaur when crouching.
-var CROUCH_HEIGHT = 20;
+const CROUCH_HEIGHT = 20;
 
 // Width of dinosaur when standing.
-var STAND_WIDTH = 20;
+const STAND_WIDTH = 20;
 
 // Width of dinosaur when crouching.
-var CROUCH_WIDTH = 30;
+const CROUCH_WIDTH = 30;
 
 // Horizontal (x) location of center of dinosaur.
-var DINO_CENTER_X = 100;
+const DINO_CENTER_X = 100;
 
 // Width of visible screen.
-var LANDSCAPE_WIDTH = 800;
+const LANDSCAPE_WIDTH = 800;
 
 // How far landscape extends beyond the end of each side of the visible screen.
-var LANDSCAPE_MARGIN = 50;
+const LANDSCAPE_MARGIN = 50;
 
 // Current state of dinosaur.
-var dino = {
+const dino = {
   element: null,
   jumpStart: undefined,
   crouching: false,
@@ -80,13 +80,13 @@ var dino = {
 };
 
 // Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
-var animationPid = undefined;
-var obstaclePid = undefined;
+let animationPid = undefined;
+let obstaclePid = undefined;
 
 // List of all obstacles currently on the landscape.
-var obstacles = [];
+const obstacles = [];
 
 // Object class for an obstacle.
 function Obstacle(type) {
@@ -109,10 +109,10 @@ function Obstacle(type) {
   this.x = LANDSCAPE_WIDTH + LANDSCAPE_MARGIN;
   this.y = GROUND_LEVEL - this.height;
 
-  var container = document.getElementById('obstacles');
+  const container = document.getElementById('obstacles');
   // <g><rect class="obstacle"></rect></g>
-  var g = document.createElementNS(SVG_NS, 'g');
-  var element = document.createElementNS(SVG_NS, 'rect');
+  const g = document.createElementNS(SVG_NS, 'g');
+  const element = document.createElementNS(SVG_NS, 'rect');
   element.setAttribute('y', GROUND_LEVEL - this.height - this.altitude);
   element.setAttribute('height', this.height);
   element.setAttribute('width', this.width);
@@ -122,10 +122,10 @@ function Obstacle(type) {
   g.appendChild(element);
   if (type === 0) {
     // Roof of house.
-    var element = document.createElementNS(SVG_NS, 'rect');
-    var y = GROUND_LEVEL - this.height * 1.5;
-    var side = this.width * 0.85;
-    var roofOffset = (this.width - side) / 2;
+    const element = document.createElementNS(SVG_NS, 'rect');
+    const y = GROUND_LEVEL - this.height * 1.5;
+    const side = this.width * 0.85;
+    const roofOffset = (this.width - side) / 2;
     element.setAttribute('x', roofOffset);
     element.setAttribute('y', y);
     element.setAttribute('height', side);
@@ -156,7 +156,7 @@ Obstacle.prototype.destroy = function() {
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
+  const m = document.cookie.match(/difficulty=([012])/);
   difficultyIndex = m ? m[1] : 0;
   SPEED = SPEEDS[difficultyIndex];
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
@@ -176,8 +176,8 @@ window.addEventListener('load', init);
 function initLandscape() {
   // Create dinosaur.
   // <rect id="dinosaur"></rect>
-  var g = document.getElementById('dino');
-  var element = document.createElementNS(SVG_NS, 'rect');
+  const dinoGroup = document.getElementById('dino');
+  const element = document.createElementNS(SVG_NS, 'rect');
   element.setAttribute('x', DINO_CENTER_X - STAND_WIDTH / 2);
   element.setAttribute('y', GROUND_LEVEL - STAND_HEIGHT);
   element.setAttribute('height', STAND_HEIGHT);
@@ -185,29 +185,29 @@ function initLandscape() {
   element.setAttribute('rx', 5);
   element.setAttribute('ry', 5);
   element.setAttribute('class', 'dinosaur');
-  g.appendChild(element);
+  dinoGroup.appendChild(element);
   dino.element = element;
 
   // Create temporary ground line.
-  var g = document.getElementById('ground');
-  makeGroundLine(g, 0, LANDSCAPE_WIDTH);
+  const groundGroup = document.getElementById('ground');
+  makeGroundLine(groundGroup, 0, LANDSCAPE_WIDTH);
 }
 
 // Show the start button.
 function showStart() {
   document.body.className = '';
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = '';
   mode = modes.START;
 }
 
 // Hide the start button, and start the game.
 function startGame() {
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = 'none';
   obstacleCountdown = OBSTACLE_COUNTS[difficultyIndex];
   mode = modes.PLAYING;
-  for (var i = 0, obstacle; (obstacle = obstacles[i]); i++) {
+  for (const obstacle of obstacles) {
     obstacle.destroy();
   }
   obstacles.length = 0;
@@ -222,17 +222,17 @@ function drawFrame(timestamp) {
   if (dino.jumpStart === 0) {
     dino.jumpStart = timestamp;
   }
-  var crouching = dino.crouching;
-  var dinoY = GROUND_LEVEL - STAND_HEIGHT;
+  let crouching = dino.crouching;
+  let dinoY = GROUND_LEVEL - STAND_HEIGHT;
   if (dino.jumpStart !== undefined) {
-    var scaledDuration = HALF_JUMP_DURATION / SPEED;
-    var jumpElapsed = timestamp - dino.jumpStart - scaledDuration;
+    const scaledDuration = HALF_JUMP_DURATION / SPEED;
+    const jumpElapsed = timestamp - dino.jumpStart - scaledDuration;
     if (jumpElapsed > scaledDuration) {
       dino.jumpStart = undefined;
       dino.rotation = 0;
     } else {
-      var scale = scaledDuration * scaledDuration;
-      var parabolaHeight = JUMP_HEIGHT -
+      const scale = scaledDuration * scaledDuration;
+      let parabolaHeight = JUMP_HEIGHT -
           jumpElapsed * jumpElapsed * JUMP_HEIGHT / scale;
       parabolaHeight = Math.max(0, Math.round(parabolaHeight));
       dinoY -= parabolaHeight;
@@ -240,8 +240,8 @@ function drawFrame(timestamp) {
     }
     crouching = false;
   }
-  var dinoHeight = STAND_HEIGHT;
-  var dinoWidth = STAND_WIDTH;
+  let dinoHeight = STAND_HEIGHT;
+  let dinoWidth = STAND_WIDTH;
   if (crouching) {
     dinoY += STAND_HEIGHT - CROUCH_HEIGHT;
     dinoHeight = CROUCH_HEIGHT;
@@ -255,13 +255,13 @@ function drawFrame(timestamp) {
     DINO_CENTER_X + ', ' + (dinoY + dinoHeight / 2) + ')');
 
   // Update obstacles.
-  for (var i = obstacles.length - 1; i >= 0; i--) {
-    var obstacle = obstacles[i];
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const obstacle = obstacles[i];
     if (obstacle.startTime === undefined) {
       obstacle.startTime = timestamp;
     }
-    var obstacleElapsed = timestamp - obstacle.startTime;
-    var x = LANDSCAPE_WIDTH - (obstacleElapsed / SCROLL_SPEED * SPEED);
+    const obstacleElapsed = timestamp - obstacle.startTime;
+    const x = LANDSCAPE_WIDTH - (obstacleElapsed / SCROLL_SPEED * SPEED);
     if (x < -LANDSCAPE_MARGIN) {
       obstacles.splice(i, 1);
       obstacle.destroy();
@@ -270,10 +270,10 @@ function drawFrame(timestamp) {
       // Collision detection.  Very forgiving of minor clipping.
       if (DINO_CENTER_X > x && DINO_CENTER_X < x + obstacle.width) {
         // X axis overlap.  Check y.
-        var dinoTop = dinoY;
-        var dinoBottom = dinoY + STAND_WIDTH;  // Dino is rotated 90 deg at apogee.
-        var obstacleTop = GROUND_LEVEL - obstacle.altitude - obstacle.height;
-        var obstacleBottom = GROUND_LEVEL - obstacle.altitude;
+        const dinoTop = dinoY;
+        const dinoBottom = dinoY + STAND_WIDTH;  // Dino is rotated 90 deg at apogee.
+        const obstacleTop = GROUND_LEVEL - obstacle.altitude - obstacle.height;
+        const obstacleBottom = GROUND_LEVEL - obstacle.altitude;
         if ((dinoTop >= obstacleTop && dinoTop <= obstacleBottom) ||
             (dinoBottom >= obstacleTop && dinoBottom <= obstacleBottom) ||
             (dinoTop <= obstacleTop && dinoBottom >= obstacleBottom)) {
@@ -289,17 +289,18 @@ function drawFrame(timestamp) {
   }
 
   // Update ground.
-  var groundScroll = timestamp / SCROLL_SPEED * SPEED;
-  var g = document.getElementById('ground');
+  const groundScroll = timestamp / SCROLL_SPEED * SPEED;
+  const g = document.getElementById('ground');
   while (g.firstChild) {
     g.removeChild(g.firstChild);
   }
-  var GROUND_GAP = 30;
-  for (var i = 0; i < 4; i++) {
-    var ground = groundScroll % GROUND_GAP + GROUND_GAP * i;
-    makeGroundLine(g, LANDSCAPE_WIDTH - ground / 1.5, LANDSCAPE_WIDTH - ground);
-    var ground = -groundScroll % GROUND_GAP + GROUND_GAP * i;
-    makeGroundLine(g, ground / 1.5, ground);
+  const GROUND_GAP = 30;
+  for (let i = 0; i < 4; i++) {
+    const rightGround = groundScroll % GROUND_GAP + GROUND_GAP * i;
+    makeGroundLine(g, LANDSCAPE_WIDTH - rightGround / 1.5,
+                   LANDSCAPE_WIDTH - rightGround);
+    const leftGround = -groundScroll % GROUND_GAP + GROUND_GAP * i;
+    makeGroundLine(g, leftGround / 1.5, leftGround);
   }
 
   animationPid = requestAnimationFrame(drawFrame);
@@ -308,7 +309,7 @@ function drawFrame(timestamp) {
 // Draw one line that makes up the ground.
 function makeGroundLine(parent, start, end) {
   // <line x1="?" y1=140 x2="?" y2=140></line>
-  var line = document.createElementNS(SVG_NS, 'line');
+  const line = document.createElementNS(SVG_NS, 'line');
   line.setAttribute('x1', start);
   line.setAttribute('x2', end);
   line.setAttribute('y1', GROUND_LEVEL + 0.5);
@@ -345,10 +346,10 @@ function keyPress(e) {
 
 // Create a new random obstacle and add it to the list of obstacles.
 function createObstacle() {
-  var type = obstacleCountdown === 0 ? 0 : (Math.random() < 0.75 ? 1 : 2);
+  const type = obstacleCountdown === 0 ? 0 : (Math.random() < 0.75 ? 1 : 2);
   obstacles.push(new Obstacle(type));
   if (obstacleCountdown > 0) {
-    var randomInterval = Math.random() * (MAX_OBSTACLE_INTERVAL - MIN_OBSTACLE_INTERVAL);
+    const randomInterval = Math.random() * (MAX_OBSTACLE_INTERVAL - MIN_OBSTACLE_INTERVAL);
     obstaclePid = setTimeout(createObstacle, (MIN_OBSTACLE_INTERVAL + randomInterval) / SPEED);
   }
   obstacleCountdown--;

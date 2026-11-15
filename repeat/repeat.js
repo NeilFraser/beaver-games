@@ -12,39 +12,39 @@
 
 
 // Keep track of currently playing audio so it may be terminated.
-var currentAudio = null;
+let currentAudio = null;
 
 // The ever-growing sequence of notes.
-var pattern = [];
+const pattern = [];
 // The player's (computer or human) location in the pattern.
-var index = 0;
+let index = 0;
 
 // The game has four modes: Waiting on start button, computer and human turns,
 // and stopped (the period between fail and start).
-var modes = {
+const modes = {
   START: -1,
   COMPUTER: 0,
   HUMAN: 1,
   STOPPED: 2
 };
-var mode = modes.START;
+let mode = modes.START;
 
-var LEVELS;
-var levelCircles = [];
+let LEVELS;
+const levelCircles = [];
 
-var winTune = [4, 3, 2, 1, 2, 3, 4];
+const winTune = [4, 3, 2, 1, 2, 3, 4];
 
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([012])/);
-  var difficultyIndex = m ? m[1] : 0;
+  const m = document.cookie.match(/difficulty=([012])/);
+  const difficultyIndex = m ? m[1] : 0;
   LEVELS = [8, 16, 32][difficultyIndex];
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
   registerOptions('difficulty');
-  for (var i = 1; i <= 4; i++) {
-    var button = document.getElementById('b' + i);
+  for (let i = 1; i <= 4; i++) {
+    const button = document.getElementById('b' + i);
     button.addEventListener('mousedown', buttonStart.bind(button, i));
     button.addEventListener('mouseup', buttonStop.bind(button, i));
     button.addEventListener('mouseout', buttonStop.bind(button, i));
@@ -62,12 +62,12 @@ window.addEventListener('load', init);
 
 // Draw level locations on the timeline.
 function initTimeline() {
-  var svg = document.getElementById('timeline');
-  var svgNS = svg.namespaceURI;
+  const svg = document.getElementById('timeline');
+  const svgNS = svg.namespaceURI;
   // <circle cx="5%" cy=10 r=5 class="notDone"></circle>
-  for (var i = 0; i < LEVELS; i++) {
-    var x = (90 / (LEVELS - 1) * i) + 5;
-    var circle = document.createElementNS(svgNS, 'circle');
+  for (let i = 0; i < LEVELS; i++) {
+    const x = (90 / (LEVELS - 1) * i) + 5;
+    const circle = document.createElementNS(svgNS, 'circle');
     circle.setAttribute('cx', x + '%');
     circle.setAttribute('cy', 10);
     circle.setAttribute('r', 5);
@@ -81,21 +81,21 @@ function initTimeline() {
 // Show the start button and disable the controls.
 function showStart() {
   document.body.className = '';
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = '';
-  var table = document.getElementById('controls');
+  const table = document.getElementById('controls');
   table.classList.add('disabled');
   mode = modes.START;
 }
 
 // Hide the start button, and start the computer's turn.
 function startGame() {
-  var startButton = document.getElementById('start');
+  const startButton = document.getElementById('start');
   startButton.style.display = 'none';
-  var table = document.getElementById('controls');
+  const table = document.getElementById('controls');
   table.classList.remove('disabled');
   pattern.length = 0;
-  for (var circle, i = 0; (circle = levelCircles[i]); i++) {
+  for (const circle of levelCircles) {
     circle.setAttribute('class', 'notDone');
     circle.setAttribute('r', 5);
   }
@@ -126,7 +126,7 @@ function startComputer() {
 
 // Play the next note in the win tune.
 function playWinTune() {
-  var note = winTune[index];
+  const note = winTune[index];
   if (note === undefined) {
     setTimeout(showStart, 500);
     return;
@@ -140,7 +140,7 @@ function playWinTune() {
 
 // Play the next note in the computer's turn.
 function playStep() {
-  var note = pattern[index];
+  const note = pattern[index];
   if (note === undefined) {
     startHuman();
     return;
@@ -225,7 +225,7 @@ function buttonStart(i) {
   if (mode !== modes.HUMAN) {
     return;
   }
-  var expectedNote = pattern[index];
+  const expectedNote = pattern[index];
   index++;
   if (expectedNote == i) {
     noteStart(i);
@@ -251,7 +251,7 @@ function noteStart(i) {
   if (currentAudio) {
     currentAudio.pause();
   }
-  var button = document.getElementById('b' + i);
+  const button = document.getElementById('b' + i);
   button.classList.add('highlight');
   currentAudio = document.getElementById('a' + i);
   currentAudio.load();
@@ -260,6 +260,6 @@ function noteStart(i) {
 
 // Human or computer stops a note playing.
 function noteStop(i) {
-  var button = document.getElementById('b' + i);
+  const button = document.getElementById('b' + i);
   button.classList.remove('highlight');
 }

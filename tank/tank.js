@@ -12,26 +12,26 @@
 
 
 // Namespace for SVG elements.
-var SVG_NS = 'http://www.w3.org/2000/svg';
+const SVG_NS = 'http://www.w3.org/2000/svg';
 
 // Distance from hexagon's center to any point.
-var HEX_SIZE = 20;
+const HEX_SIZE = 20;
 
 // Width of a pointy-top hexagon.
-var HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
+const HEX_WIDTH = Math.sqrt(3) * HEX_SIZE;
 // Height of a pointy-top hexagon.
-var HEX_HEIGHT = 2 * HEX_SIZE;
+const HEX_HEIGHT = 2 * HEX_SIZE;
 
 // Number of hexagon rows on playing field.
-var GRID_HEIGHT = 19;  // Odd is better.
+const GRID_HEIGHT = 19;  // Odd is better.
 // Number of hexagon columns on playing field.
-var GRID_WIDTH = 25;
+const GRID_WIDTH = 25;
 
 // Fraction of the board with obstacles.
-var OBSTACLE_RATIO = 0.3;
+const OBSTACLE_RATIO = 0.3;
 
 // Current state of the keyboard.
-var keyStatus = {
+const keyStatus = {
   '1': false,
   '2': false,
   '3': false,
@@ -41,7 +41,7 @@ var keyStatus = {
 };
 
 // Keys tapped within a turn.
-var keyTapped = {
+const keyTapped = {
   '1': false,
   '2': false,
   '3': false,
@@ -51,29 +51,29 @@ var keyTapped = {
 };
 
 // Array of Tank objects (players).
-var tanks = [];
+const tanks = [];
 // Incrementing tick count for each clock tick.
-var clockCycle = 0;
+let clockCycle = 0;
 
 // 2D axial grid of hexagons.
-var grid = [];
+const grid = [];
 
 // Number of milliseconds between two turns of a player.
-var SPEED;
+let SPEED;
 
-var player1 = null;
-var player2 = null;
-var playerComputer = null;
+let player1 = null;
+let player2 = null;
+let playerComputer = null;
 
 // On page load, initialize the event handlers and draw the grid.
 function init() {
   fixLinks();
 
-  var m = document.cookie.match(/difficulty=([01])/);
-  var difficultyIndex = m ? m[1] : 0;
+  let m = document.cookie.match(/difficulty=([01])/);
+  const difficultyIndex = m ? m[1] : 0;
   SPEED = [750, 500][difficultyIndex];
   document.getElementById('difficulty').selectedIndex = difficultyIndex;
-  var playerCount = 1;
+  let playerCount = 1;
   m = document.cookie.match(/players=([12])/);
   if (m && m[1] === '2') {
     playerCount = 2;
@@ -103,18 +103,18 @@ function init() {
   // If there are an odd number of tanks:
   // 1:  S1,T1 - S1 - Repeat...
   // 3:  S1,T1 - S3 - S2,T2 - S1 - S3,T3 - S2 - Repeat...
-  var interval = SPEED / (tanks.length * ((tanks.length % 2) ?  2 : 1));
+  const interval = SPEED / (tanks.length * ((tanks.length % 2) ?  2 : 1));
   setInterval(clock, interval);
 }
 window.addEventListener('load', init);
 
 // Initial draw of grid.
 function initGrid() {
-  for (var y = 0; y < GRID_HEIGHT; y++) {
-    var row = [];
-    var startX = -Math.floor(y / 2);
-    var endX = GRID_WIDTH - Math.ceil(y / 2);
-    for (var x = startX; x < endX; x++) {
+  for (let y = 0; y < GRID_HEIGHT; y++) {
+    const row = [];
+    const startX = -Math.floor(y / 2);
+    const endX = GRID_WIDTH - Math.ceil(y / 2);
+    for (let x = startX; x < endX; x++) {
       row[x] = new Hex(x, y);
       if (y === 0 || y === GRID_HEIGHT - 1 ||
           x === startX || x === endX - 1) {
@@ -125,17 +125,15 @@ function initGrid() {
     grid[y] = row;
   }
   // Randomly add barriers.
-  for (var y in grid) {
-    var row = grid[y];
-    for (var x in row) {
-      var cell = row[x];
+  for (const row of grid) {
+    for (const cell of row) {
       if (!cell.isWall && Math.random() < OBSTACLE_RATIO) {
         // Place barrier as long as it doesn't form an exclave.
         cell.setWall(true);
-        var neighbours = cell.getNeighbours();
-        var firstNeighbour = neighbours.pop();
+        const neighbours = cell.getNeighbours();
+        const firstNeighbour = neighbours.pop();
         if (firstNeighbour) {
-          for (var i = 0, neighbour; (neighbour = neighbours[i]); i++) {
+          for (const neighbour of neighbours) {
             if (!hasPath(firstNeighbour, neighbour)) {
               cell.setWall(false);
               break;
@@ -149,16 +147,16 @@ function initGrid() {
 
 // Is there a navigable path between two hexes?
 function hasPath(startHex, goalHex) {
-  var frontier = [startHex];
-  var reached = new Set();
+  const frontier = [startHex];
+  const reached = new Set();
   reached.add(startHex);
   while (frontier.length) {
-    var current = frontier.shift();
+    let current = frontier.shift();
     if (current === goalHex) {
       return true;
     }
-    var neighbours = current.getNeighbours();
-    for (var i = 0, neighbour; (neighbour = neighbours[i]); i++) {
+    const neighbours = current.getNeighbours();
+    for (const neighbour of neighbours) {
       if (!reached.has(neighbour)) {
         frontier.push(neighbour);
         reached.add(neighbour);
@@ -171,19 +169,19 @@ function hasPath(startHex, goalHex) {
 // Starting at the specified tank's location, find the path to the closest tank.
 // Return the initial direction to move to head to the tank.
 function findTank(me) {
-  var goalHexes = new Set();
-  var dangerHexes = new Set();
-  for (var i = 0, target; (target = tanks[i]); i++) {
+  const goalHexes = new Set();
+  const dangerHexes = new Set();
+  for (const target of tanks) {
     if (target === me || target.disposed) {
       continue;
     }
     // Enemy tank is a good goal.
-    var hex = target.getHex();
+    let hex = target.getHex();
     goalHexes.add(hex);
     // In front of an enemy tank is a dangerous place.
-    var lookX = hex.hexX;
-    var lookY = hex.hexY;
-    var dxy = dirToDelta(target.direction);
+    let lookX = hex.hexX;
+    let lookY = hex.hexY;
+    const dxy = dirToDelta(target.direction);
     while (true) {
       lookX += dxy.x;
       lookY += dxy.y;
@@ -196,7 +194,7 @@ function findTank(me) {
   }
 
   function record(newHex, newDir) {
-    var newDesc = makeDesc(newHex, newDir);
+    const newDesc = makeDesc(newHex, newDir);
     if (!cameFrom.has(newDesc)) {
       frontier.push([newHex, newDir]);
       cameFrom.set(newDesc, [currentHex, currentDir]);
@@ -207,17 +205,19 @@ function findTank(me) {
     return hex.hexX + ',' + hex.hexY + ',' + direction;
   }
 
-  var startHex = me.getHex();
-  var startDir = me.direction;
-  var frontier = [[startHex, startDir]];
-  var cameFrom = new Map();
+  const startHex = me.getHex();
+  const startDir = me.direction;
+  const frontier = [[startHex, startDir]];
+  const cameFrom = new Map();
+  let currentHex;
+  let currentDir;
   while (frontier.length) {
-    var current = frontier.shift();
-    var currentHex = current[0];
-    var currentDir = current[1];
+    let current = frontier.shift();
+    currentHex = current[0];
+    currentDir = current[1];
     if (currentHex !== startHex && goalHexes.has(currentHex)) {
       // Found an enemy tank.  Return the first direction to step to.
-      var returnDir = null;
+      let returnDir = null;
       while (currentHex !== startHex || currentDir !== startDir) {
         returnDir = currentDir;
         current = cameFrom.get(makeDesc(currentHex, currentDir));
@@ -226,9 +226,9 @@ function findTank(me) {
       }
       return returnDir;
     }
-    var newHex, newDir;
+    let newHex, newDir;
     // Explore moving forwards.
-    var dxy = dirToDelta(currentDir);
+    const dxy = dirToDelta(currentDir);
     newHex = grid[currentHex.hexY + dxy.y][currentHex.hexX + dxy.x];
     newDir = currentDir;
     if (!newHex.isWall && !dangerHexes.has(newHex)) {
@@ -247,10 +247,10 @@ function findTank(me) {
 
 // Handle a turn.
 function clock() {
-  var players = tanks.length;
-  var oddPlayers = players % 2;
-  var tank = null;
-  var shell = null;
+  const players = tanks.length;
+  const oddPlayers = players % 2;
+  let tank = null;
+  let shell = null;
   if (oddPlayers) {
     if (clockCycle % 2) {
       shell = tanks[(clockCycle * 2) % players].shell;
@@ -310,7 +310,7 @@ function clock() {
 
   // Increment the clockCycle, wrapping to 0 as needed.
   clockCycle++;
-  var wrapTicks = players * (oddPlayers ? 2 : 1);
+  const wrapTicks = players * (oddPlayers ? 2 : 1);
   if (clockCycle >= wrapTicks) {
     clockCycle = 0;
   }
@@ -318,20 +318,21 @@ function clock() {
 
 function computerTurn(me) {
   // Fire if there's a tank ahead of us.
-  var lookX = me.hexX;
-  var lookY = me.hexY;
-  var dxy = dirToDelta(me.direction);
+  let lookX = me.hexX;
+  let lookY = me.hexY;
+  const dxy = dirToDelta(me.direction);
+  let hex;
   do {
     lookX += dxy.x;
     lookY += dxy.y;
-    var hex = grid[lookY][lookX];
+    hex = grid[lookY][lookX];
   } while (!hex.isWall && !hex.getTank());
   if (hex.getTank()) {
     me.fire();
   }
 
   // Drive/Turn towards the nearest tank.
-  var direction = findTank(me);
+  const direction = findTank(me);
   if (direction !== null) {
     if (((me.direction + 1) % 6) === direction) {
       me.turn(1);
@@ -339,8 +340,8 @@ function computerTurn(me) {
       me.turn(-1);
     } else {
       // Move forward, but not if there's a shell in the next square.
-      var dxy = dirToDelta(me.direction);
-      var newHex = me.getHex(dxy.x, dxy.y);
+      const dxy = dirToDelta(me.direction);
+      const newHex = me.getHex(dxy.x, dxy.y);
       if (newHex.getShells().length === 0) {
         me.move();
       }
@@ -350,9 +351,9 @@ function computerTurn(me) {
 
 // Convert axial hex coordinates to screen XY coordinates.
 function hexToScreen(hexX, hexY) {
-  var x = hexX * HEX_WIDTH - HEX_WIDTH / 4;
+  let x = hexX * HEX_WIDTH - HEX_WIDTH / 4;
   x += hexY * HEX_WIDTH / 2;
-  var y = hexY * HEX_HEIGHT * 0.75;
+  const y = hexY * HEX_HEIGHT * 0.75;
   return {x: x, y: y};
 }
 
@@ -395,9 +396,9 @@ function Hex(hexX, hexY) {
   this.hexX = hexX;
   this.hexY = hexY;
   // <polygon points="100,60 134.6,80 134.6,120 100,140 65.3,120 65.3,80" class="grid"></polygon>
-  var xy = hexToScreen(hexX, hexY);
-  var element = document.createElementNS(SVG_NS, 'polygon');
-  var points = [];
+  const xy = hexToScreen(hexX, hexY);
+  const element = document.createElementNS(SVG_NS, 'polygon');
+  const points = [];
   points[0] = (xy.x) + ',' + (xy.y - HEX_HEIGHT / 2);
   points[1] = (xy.x + HEX_WIDTH / 2) + ',' + (xy.y - HEX_HEIGHT / 4);
   points[2] = (xy.x + HEX_WIDTH / 2) + ',' + (xy.y + HEX_HEIGHT / 4);
@@ -406,7 +407,7 @@ function Hex(hexX, hexY) {
   points[5] = (xy.x - HEX_WIDTH / 2) + ',' + (xy.y - HEX_HEIGHT / 4);
   element.setAttribute('points', points.join(' '));
   element.setAttribute('class', 'grid');
-  var g = document.getElementById('grid');
+  const g = document.getElementById('grid');
   g.appendChild(element);
 
   this.element = element;
@@ -425,8 +426,8 @@ Hex.prototype.setWall = function(wall) {
 
 // Return list of all live shells in this hex.
 Hex.prototype.getShells = function(victim) {
-  var shells = [];
-  for (var i = 0, tank; (tank = tanks[i]); i++) {
+  const shells = [];
+  for (const tank of tanks) {
     if (tank.shell &&
         tank.shell.hexX === this.hexX && tank.shell.hexY === this.hexY &&
         (tank !== victim || !tank.firing)) {
@@ -438,7 +439,7 @@ Hex.prototype.getShells = function(victim) {
 
 // Return tank in this hex, or null.
 Hex.prototype.getTank = function() {
-  for (var i = 0, tank; (tank = tanks[i]); i++) {
+  for (const tank of tanks) {
     if (tank.hexX === this.hexX && tank.hexY === this.hexY) {
       return tank;
     }
@@ -448,12 +449,12 @@ Hex.prototype.getTank = function() {
 
 // Return all non-wall neighbours of this hex.
 Hex.prototype.getNeighbours = function() {
-  var neighbours = [];
-  for (var direction = 0; direction < 6; direction++) {
-    var dxy = dirToDelta(direction);
-    var newX = this.hexX + dxy.x;
-    var newY = this.hexY + dxy.y;
-    var newHex = grid[newY][newX];
+  const neighbours = [];
+  for (let direction = 0; direction < 6; direction++) {
+    const dxy = dirToDelta(direction);
+    const newX = this.hexX + dxy.x;
+    const newY = this.hexY + dxy.y;
+    const newHex = grid[newY][newX];
     if (!newHex.isWall) {
       neighbours.push(newHex);
     }
@@ -482,7 +483,7 @@ AbstractAnimatable.prototype.render = function(animate) {
     this.translateYStart = this.translateYFinal;
     this.rotateStart = this.rotateFinal;
   }
-  var xy = hexToScreen(this.hexX, this.hexY);
+  const xy = hexToScreen(this.hexX, this.hexY);
   this.translateXFinal = xy.x;
   this.translateYFinal = xy.y;
   this.rotateFinal = this.direction * 60 + 90;
@@ -504,9 +505,9 @@ AbstractAnimatable.prototype.render = function(animate) {
 
 // Set the SVG transforms for a object.
 AbstractAnimatable.prototype.setTransforms = function() {
-  var translate = 'translate(' + this.translateXNow + ',' + this.translateYNow + ')';
-  var rotate = 'rotate(' + this.rotateNow + ')';
-  var scale = 'scale(' + this.SCALE + ')';
+  const translate = 'translate(' + this.translateXNow + ',' + this.translateYNow + ')';
+  const rotate = 'rotate(' + this.rotateNow + ')';
+  const scale = 'scale(' + this.SCALE + ')';
   this.element.setAttribute('transform', translate + ' ' + rotate + ' ' + scale);
 };
 
@@ -516,9 +517,9 @@ AbstractAnimatable.prototype.animate = function(timestamp) {
   if (!this.animateStart) {
     this.animateStart = timestamp;
   }
-  var maxElapsed = SPEED * this.SPEED;
-  var elapsed = Math.min(timestamp - this.animateStart, maxElapsed);
-  var ratio = elapsed / maxElapsed;
+  const maxElapsed = SPEED * this.SPEED;
+  const elapsed = Math.min(timestamp - this.animateStart, maxElapsed);
+  const ratio = elapsed / maxElapsed;
   this.translateXNow = (this.translateXFinal - this.translateXStart) * ratio + this.translateXStart;
   this.translateYNow = (this.translateYFinal - this.translateYStart) * ratio + this.translateYStart;
   this.rotateNow = (this.rotateFinal - this.rotateStart) * ratio + this.rotateStart;
@@ -537,8 +538,8 @@ AbstractAnimatable.prototype.animate = function(timestamp) {
 
 // Get the hex for this object.
 AbstractAnimatable.prototype.getHex = function(opt_dx, opt_dy) {
-  var newX = this.hexX + (opt_dx || 0);
-  var newY = this.hexY + (opt_dy || 0);
+  const newX = this.hexX + (opt_dx || 0);
+  const newY = this.hexY + (opt_dy || 0);
   return grid[newY][newX];
 };
 
@@ -560,12 +561,12 @@ AbstractAnimatable.prototype.dispose = function() {
 // Constructor for a new shell (bullet).
 function Shell(tank) {
   this.tank = tank;
-  var element = document.createElementNS(SVG_NS, 'circle');
+  const element = document.createElementNS(SVG_NS, 'circle');
   element.setAttribute('cx', 0);
   element.setAttribute('cy', 0);
   element.setAttribute('r', 1);
   element.setAttribute('class', 'shell player' + tank.playerNumber);
-  var g = document.getElementById('landscape');
+  const g = document.getElementById('landscape');
   g.appendChild(element);
 
   this.hexX = tank.hexX;
@@ -601,8 +602,8 @@ Shell.prototype.dispose = function() {
 Shell.prototype.move = function() {
   if (this.frozen) throw Error('Shell is frozen.');
   this.animateStart = 0;  // Set a falsy start value.
-  var dxy = dirToDelta(this.direction);
-  var newHex = this.getHex(dxy.x, dxy.y);
+  const dxy = dirToDelta(this.direction);
+  const newHex = this.getHex(dxy.x, dxy.y);
   if (!newHex) {
     throw Error('Shell out of bounds: ' + this.hexX + ',' + this.hexY + ' + ' +
                 dxy.x + ',' + dxy.y);
@@ -610,7 +611,7 @@ Shell.prototype.move = function() {
   if (newHex.isWall) {
     this.callDispose();
   }
-  var victim = newHex.getTank();
+  const victim = newHex.getTank();
   if (victim && (victim !== this.tank || !victim.firing)) {
     victim.recordScore([this.tank]);
     victim.frozen = true;
@@ -626,10 +627,10 @@ Shell.prototype.move = function() {
 // Player number should be 1-3 and determines tank's colour.
 function Tank(playerNumber) {
   this.playerNumber = playerNumber;
-  var element = document.createElementNS(SVG_NS, 'polygon');
+  const element = document.createElementNS(SVG_NS, 'polygon');
   element.setAttribute('points', this.PATH);
   element.setAttribute('class', 'tank player' + playerNumber);
-  var g = document.getElementById('landscape');
+  const g = document.getElementById('landscape');
   g.appendChild(element);
   this.element = element;
   this.shell = null;
@@ -657,8 +658,8 @@ Tank.prototype.disposed = true;
 Tank.prototype.move = function() {
   if (this.frozen) throw Error('Tank is frozen.');
   this.animateStart = 0;  // Set a falsy start value.
-  var dxy = dirToDelta(this.direction);
-  var newHex = this.getHex(dxy.x, dxy.y);
+  const dxy = dirToDelta(this.direction);
+  const newHex = this.getHex(dxy.x, dxy.y);
   if (!newHex) {
     throw Error('Tank out of bounds: ' + this.hexX + ',' + this.hexY + ' + ' +
                 dxy.x + ',' + dxy.y);
@@ -667,12 +668,12 @@ Tank.prototype.move = function() {
     this.animateStart = undefined;
     return;
   }
-  var shells = newHex.getShells(this);
+  const shells = newHex.getShells(this);
   if (shells.length) {
     // Look for shells that are approaching head-on.
-    var dir = (this.direction + 3) % 6;
-    var victors = [];
-    for (var i = 0, shell; (shell = shells[i]); i++) {
+    const dir = (this.direction + 3) % 6;
+    const victors = [];
+    for (const shell of shells) {
       if (shell.direction === dir) {
         victors.push(shell.tank);
         this.intersectedShells.push(shell);
@@ -692,12 +693,13 @@ Tank.prototype.move = function() {
 
 // Place the tank randomly on the board and activate it.
 Tank.prototype.placeRandomly = function() {
+  let x, y, hex;
   do {
-    var y = Math.floor(Math.random() * grid.length);
-    var xKeys = Object.keys(grid[y]);
-    var xIndex = Math.floor(Math.random() * xKeys.length);
-    var x = Number(xKeys[xIndex]);
-    var hex = grid[y][x];
+    y = Math.floor(Math.random() * grid.length);
+    const xKeys = Object.keys(grid[y]);
+    const xIndex = Math.floor(Math.random() * xKeys.length);
+    x = Number(xKeys[xIndex]);
+    hex = grid[y][x];
   } while (hex.isWall || hex.getTank());
 
   this.hexX = x;
@@ -732,7 +734,7 @@ Tank.prototype.dispose = function() {
     return;
   }
   this.disposed = true;
-  var audio = document.getElementById('bang');
+  const audio = document.getElementById('bang');
   audio.currentTime = 0;
   audio.play();
   // Create a hulk in this location.
@@ -742,7 +744,7 @@ Tank.prototype.dispose = function() {
   cancelAnimationFrame(this.animationFramePid);
   this.firing = 0;
   // Destroy any shells this tank hit.
-  for (var i = 0, shell; (shell = this.intersectedShells[i]); i++) {
+  for (const shell of this.intersectedShells) {
     shell.callDispose();
   }
   this.intersectedShells.length = 0;
@@ -755,7 +757,7 @@ Tank.prototype.dispose = function() {
 
 // Increase the score of whomever is responsible for this tank's death.
 Tank.prototype.recordScore = function(victors) {
-  for (var i = 0, victor; (victor = victors[i]); i++) {
+  for (const victor of victors) {
     if (victor === this) {
       // Spawned in your own shell's path.
       this.setScore(this.score - 1);
@@ -791,10 +793,10 @@ Tank.prototype.fire = function() {
 // Player number should be 1-3 and determines hulk's colour.
 function Hulk(tank) {
   this.tank = tank;
-  var element = document.createElementNS(SVG_NS, 'polygon');
+  const element = document.createElementNS(SVG_NS, 'polygon');
   element.setAttribute('points', this.PATH);
   element.setAttribute('class', 'hulk player' + tank.playerNumber);
-  var g = document.getElementById('hulks');
+  const g = document.getElementById('hulks');
   g.appendChild(element);
   this.element = element;
   this.hexX = tank.hexX;
