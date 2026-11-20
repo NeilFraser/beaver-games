@@ -50,6 +50,15 @@ let sortCount = 0;
 // Counter for dragenter/dragleave events on bagArea.
 let bagAreaDragCount = 0;
 
+// Display symbols.
+const operators = {
+  '+': '+',
+  '-': '-',
+  '*': '×',
+  '/': '÷',
+  '=': '=',
+}
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 // On page load, initialize the event handlers and show the start button.
@@ -57,7 +66,7 @@ function init() {
   fixLinks();
 
   const m = document.cookie.match(/difficulty=([012])/);
-  difficultyLevel = m ? Number(m[1]) : 0;
+  difficultyLevel = m ? Number(m[1]) : 1;
   document.getElementById('difficulty').selectedIndex = difficultyLevel;
   registerOptions('difficulty');
 
@@ -123,18 +132,6 @@ function startGame() {
   document.getElementById('restartArea').style.display = 'none';
 }
 
-// End game, show start button.
-function fail() {
-  gameOver = true;
-  clearSelection();
-  document.body.className = 'shake game-over';
-  document.querySelectorAll('.chip').forEach(chip => {
-    chip.draggable = false;
-  });
-  document.getElementById('crash').play();
-  document.getElementById('restartArea').style.display = '';
-}
-
 // ── Grid rendering ────────────────────────────────────────────────────────────
 
 // Build the grid table from scratch.
@@ -166,7 +163,7 @@ function renderGrid() {
         setupSlotEvents(td);
       } else if (typeof cell === 'string') {
         td.className = 'cell-op';
-        td.textContent = cell;
+        td.textContent = operators[cell];
       } else {
         // Fixed number.
         td.className = 'cell-fixed';
@@ -806,13 +803,26 @@ function checkWin() {
   }
 
   // Win!
-  gameOver = true;
-  clearSelection();
+  end();
   document.body.className = 'game-over';
+  document.getElementById('win').play();
+  document.getElementById('restartArea').style.display = '';
+}
+
+// End game, show start button.
+function fail() {
+  end();
+  document.body.className = 'shake game-over';
+  document.getElementById('crash').play();
+  document.getElementById('restartArea').style.display = '';
+}
+
+// Common actions when a game ends, win or lose.
+function end() {
+  gameOver = true;
+  updateUndoButton();
+  clearSelection();
   document.querySelectorAll('.chip').forEach(chip => {
     chip.draggable = false;
   });
-  document.getElementById('win').play();
-  document.getElementById('restartArea').style.display = '';
-  updateUndoButton();
 }

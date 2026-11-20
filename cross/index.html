@@ -53,7 +53,7 @@
         text-align: center;
         vertical-align: middle;
         padding: 0;
-        font-size: 1em;
+        font-size: 1.2em;
         font-weight: bold;
       }
       /* Null / separator cell */
@@ -62,29 +62,30 @@
       }
       /* Operator / equals cell */
       td.cell-op {
-        font-size: 1.1em;
         color: #333;
+        background-color: #f8e6b4;
+        border: 1px solid #888;
       }
       /* Fixed (given) number cell */
       td.cell-fixed {
         background: #ddeeff;
-        border-radius: 4px;
-        font-size: 1.1em;
         color: #222;
+        background-color: #f8e6b4;
+        border: 1px solid #888;
       }
       /* Slot: a player-fillable cell */
       td.cell-slot {
-        border: 2px dashed #aaa;
-        border-radius: 4px;
         cursor: pointer;
         position: relative;
         min-width: 2.4em;
         min-height: 2.4em;
         box-sizing: border-box;
+        background-color: #fef6de;
+        border: 1px solid #888;
       }
       td.cell-slot.drag-over {
         background: #fffacd;
-        border-color: #888;
+        border-color: #000;
       }
 
       /* Chip: a draggable number tile */
@@ -94,11 +95,10 @@
         height: 2em;
         line-height: 2em;
         text-align: center;
-        background: #fff8dc;
-        border: 2px solid #bbb;
+        background: #e5f7f2;
+        border: 1px solid #bbb;
         border-radius: 4px;
         cursor: grab;
-        font-size: 1em;
         font-weight: bold;
         box-sizing: border-box;
         transition: transform 0.18s ease, opacity 0.18s ease;
@@ -127,6 +127,7 @@
         margin: 0 auto 16px;
         max-width: 600px;
         text-align: center;
+        font-size: 1.2em;
       }
       #bag {
         display: flex;
