@@ -262,8 +262,8 @@ function disolveSnake() {
 }
 
 // Get the TD element for the given coordinates.
-function getCell(xy) {
-  return document.getElementById(xy[0] + '_' + xy[1]);
+function getCell([x, y]) {
+  return document.getElementById(x + '_' + y);
 }
 
 // Player is changing directions using the keyboard.
@@ -360,10 +360,10 @@ Snake.prototype.setHead = function(x, y) {
 
 // Move the head in the given direction.
 // Returns the result of this move (crash, food or free).
-Snake.prototype.moveHead = function(dxy) {
-  const headXY = this.coordinates[this.coordinates.length - 1];
-  let x = headXY[0] + dxy[0];
-  let y = headXY[1] + dxy[1];
+Snake.prototype.moveHead = function([dx, dy]) {
+  const [headX, headY] = this.coordinates[this.coordinates.length - 1];
+  let x = headX + dx;
+  let y = headY + dy;
   if (x < 0) {
     x += WIDTH;
   } else if (x >= WIDTH) {

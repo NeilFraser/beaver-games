@@ -428,9 +428,10 @@ Vehicle.prototype.moveBy = function(delta) {
   }
   // Couple to any train we ran into.
   if (delta > 0) {
+    const [trainEndSeg, trainEndDist] = locTrainEnd;
     for (const train of trains) {
-      if (train.frontSegment_ === locTrainEnd[0] &&
-          train.frontDistance_ <= locTrainEnd[1]) {
+      if (train.frontSegment_ === trainEndSeg &&
+          train.frontDistance_ <= trainEndDist) {
         let lastCar = this;
         while (lastCar.nextVehicle) {
           lastCar = lastCar.nextVehicle;

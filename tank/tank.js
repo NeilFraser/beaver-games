@@ -320,11 +320,11 @@ function computerTurn(me) {
   // Fire if there's a tank ahead of us.
   let lookX = me.hexX;
   let lookY = me.hexY;
-  const dxy = dirToDelta(me.direction);
+  const { x: dx, y: dy } = dirToDelta(me.direction);
   let hex;
   do {
-    lookX += dxy.x;
-    lookY += dxy.y;
+    lookX += dx;
+    lookY += dy;
     hex = grid[lookY][lookX];
   } while (!hex.isWall && !hex.getTank());
   if (hex.getTank()) {
@@ -340,8 +340,8 @@ function computerTurn(me) {
       me.turn(-1);
     } else {
       // Move forward, but not if there's a shell in the next square.
-      const dxy = dirToDelta(me.direction);
-      const newHex = me.getHex(dxy.x, dxy.y);
+      const { x: fwdDx, y: fwdDy } = dirToDelta(me.direction);
+      const newHex = me.getHex(fwdDx, fwdDy);
       if (newHex.getShells().length === 0) {
         me.move();
       }
@@ -396,15 +396,15 @@ function Hex(hexX, hexY) {
   this.hexX = hexX;
   this.hexY = hexY;
   // <polygon points="100,60 134.6,80 134.6,120 100,140 65.3,120 65.3,80" class="grid"></polygon>
-  const xy = hexToScreen(hexX, hexY);
+  const { x, y } = hexToScreen(hexX, hexY);
   const element = document.createElementNS(SVG_NS, 'polygon');
   const points = [];
-  points[0] = (xy.x) + ',' + (xy.y - HEX_HEIGHT / 2);
-  points[1] = (xy.x + HEX_WIDTH / 2) + ',' + (xy.y - HEX_HEIGHT / 4);
-  points[2] = (xy.x + HEX_WIDTH / 2) + ',' + (xy.y + HEX_HEIGHT / 4);
-  points[3] = (xy.x) + ',' + (xy.y +  HEX_HEIGHT / 2);
-  points[4] = (xy.x - HEX_WIDTH / 2) + ',' + (xy.y + HEX_HEIGHT / 4);
-  points[5] = (xy.x - HEX_WIDTH / 2) + ',' + (xy.y - HEX_HEIGHT / 4);
+  points[0] = (x) + ',' + (y - HEX_HEIGHT / 2);
+  points[1] = (x + HEX_WIDTH / 2) + ',' + (y - HEX_HEIGHT / 4);
+  points[2] = (x + HEX_WIDTH / 2) + ',' + (y + HEX_HEIGHT / 4);
+  points[3] = (x) + ',' + (y +  HEX_HEIGHT / 2);
+  points[4] = (x - HEX_WIDTH / 2) + ',' + (y + HEX_HEIGHT / 4);
+  points[5] = (x - HEX_WIDTH / 2) + ',' + (y - HEX_HEIGHT / 4);
   element.setAttribute('points', points.join(' '));
   element.setAttribute('class', 'grid');
   const g = document.getElementById('grid');
@@ -483,9 +483,9 @@ AbstractAnimatable.prototype.render = function(animate) {
     this.translateYStart = this.translateYFinal;
     this.rotateStart = this.rotateFinal;
   }
-  const xy = hexToScreen(this.hexX, this.hexY);
-  this.translateXFinal = xy.x;
-  this.translateYFinal = xy.y;
+  const { x, y } = hexToScreen(this.hexX, this.hexY);
+  this.translateXFinal = x;
+  this.translateYFinal = y;
   this.rotateFinal = this.direction * 60 + 90;
   if (animate) {
     if (this.rotateStart === 390 && this.rotateFinal === 90) {
@@ -602,11 +602,11 @@ Shell.prototype.dispose = function() {
 Shell.prototype.move = function() {
   if (this.frozen) throw Error('Shell is frozen.');
   this.animateStart = 0;  // Set a falsy start value.
-  const dxy = dirToDelta(this.direction);
-  const newHex = this.getHex(dxy.x, dxy.y);
+  const { x: dx, y: dy } = dirToDelta(this.direction);
+  const newHex = this.getHex(dx, dy);
   if (!newHex) {
     throw Error('Shell out of bounds: ' + this.hexX + ',' + this.hexY + ' + ' +
-                dxy.x + ',' + dxy.y);
+                dx + ',' + dy);
   }
   if (newHex.isWall) {
     this.callDispose();
@@ -618,8 +618,8 @@ Shell.prototype.move = function() {
     this.intersectedTank = victim;
     this.callDispose();
   }
-  this.hexX += dxy.x;
-  this.hexY += dxy.y;
+  this.hexX += dx;
+  this.hexY += dy;
   this.render(true);
 };
 
@@ -658,11 +658,11 @@ Tank.prototype.disposed = true;
 Tank.prototype.move = function() {
   if (this.frozen) throw Error('Tank is frozen.');
   this.animateStart = 0;  // Set a falsy start value.
-  const dxy = dirToDelta(this.direction);
-  const newHex = this.getHex(dxy.x, dxy.y);
+  const { x: dx, y: dy } = dirToDelta(this.direction);
+  const newHex = this.getHex(dx, dy);
   if (!newHex) {
     throw Error('Tank out of bounds: ' + this.hexX + ',' + this.hexY + ' + ' +
-                dxy.x + ',' + dxy.y);
+                dx + ',' + dy);
   }
   if (newHex.isWall || newHex.getTank()) {
     this.animateStart = undefined;
@@ -686,8 +686,8 @@ Tank.prototype.move = function() {
       this.callDispose();
     }
   }
-  this.hexX += dxy.x;
-  this.hexY += dxy.y;
+  this.hexX += dx;
+  this.hexY += dy;
   this.render(true);
 };
 

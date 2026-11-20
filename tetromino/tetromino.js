@@ -394,9 +394,7 @@ CurrentShape.prototype.setTransforms = function() {
 // Does this shape intersect with any existing blocks on the board,
 // or extends beyond the board?
 CurrentShape.prototype.isCollided = function() {
-  for (const coord of this.coords) {
-    const x = coord[0];
-    const y = coord[1];
+  for (const [x, y] of this.coords) {
     if (y < 0) {
       return true;  // Under the floor.
     }
@@ -467,9 +465,7 @@ function lockDown() {
   }
   // Create static blocks which look identical to the fallen shape.
   const g = document.getElementById('matrix');
-  for (const coord of currentShape.coords) {
-    const x = coord[0];
-    const y = coord[1];
+  for (const [x, y] of currentShape.coords) {
     const b = createBlock();
     b.setAttribute('x', SQUARE_SIZE * x + BORDER_WIDTH);
     b.setAttribute('y', SQUARE_SIZE * (ROWS - y - 1) + TOP_ROW_HEIGHT);
@@ -718,9 +714,9 @@ function actionRotate(ccw) {
   const oldX = currentShape.currentX;
   const oldY = currentShape.currentY;
   currentShape.currentRotation += ccw ? -1 : 1;
-  const rotationPoint = currentShape.shape.rotation;
-  const cx = currentShape.currentX + rotationPoint[0];
-  const cy = currentShape.currentY - rotationPoint[1] + 1;
+  const [rotX, rotY] = currentShape.shape.rotation;
+  const cx = currentShape.currentX + rotX;
+  const cy = currentShape.currentY - rotY + 1;
   currentShape.coords = rotateCoords(currentShape.coords, ccw, cx, cy);
   if (currentShape.isCollided()) {
     // Simple rotation failed.  Try kicking the rotated shape around.
@@ -732,10 +728,10 @@ function actionRotate(ccw) {
     const preKickCoords = currentShape.coords;
     const preKickX = currentShape.currentX;
     const preKickY = currentShape.currentY;
-    for (const kick of kickList) {
-      currentShape.coords = moveCoords(currentShape.coords, kick[0], kick[1]);
-      currentShape.currentX += kick[0];
-      currentShape.currentY += kick[1];
+    for (const [kickX, kickY] of kickList) {
+      currentShape.coords = moveCoords(currentShape.coords, kickX, kickY);
+      currentShape.currentX += kickX;
+      currentShape.currentY += kickY;
       if (!currentShape.isCollided()) {
         break;
       }

@@ -185,9 +185,9 @@ function cpuPlay() {
   // The computer should appear to take a second to think of a move.
   // If it takes less that this, add an artifical delay.
   const startTime = Date.now();
-  const best = cpuThink(liveField, turn, DIFFICULTY);
+  const { x, y } = cpuThink(liveField, turn, DIFFICULTY);
   const elapsedTime = Date.now() - startTime;
-  timeoutPID = setTimeout(cpuPublish_.bind(null, best.x, best.y), 1000 - elapsedTime);
+  timeoutPID = setTimeout(cpuPublish_.bind(null, x, y), 1000 - elapsedTime);
 }
 
 // Reveal the move.

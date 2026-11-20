@@ -263,17 +263,16 @@ function findEnd(startX, startY) {
   const queue = new Map();
   queue.set(startX + ' ' + startY, 0);
   while (queue.size) {
-    const xys_ = queue.entries().next().value;
-    const xy = xys_[0];
-    const steps = Number(xys_[1]) + 1;
+    const [xy, rawSteps] = queue.entries().next().value;
+    const steps = Number(rawSteps) + 1;
     queue.delete(xy);
     if (visited.has(xy)) {
       continue;
     }
     visited.add(xy);
-    const xy_ = xy.split(' ');
-    const x = Number(xy_[0]);
-    const y = Number(xy_[1]);
+    const [xStr, yStr] = xy.split(' ');
+    const x = Number(xStr);
+    const y = Number(yStr);
     if (isWall(x, y, true)) {
       continue;
     }
@@ -363,10 +362,11 @@ function move(dx, dy) {
 function drawPath() {
   const d = [];
   for (let i = 0; i < avatarPath.length; i++) {
+    const { x, y } = avatarPath[i];
     // First path element is 'move', following ones are 'line'.
     d.push(i ? 'L' : 'M',
-           avatarPath[i].x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5,
-           avatarPath[i].y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
+           x * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5,
+           y * SQUARE_SIZE + SQUARE_SIZE / 2 + 0.5);
   }
   const element = document.getElementById('avatarPath');
   element.setAttribute('d', d.join(' '));
