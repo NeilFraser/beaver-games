@@ -128,12 +128,10 @@ function initBorders() {
 // Clear temporary CSS classes (e.g. snake, food) from a cell.
 // Preserve permanent CSS classes (e.g. even/odd, border).
 function clearCell(td) {
-  const classeNames = ['food', 'snake', 'player1', 'player2',
+  const classNames = ['food', 'snake', 'player1', 'player2',
     'dir-0', 'dir-1', 'dir-2', 'dir-3',
     'head', 'body', 'turn-ccw', 'turn-cw', 'tail'];
-  for (const className of classeNames) {
-    td.classList.remove(className);
-  }
+  td.classList.remove(...classNames);
 }
 
 // Clear any existing data, and configure a new game.

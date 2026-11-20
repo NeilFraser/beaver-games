@@ -44,9 +44,8 @@ function saveOptions() {
 }
 
 // Set event handlers on the named game option dropdowns.
-function registerOptions(var_args) {
-  for (let i = 0; i < arguments.length; i++) {
-    const name = arguments[i];
+function registerOptions(...names) {
+  for (const name of names) {
     optionNames.push(name);
     const dropdown = document.getElementById(name);
     dropdown.addEventListener('change', saveOptions);

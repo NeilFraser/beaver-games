@@ -292,25 +292,14 @@ const CurrentShape = function(type) {
 
 // Compute width of shape.  Used for centering the shape when first created.
 CurrentShape.prototype.getWidth = function() {
-  let left = Infinity;
-  let right = -Infinity;
-  for (const coord of this.coords) {
-    const x = coord[0];
-    left = Math.min(left, x);
-    right = Math.max(right, x);
-  }
-  return right - left + 1;
+  const xs = this.coords.map(([x]) => x);
+  return Math.max(...xs) - Math.min(...xs) + 1;
 };
 
 // Compute the bottom of shape.  Used for vertical positioning of the shape
 // when first created.
 CurrentShape.prototype.getBottom = function() {
-  let bottom = Infinity;
-  for (const coord of this.coords) {
-    const y = coord[1];
-    bottom = Math.min(bottom, y);
-  }
-  return bottom;
+  return Math.min(...this.coords.map(([, y]) => y));
 };
 
 CurrentShape.prototype.addTransform = function(animate) {

@@ -102,7 +102,7 @@ function dream(x_o, board) {
   const losses = [];
   for (let i = 0; i < 9; i++) {
     if (board[i] === EMPTY) {
-      const dreamBoard = board.slice();
+      const dreamBoard = [...board];
       dreamBoard[i] = x_o;
       const result = dream(invert(x_o), dreamBoard)[1];
       if (result === x_o) {
@@ -131,14 +131,14 @@ function lookAhead() {
   for (let i = 0; i < 9; i++) {
     if (board[i] === EMPTY) {
       empty.push(i);
-      const dreamBoard = board.slice();
+      const dreamBoard = [...board];
       dreamBoard[i] = turn;
       if (boardState(dreamBoard) === turn) {
         // Winning move found.
         wins.push(i);
       }
       if (DIFFICULTY === 1) {
-        const dreamBoard = board.slice();
+        const dreamBoard = [...board];
         dreamBoard[i] = nextTurn;
         if (boardState(dreamBoard) === nextTurn) {
           // Blocking move found.

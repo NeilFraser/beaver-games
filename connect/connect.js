@@ -76,7 +76,7 @@ function init() {
     CHARACTERS = CHARACTERS_ALPHA;
     if (difficulty === 2) {
       // Hard mode also has greyscale numbers.
-      COLOURS = COLOURS.concat(COLOURS_NUMERIC_HARD);
+      COLOURS.push(...COLOURS_NUMERIC_HARD);
       CHARACTERS += CHARACTERS_NUMERIC;
     }
   }
@@ -316,7 +316,7 @@ function findPath(x1, y1, x2, y2) {
     // For each direction...
     for (const delta of deltas) {
       // Try moving forward...
-      const newPath = state.path.slice();
+      const newPath = [...state.path];
       let cursorX = xy.x;
       let cursorY = xy.y;
       while (true) {
@@ -336,7 +336,7 @@ function findPath(x1, y1, x2, y2) {
           break;
         }
         if (newCorners >= 0) {
-          queue.push({path: newPath.slice(), corners: newCorners});
+          queue.push({path: [...newPath], corners: newCorners});
         }
       }
     }

@@ -315,12 +315,7 @@ Disk.prototype.setTarget = function() {
 // Draw a landing spot for one peg.
 function drawSpot() {
   // Find the radius of the largest disk.
-  let radius = 0;
-  for (const peg of pegs) {
-    if (peg[0]) {
-      radius = Math.max(radius, peg[0].radius);
-    }
-  }
+  const radius = Math.max(0, ...pegs.map(peg => peg[0] ? peg[0].radius : 0));
 
   const pitchRadians = VIEW_ANGLE / 180 * Math.PI;
   const ratio = Math.sin(pitchRadians);
