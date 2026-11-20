@@ -24,12 +24,8 @@ let bagSlots = [];
 // the player (bagSlotIndex is the index in bagSlots that the chip came from).
 let placedCells = new Map();
 
-// Undo stack. Each entry: { fromType, fromKey, toType, toKey, value,
-//   swappedValue, swappedFromType, swappedFromKey } where
-//   fromType / toType are 'bag' or 'grid',
-//   fromKey is a bagSlot index or "r,c",
-//   swapped* describe the chip displaced by a swap (if any).
-let undoStack = [];
+// History of grid cell keys where numbers were placed or moved.
+let placementHistory = [];
 
 // Number of mistakes accumulated this game.
 let mistakes = 0;
@@ -48,6 +44,12 @@ let selectedSource = null;
 // Guard against interactions while an animation is in flight.
 let animating = false;
 
+// Count of sort operations, used to determine if the bag was resorted.
+let sortCount = 0;
+
+// Counter for dragenter/dragleave events on bagArea.
+let bagAreaDragCount = 0;
+
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 // On page load, initialize the event handlers and show the start button.
@@ -65,6 +67,8 @@ function init() {
   document.getElementById('sortBtn').addEventListener('click', doSort);
   document.getElementById('restartBtn').addEventListener('click', startGame);
 
+  setupBagAreaEvents();
+
   showStart();
 }
 window.addEventListener('load', init);
@@ -79,15 +83,18 @@ function showStart() {
 function startGame() {
   document.getElementById('start').style.display = 'none';
   document.getElementById('startDiv').style.display = 'none';
+  document.body.className = '';
 
   // Reset state.
   placedCells = new Map();
-  undoStack = [];
+  placementHistory = [];
   mistakes = 0;
   lastInvalidFormulas = new Set();
   gameOver = false;
   selectedSource = null;
   animating = false;
+  sortCount = 0;
+  bagAreaDragCount = 0;
 
   // Grid size scales with difficulty: 8 (Easy), 10 (Normal), 12 (Hard).
   const sizes = [8, 10, 12];
@@ -119,7 +126,11 @@ function startGame() {
 // End game, show start button.
 function fail() {
   gameOver = true;
-  document.body.className = 'shake';
+  clearSelection();
+  document.body.className = 'shake game-over';
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.draggable = false;
+  });
   document.getElementById('crash').play();
   document.getElementById('restartArea').style.display = '';
 }
@@ -198,8 +209,6 @@ function renderBag() {
     if (slot) {
       slotDiv.appendChild(makeChip(slot.value, 'bag', i));
     }
-    // Drag-over target for returning chips.
-    setupBagSlotEvents(slotDiv);
     bagDiv.appendChild(slotDiv);
   }
 }
@@ -209,7 +218,10 @@ function refreshBagSlot(index) {
   const slotDiv = document.querySelector(
     `#bag .bag-slot[data-bag-index="${index}"]`
   );
-  if (!slotDiv) return;
+  if (!slotDiv) {
+    renderBag();
+    return;
+  }
   const old = slotDiv.querySelector('.chip');
   if (old) old.remove();
   const slot = bagSlots[index];
@@ -244,6 +256,11 @@ function makeChip(value, srcType, srcKey) {
   });
   chip.addEventListener('dragend', () => {
     chip.style.opacity = '';
+    bagAreaDragCount = 0;
+    const bagArea = document.getElementById('bagArea');
+    if (bagArea) {
+      bagArea.classList.remove('drag-over');
+    }
   });
 
   chip.addEventListener('click', (e) => {
@@ -265,10 +282,17 @@ function handleChipClick(srcType, srcKey, value, chipEl) {
       clearSelection();
       return;
     }
-    // Otherwise treat the destination as the clicked chip's location
-    // (a swap: selected → this chip's slot).
+    // Otherwise treat the destination as the clicked chip's location.
     if (srcType === 'bag') {
-      executeMove(selectedSource, { type: 'bag', key: Number(srcKey) });
+      if (selectedSource.type === 'grid') {
+        // Destination is bagArea: return selected grid chip to bag.
+        returnGridChipToBag(selectedSource.key);
+      } else {
+        // Change selection to the clicked bag chip.
+        clearSelection();
+        selectedSource = { type: 'bag', key: Number(srcKey), value, element: chipEl };
+        chipEl.classList.add('selected');
+      }
     } else {
       executeMove(selectedSource, { type: 'grid', key: srcKey });
     }
@@ -326,38 +350,86 @@ function setupSlotEvents(td) {
   });
 }
 
-// ── Slot events (bag) ─────────────────────────────────────────────────────────
+// ── Bag area events ───────────────────────────────────────────────────────────
 
-function setupBagSlotEvents(slotDiv) {
-  slotDiv.addEventListener('dragover', (e) => {
+/**
+ * Return a chip from the grid back to the bag.
+ * The chip will appear in an existing gap, or at the end if there is no gap.
+ * @param {string} gridKey  The "r,c" coordinates of the grid cell.
+ */
+function returnGridChipToBag(gridKey) {
+  clearSelection();
+
+  if (!placedCells.has(gridKey)) return;
+
+  const placed = placedCells.get(gridKey);
+  const bagSlotIndex = placed ? placed.bagSlotIndex : null;
+  const chipSortCount = placed ? placed.sortCount : 0;
+
+  let destIndex = -1;
+  // If the bag hasn't been resorted since it was dragged out, and its original gap is still open:
+  if (chipSortCount === sortCount &&
+      bagSlotIndex !== null && bagSlotIndex !== undefined &&
+      bagSlotIndex < bagSlots.length && bagSlots[bagSlotIndex] === null) {
+    destIndex = bagSlotIndex;
+  } else {
+    // Otherwise find the first existing gap.
+    destIndex = bagSlots.findIndex(slot => slot === null);
+  }
+  // If there is no gap, place at the end.
+  if (destIndex === -1) {
+    destIndex = bagSlots.length;
+  }
+
+  executeMove({ type: 'grid', key: gridKey }, { type: 'bag', key: destIndex });
+}
+
+function setupBagAreaEvents() {
+  const bagArea = document.getElementById('bagArea');
+  if (!bagArea) return;
+
+  bagArea.addEventListener('dragenter', (e) => {
+    if (gameOver || animating) return;
+    bagAreaDragCount++;
+    bagArea.classList.add('drag-over');
+  });
+
+  bagArea.addEventListener('dragleave', (e) => {
+    bagAreaDragCount--;
+    if (bagAreaDragCount <= 0) {
+      bagAreaDragCount = 0;
+      bagArea.classList.remove('drag-over');
+    }
+  });
+
+  bagArea.addEventListener('dragover', (e) => {
     if (gameOver || animating) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
-    slotDiv.classList.add('drag-over');
-  });
-  slotDiv.addEventListener('dragleave', () => {
-    slotDiv.classList.remove('drag-over');
-  });
-  slotDiv.addEventListener('drop', (e) => {
-    if (gameOver || animating) return;
-    e.preventDefault();
-    slotDiv.classList.remove('drag-over');
-    const srcType = e.dataTransfer.getData('srcType');
-    const srcKey = e.dataTransfer.getData('srcKey');
-    const destIndex = Number(slotDiv.dataset.bagIndex);
-    const src = { type: srcType, key: srcType === 'bag' ? Number(srcKey) : srcKey };
-    const dst = { type: 'bag', key: destIndex };
-    if (src.type === 'bag' && src.key === dst.key) return;
-    executeMove(src, dst);
   });
 
-  slotDiv.addEventListener('click', () => {
+  bagArea.addEventListener('drop', (e) => {
     if (gameOver || animating) return;
-    if (!selectedSource) return;
-    const destIndex = Number(slotDiv.dataset.bagIndex);
-    // If the slot has a chip, its click handler fires first.
-    if (bagSlots[destIndex]) return;
-    executeMove(selectedSource, { type: 'bag', key: destIndex });
+    e.preventDefault();
+    bagAreaDragCount = 0;
+    bagArea.classList.remove('drag-over');
+
+    const srcType = e.dataTransfer.getData('srcType');
+    const srcKey = e.dataTransfer.getData('srcKey');
+
+    if (srcType === 'grid') {
+      returnGridChipToBag(srcKey);
+    }
+  });
+
+  bagArea.addEventListener('click', (e) => {
+    if (gameOver || animating) return;
+    // Don't intercept button clicks in controls.
+    if (e.target.closest('button')) return;
+
+    if (selectedSource && selectedSource.type === 'grid') {
+      returnGridChipToBag(selectedSource.key);
+    }
   });
 }
 
@@ -382,20 +454,13 @@ function executeMove(src, dst) {
     if (src.type === 'grid' && !isSlot(src.key)) return;
   }
 
-  // Build undo entry.
-  const entry = {
-    fromType: src.type,
-    fromKey: src.key,
-    toType: dst.type,
-    toKey: dst.key,
-    value: srcValue,
-    swappedValue: isSwap ? dstValue : null,
-    swappedFromType: isSwap ? dst.type : null,
-    swappedFromKey: isSwap ? dst.key : null,
-    swappedToType: isSwap ? src.type : null,
-    swappedToKey: isSwap ? src.key : null,
-  };
-  undoStack.push(entry);
+  // Record placement history on the grid.
+  if (dst.type === 'grid') {
+    if (isSwap && src.type === 'grid') {
+      placementHistory.push(src.key);
+    }
+    placementHistory.push(dst.key);
+  }
 
   if (isSwap) {
     // Move srcValue to dst, dstValue back to src — with animation for displaced.
@@ -449,12 +514,16 @@ function setOccupant(dst, value, srcHint) {
   } else {
     // Determine which bag slot this chip originally came from.
     let bagSlotIndex = null;
+    let chipSortCount = sortCount;
     if (srcHint.type === 'bag') {
       bagSlotIndex = srcHint.key;
+      chipSortCount = sortCount;
     } else if (placedCells.has(srcHint.key)) {
-      bagSlotIndex = placedCells.get(srcHint.key).bagSlotIndex;
+      const p = placedCells.get(srcHint.key);
+      bagSlotIndex = p.bagSlotIndex;
+      chipSortCount = p.sortCount;
     }
-    placedCells.set(dst.key, { value, bagSlotIndex });
+    placedCells.set(dst.key, { value, bagSlotIndex, sortCount: chipSortCount });
     refreshGridCell(dst.key);
   }
 }
@@ -502,52 +571,31 @@ function animateDisplaced(targetLoc, value) {
 // ── Undo ──────────────────────────────────────────────────────────────────────
 
 function doUndo() {
-  if (gameOver || undoStack.length === 0) return;
+  if (gameOver || animating || placedCells.size === 0) return;
 
-  const entry = undoStack.pop();
-
-  // Reverse: move from toKey back to fromKey.
-  // If there was a swap, the displaced chip is at fromKey — move it back to
-  // toKey (its original home), then move the main chip back to fromKey.
-  if (entry.swappedValue !== null) {
-    // Swap undo: main chip went fromKey→toKey, displaced chip went toKey→fromKey.
-    // Reverse: remove both, then place each back where it started.
-    removeOccupant({ type: entry.fromType, key: entry.fromKey });
-    removeOccupant({ type: entry.toType, key: entry.toKey });
-    // Restore main chip to fromKey.
-    setOccupant(
-      { type: entry.fromType, key: entry.fromKey },
-      entry.value,
-      { type: entry.toType, key: entry.toKey }
-    );
-    // Restore displaced chip to toKey (its original position before the swap).
-    setOccupant(
-      { type: entry.swappedFromType, key: entry.swappedFromKey },
-      entry.swappedValue,
-      { type: entry.swappedToType, key: entry.swappedToKey }
-    );
-  } else {
-    // Simple move: return srcValue from toKey back to fromKey.
-    removeOccupant({ type: entry.toType, key: entry.toKey });
-    if (entry.fromType === 'bag') {
-      bagSlots[entry.fromKey] = { value: entry.value, originalIndex: entry.fromKey };
-      refreshBagSlot(entry.fromKey);
-    } else {
-      setOccupant(
-        { type: entry.fromType, key: entry.fromKey },
-        entry.value,
-        { type: entry.toType, key: entry.toKey }
-      );
+  // Find the most recently placed/swapped number on the grid.
+  let targetKey = null;
+  while (placementHistory.length > 0) {
+    const key = placementHistory.pop();
+    if (placedCells.has(key)) {
+      targetKey = key;
+      break;
     }
   }
 
-  updateUndoButton();
-  applyInvalidHighlights();
+  // Fallback if history had no occupied cell: pick the last placed cell.
+  if (!targetKey && placedCells.size > 0) {
+    targetKey = Array.from(placedCells.keys()).pop();
+  }
+
+  if (targetKey) {
+    returnGridChipToBag(targetKey);
+  }
 }
 
 function updateUndoButton() {
   document.getElementById('undoBtn').disabled =
-    (undoStack.length === 0 || gameOver);
+    (placedCells.size === 0 || gameOver);
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
@@ -556,8 +604,8 @@ function doReset() {
   if (gameOver) return;
 
   // Move all placed chips back to their original bag slots.
-  for (const [key, { value, bagSlotIndex }] of placedCells) {
-    if (bagSlotIndex !== null && bagSlotIndex !== undefined) {
+  for (const [key, { value, bagSlotIndex, sortCount: chipSortCount }] of placedCells) {
+    if (chipSortCount === sortCount && bagSlotIndex !== null && bagSlotIndex !== undefined && !bagSlots[bagSlotIndex]) {
       bagSlots[bagSlotIndex] = { value, originalIndex: bagSlotIndex };
     } else {
       // Find a gap, or push.
@@ -570,10 +618,12 @@ function doReset() {
   }
 
   placedCells.clear();
-  undoStack = [];
+  placementHistory = [];
   mistakes = 0;
   lastInvalidFormulas = new Set();
   gameOver = false;
+  sortCount = 0;
+  bagAreaDragCount = 0;
   document.body.className = '';
 
   renderGrid();
@@ -586,6 +636,7 @@ function doReset() {
 // ── Sort bag ──────────────────────────────────────────────────────────────────
 
 function doSort() {
+  sortCount++;
   // Collect all remaining chips (non-null slots).
   const values = bagSlots.filter(s => s).map(s => s.value);
   values.sort((a, b) => a - b);
@@ -692,12 +743,17 @@ function applyInvalidHighlights() {
     }
   }
 
-  // Count newly-invalid formulas as mistakes.
+  // Count newly-invalid formulas as mistakes (at most one mistake per placement).
   if (!gameOver) {
+    let hasNewMistake = false;
     for (const fKey of nowInvalidForms) {
       if (!lastInvalidFormulas.has(fKey)) {
-        mistakes++;
+        hasNewMistake = true;
+        break;
       }
+    }
+    if (hasNewMistake) {
+      mistakes++;
     }
     lastInvalidFormulas = nowInvalidForms;
     updateMistakeCounter();
@@ -751,6 +807,11 @@ function checkWin() {
 
   // Win!
   gameOver = true;
+  clearSelection();
+  document.body.className = 'game-over';
+  document.querySelectorAll('.chip').forEach(chip => {
+    chip.draggable = false;
+  });
   document.getElementById('win').play();
   document.getElementById('restartArea').style.display = '';
   updateUndoButton();
