@@ -33,7 +33,7 @@ function init() {
   const m = document.cookie.match(/disks=(\d+)/);
   const cookieDisks = m ? Number(m[1]) : 0;
   totalDisks = cookieDisks > 0 ? cookieDisks : totalDisks;
-  const options =  document.getElementById('disks').options;
+  const options = document.getElementById('disks').options;
   for (const option of options) {
     option.selected = (option.value == totalDisks);
   }
@@ -164,7 +164,7 @@ function input(n) {
   const peg = pegs[n];
   if (selectedDisk) {
     // Verify we aren't placing a big disk on a smaller one.
-    const topDisk = peg[peg.length - 1];
+    const topDisk = peg.at(-1);
     if (topDisk && (topDisk.n < selectedDisk.n)) {
       return;
     }
@@ -188,7 +188,7 @@ function input(n) {
     checkWin();
   } else {
     // Might be undefined.
-    selectedDisk = peg[peg.length - 1];
+    selectedDisk = peg.at(-1);
     if (selectedDisk) {
       selectedDisk.isRaised = true;
       selectedDisk.setTarget();

@@ -311,7 +311,7 @@ function findPath(x1, y1, x2, y2) {
   queue.push({path: [{x: x1, y: y1}], corners: MAX_PATH_CORNERS});
   while (queue.length) {
     const state = queue.shift();
-    const xy = state.path[state.path.length - 1];
+    const xy = state.path.at(-1);
     const newCorners = state.corners - 1;
     // For each direction...
     for (const delta of deltas) {

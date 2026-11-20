@@ -81,7 +81,7 @@ function draw(i) {
   const newUse = document.createElementNS(SVG_NS, 'use');
   newUse.setAttributeNS(XLINK_NS, 'href', '#generic-' +
       (turn == X_VALUE ? 'x' : 'o') + '-' +
-      ((cpuFirst ? turn === X_VALUE : turn === O_VALUE)  ? 'cpu' : 'human'));
+      ((cpuFirst ? turn === X_VALUE : turn === O_VALUE) ? 'cpu' : 'human'));
   oldUse.parentNode.replaceChild(newUse, oldUse);
 
   // Update the internal board, and toggle whose turn it is.

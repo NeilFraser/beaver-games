@@ -339,7 +339,7 @@ Snake.prototype.setHead = function(x, y) {
     return moveResult.CRASH;
   }
   if (this.coordinates.length) {
-    const oldHeadXY = this.coordinates[this.coordinates.length - 1];
+    const oldHeadXY = this.coordinates.at(-1);
     const oldHead = getCell(oldHeadXY);
     oldHead.classList.remove('head');
     oldHead.classList.add('body');
@@ -359,7 +359,7 @@ Snake.prototype.setHead = function(x, y) {
 // Move the head in the given direction.
 // Returns the result of this move (crash, food or free).
 Snake.prototype.moveHead = function([dx, dy]) {
-  const [headX, headY] = this.coordinates[this.coordinates.length - 1];
+  const [headX, headY] = this.coordinates.at(-1);
   let x = headX + dx;
   let y = headY + dy;
   if (x < 0) {
@@ -388,7 +388,7 @@ Snake.prototype.step = function(initialGrow) {
         (this.direction === directions.UP && newDirection === directions.LEFT);
     this.direction = newDirection;
   }
-  const oldHeadXY = this.coordinates[this.coordinates.length - 1];
+  const oldHeadXY = this.coordinates.at(-1);
   const oldHeadCell = getCell(oldHeadXY);
   const result = this.moveHead(deltas[this.direction]);
   if (result == moveResult.CRASH) {
@@ -404,7 +404,7 @@ Snake.prototype.step = function(initialGrow) {
     oldHeadCell.classList.remove('body');
     oldHeadCell.classList.add(ccw ? 'turn-ccw' : 'turn-cw');
     // Turn the direction of this cell, to match the head.
-    const newHeadXY = this.coordinates[this.coordinates.length - 1];
+    const newHeadXY = this.coordinates.at(-1);
     const newHeadCell = getCell(newHeadXY);
     for (let d = 0; d < 4; d++) {
       oldHeadCell.classList.remove('dir-' + d);
@@ -430,7 +430,7 @@ Snake.prototype.shrink = function() {
 
 // Add the player's new direction to the queue of direction changes.
 Snake.prototype.pushDirection = function(newDirection) {
-  let last = this.directionQueue[this.directionQueue.length - 1];
+  let last = this.directionQueue.at(-1);
   if (last === undefined) {
     last = this.direction;
   }
