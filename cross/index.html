@@ -5,6 +5,7 @@
     <title>Beaver Games : Cross Math</title>
     <link rel="stylesheet" href="../common/style.css">
     <script src="../common/utils.js"></script>
+    <script src="generate.js"></script>
     <script src="cross.js"></script>
     <style>
       #start {
@@ -34,6 +35,170 @@
       #difficulty {
         float: right;
       }
+
+      /* ── Game area ───────────────────────────────────────────────────── */
+      #gameArea {
+        display: none;
+        user-select: none;
+      }
+
+      /* Grid rendered as a table */
+      #gridTable {
+        border-collapse: collapse;
+        margin: 0 auto 24px;
+      }
+      #gridTable td {
+        width: 2.4em;
+        height: 2.4em;
+        text-align: center;
+        vertical-align: middle;
+        padding: 0;
+        font-size: 1em;
+        font-weight: bold;
+      }
+      /* Null / separator cell */
+      td.cell-null {
+        background: transparent;
+      }
+      /* Operator / equals cell */
+      td.cell-op {
+        font-size: 1.1em;
+        color: #333;
+      }
+      /* Fixed (given) number cell */
+      td.cell-fixed {
+        background: #ddeeff;
+        border-radius: 4px;
+        font-size: 1.1em;
+        color: #222;
+      }
+      /* Slot: a player-fillable cell */
+      td.cell-slot {
+        border: 2px dashed #aaa;
+        border-radius: 4px;
+        cursor: pointer;
+        position: relative;
+        min-width: 2.4em;
+        min-height: 2.4em;
+        box-sizing: border-box;
+      }
+      td.cell-slot.drag-over {
+        background: #fffacd;
+        border-color: #888;
+      }
+
+      /* Chip: a draggable number tile */
+      .chip {
+        display: inline-block;
+        width: 2em;
+        height: 2em;
+        line-height: 2em;
+        text-align: center;
+        background: #fff8dc;
+        border: 2px solid #bbb;
+        border-radius: 4px;
+        cursor: grab;
+        font-size: 1em;
+        font-weight: bold;
+        box-sizing: border-box;
+        transition: transform 0.18s ease, opacity 0.18s ease;
+      }
+      .chip:active {
+        cursor: grabbing;
+      }
+      .chip.selected {
+        border: 2px solid #22aa22;
+        background: #d4f5d4;
+        outline: 2px solid #22aa22;
+      }
+      .chip.invalid {
+        background: #ffcccc;
+        border-color: #cc0000;
+        color: #cc0000;
+      }
+
+      /* ── Bag area ─────────────────────────────────────────────────────── */
+      #bagArea {
+        margin: 0 auto 16px;
+        max-width: 600px;
+        text-align: center;
+      }
+      #bag {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        min-height: 2.6em;
+        margin-bottom: 8px;
+        padding: 6px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        background: #f7f7f7;
+      }
+      .bag-slot {
+        display: inline-block;
+        width: 2.4em;
+        height: 2.4em;
+        text-align: center;
+        vertical-align: middle;
+        line-height: 2.4em;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .bag-slot.drag-over {
+        background: #fffacd;
+        border-radius: 4px;
+      }
+
+      /* ── Controls ─────────────────────────────────────────────────────── */
+      #controls {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-bottom: 16px;
+      }
+      #controls button {
+        padding: 6px 16px;
+        font-size: 0.95em;
+        border: 1px solid #bbb;
+        border-radius: 4px;
+        cursor: pointer;
+        background: #fff;
+      }
+      #controls button:hover:not(:disabled) {
+        background: #eee;
+      }
+      #controls button:disabled {
+        color: #aaa;
+        cursor: default;
+      }
+      #mistakeCounter {
+        font-weight: bold;
+        font-size: 1em;
+      }
+      #mistakeCounter.has-mistakes {
+        color: #cc0000;
+      }
+
+      /* ── Restart area ─────────────────────────────────────────────────── */
+      #restartArea {
+        display: none;
+        text-align: center;
+        margin-bottom: 16px;
+      }
+      #restartArea button {
+        padding: 10px 28px;
+        font-size: 1.1em;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #fff;
+      }
+      #restartArea button:hover {
+        background: #eee;
+      }
     </style>
   </head>
 
@@ -51,7 +216,24 @@
       </button>
     </div>
 
-    <!-- Content goes here. -->
+    <!-- Game area -->
+    <div id="gameArea">
+      <table id="gridTable"></table>
+
+      <div id="bagArea">
+        <div id="bag"></div>
+        <div id="controls">
+          <button id="undoBtn" disabled>Undo</button>
+          <button id="resetBtn">Reset</button>
+          <button id="sortBtn">Sort</button>
+          <span id="mistakeCounter">Mistakes: 0 / 3</span>
+        </div>
+      </div>
+
+      <div id="restartArea">
+        <button id="restartBtn">New Game</button>
+      </div>
+    </div>
 
     <audio id="crash" src="../common/crash.mp3"></audio>
     <audio id="win" src="../common/win.mp3"></audio>
