@@ -35,7 +35,7 @@
  * * A constant of 0.8 determines the optimal percentage of formulas with
  *   addition and/or subtraction, as opposed to formulas with multiplication
  *   and/or division.
- * * A constant of 0.4 determines the optimal fill percentage, the remaining
+ * * A constant of 0.5 determines the optimal fill percentage, the remaining
  *   values being null.
  *
  * If the algorithm gets stuck and cannot complete, it is acceptable to throw an
@@ -72,6 +72,7 @@ function generateMathGrid(size) {
   const RATIO_ADDSUB = 0.8;   // target fraction of add/sub formulas
   const FILL_TARGET  = 0.5;   // target fill fraction of non-null cells
   const MAX_ATTEMPTS = 300;   // top-level restarts before giving up
+  const MAX_VALUE    = 120;   // maximum value of a number
 
   // ── Build formula catalogue (lazy, memoised across calls) ─────────────────
   if (!generateMathGrid._catalogues) {
@@ -112,9 +113,16 @@ function generateMathGrid(size) {
     }
 
     function valid(nums, result) {
-      if (!Number.isInteger(result) || result <= 0 || result > 120) return false;
-      for (const n of nums) if (n <= 0 || n > 120) return false;
-      return [...nums, result].some(n => n <= 20);
+      let hasSmall = false;
+      for (const n of [...nums, result]) {
+        // Must be an integer between 1 and MAX_VALUE.
+        if (!Number.isInteger(result) || n <= 0 || n > MAX_VALUE) return false;
+        // Discourage 1.
+        if (n === 1 && Math.random() < 0.5) return false;
+        // At least one number must be small.
+        if (n <= 20) hasSmall = true;
+      }
+      return hasSmall;
     }
 
     // Four bins indexed 0–3: shortAddSub, shortMulDiv, longAddSub, longMulDiv
@@ -143,8 +151,8 @@ function generateMathGrid(size) {
     for (const op of ['+', '-', '*', '/']) {
       const addSub = op === '+' || op === '-';
       const binId  = addSub ? BIN_SHORT_AS : BIN_SHORT_MD;
-      for (let a = 1; a <= 120; a++) {
-        for (let b = 1; b <= 120; b++) {
+      for (let a = 1; a <= MAX_VALUE; a++) {
+        for (let b = 1; b <= MAX_VALUE; b++) {
           if (op === '-' && a < b) continue;
           if (op === '/' && (b === 0 || a % b !== 0)) continue;
           const c = evalLR([a, op, b]);
@@ -157,7 +165,7 @@ function generateMathGrid(size) {
 
     // ── Length-7: A op1 B op2 C = D (left-to-right) ─────────────────────
     // Operands A, B, C capped at 30 for fast build (still thousands of valid
-    // formulas; results can still reach up to 120).
+    // formulas; results can still reach up to MAX_VALUE).
     const LONG_MAX = 30;
     for (const [op1, op2, binId] of [
       ['+', '+', BIN_LONG_AS], ['+', '-', BIN_LONG_AS],
@@ -170,13 +178,15 @@ function generateMathGrid(size) {
           if (op1 === '-' && a < b) continue;
           if (op1 === '/' && (b === 0 || a % b !== 0)) continue;
           const ab = evalLR([a, op1, b]);
-          if (ab === null || ab <= 0 || ab > 120) continue;
+          if (ab === null || ab <= 0 || ab > MAX_VALUE) continue;
           for (let c = 1; c <= LONG_MAX; c++) {
             if (op2 === '-' && ab < c) continue;
             if (op2 === '/' && (c === 0 || ab % c !== 0)) continue;
             const d = evalLR([ab, op2, c]);
             if (d === null) continue;
             if (!valid([a, b, c], d)) continue;
+            // Boring: 3 * 4 / 4 = 3
+            if (new Set([a, b, c, d]).size < 3) continue;
             addFormula([a, op1, b, op2, c, '=', d], binId);
           }
         }
@@ -796,7 +806,7 @@ function hardFilter(grid) {
             } else {
               reqVal = solveEq7(vals[0], f.op1, vals[1], f.op2, vals[2], vals[3]);
             }
-            if (reqVal === null || reqVal <= 0 || reqVal > 120 || !Number.isInteger(reqVal)) {
+            if (reqVal === null || reqVal <= 0 || !Number.isInteger(reqVal)) {
               for (const c of deduced) {
                 bagCounts.set(c.val, bagCounts.get(c.val) + 1);
                 c.val = undefined;
@@ -1199,7 +1209,8 @@ function normalFilter(grid) {
   let restoredCount = 0;
   const restoredSet = new Set();
 
-  // Prioritize giving formulas with 2 unknowns a restored clue so they become 1-unknown
+  // Prioritize giving formulas with 2 or more unknowns a restored clue.
+  // Avoid completing a formula.
   for (const f of rawFormulas) {
     if (restoredCount >= numToRestore) break;
     const numIdxs = f.length === 5 ? [0, 2, 4] : [0, 2, 4, 6];
@@ -1207,22 +1218,11 @@ function normalFilter(grid) {
       gHard[f[idx].r][f[idx].c] === undefined &&
       !restoredSet.has(f[idx].r + ',' + f[idx].c)
     ));
-    if (uCells.length === 2) {
+    if (uCells.length >= 2) {
       const chosen = f[uCells[0]];
       const key = chosen.r + ',' + chosen.c;
       restoredSet.add(key);
       gHard[chosen.r][chosen.c] = originalGrid[chosen.r][chosen.c];
-      restoredCount++;
-    }
-  }
-
-  // Fill remaining restores from undefinedCells
-  for (const cell of undefinedCells) {
-    if (restoredCount >= numToRestore) break;
-    const key = cell.r + ',' + cell.c;
-    if (!restoredSet.has(key)) {
-      restoredSet.add(key);
-      gHard[cell.r][cell.c] = cell.val;
       restoredCount++;
     }
   }

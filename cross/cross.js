@@ -70,28 +70,19 @@ function init() {
   document.getElementById('difficulty').selectedIndex = difficultyLevel;
   registerOptions('difficulty');
 
-  document.getElementById('start').addEventListener('click', startGame);
   document.getElementById('undoBtn').addEventListener('click', doUndo);
   document.getElementById('resetBtn').addEventListener('click', doReset);
   document.getElementById('sortBtn').addEventListener('click', doSort);
   document.getElementById('restartBtn').addEventListener('click', startGame);
 
   setupBagAreaEvents();
-
-  showStart();
+  startGame();
 }
 window.addEventListener('load', init);
 
-// Show the start button.
-function showStart() {
-  document.body.className = '';
-  document.getElementById('start').style.display = '';
-}
 
 // Hide the start button, and start the game.
 function startGame() {
-  document.getElementById('start').style.display = 'none';
-  document.getElementById('startDiv').style.display = 'none';
   document.body.className = '';
 
   // Reset state.
