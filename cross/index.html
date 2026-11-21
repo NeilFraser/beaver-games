@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta content="text/html;charset=utf-8" http-equiv="Content-Type">
-    <title>Beaver Games : Cross Math</title>
+    <title>Beaver Games : Math Cross</title>
     <link rel="stylesheet" href="../common/style.css">
     <script src="../common/utils.js"></script>
     <script src="generate.js"></script>
@@ -17,10 +17,16 @@
 
       /* ── Game area ───────────────────────────────────────────────────── */
       #gameArea {
-        display: none;
         user-select: none;
+        display: flex;
+        flex-direction: row-reverse;
       }
 
+      @media (orientation: portrait) {
+        #gameArea {
+          display: block;
+        }
+      }
       /* Grid rendered as a table */
       #gridTable {
         border-collapse: collapse;
@@ -103,9 +109,7 @@
 
       /* ── Bag area ─────────────────────────────────────────────────────── */
       #bagArea {
-        margin: 0 auto 16px;
-        max-width: 600px;
-        text-align: center;
+        margin: 2em auto 0;
         font-size: 1.2em;
       }
       #bag {
@@ -193,7 +197,7 @@
       <option value=1>Normal</option>
       <option value=2>Hard</option>
     </select>
-    <h1><a href="../">Beaver Games</a> : Cross Math</h1>
+    <h1><a href="../">Beaver Games</a> : Math Cross</h1>
 
     <!-- Game area -->
     <div id="gameArea">
@@ -207,10 +211,9 @@
           <span id="mistakeCounter">Mistakes: 0 / 3</span>
           <button id="resetBtn">⟳ Reset</button>
         </div>
-      </div>
-
-      <div id="restartArea">
-        <button id="restartBtn">New Game</button>
+        <div id="restartArea">
+          <button id="restartBtn">New Game</button>
+        </div>
       </div>
     </div>
 

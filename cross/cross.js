@@ -5,7 +5,7 @@
  */
 
 /**
- * @fileoverview Cross Math game.
+ * @fileoverview Math Cross game.
  * @author root@neil.fraser.name (Neil Fraser)
  */
 'use strict';
@@ -66,7 +66,7 @@ function init() {
   fixLinks();
 
   const m = document.cookie.match(/difficulty=([012])/);
-  difficultyLevel = m ? Number(m[1]) : 1;
+  difficultyLevel = m ? Number(m[1]) : 0;
   document.getElementById('difficulty').selectedIndex = difficultyLevel;
   registerOptions('difficulty');
 
@@ -115,11 +115,10 @@ function startGame() {
   bagSlots = bag.map((value, i) => ({ value, originalIndex: i }));
 
   renderGrid();
-  renderBag();
+  doSort();
   updateUndoButton();
   updateMistakeCounter();
 
-  document.getElementById('gameArea').style.display = 'block';
   document.getElementById('restartArea').style.display = 'none';
 }
 
@@ -616,7 +615,7 @@ function doReset() {
   document.body.className = '';
 
   renderGrid();
-  renderBag();
+  doSort();
   updateUndoButton();
   updateMistakeCounter();
   document.getElementById('restartArea').style.display = 'none';

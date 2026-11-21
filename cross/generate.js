@@ -10,38 +10,6 @@
  */
 'use strict';
 
-/*
- * Prompt to Claude:
- * We are generating a math crossword puzzle.  Write a function in JavaScript
- * called 'generateMathGrid' that takes a positive integer 'size' parameter
- * (expected range 8 through 16) and returns a two-dimensional array of that
- * size.  The array is populated by positive integers not greater than 120, the
- * string symbols '+', '-', '*', '/', '=', and null.  The function generates a
- * matrix of intersecting vertical (top to bottom) and horizontal (left to
- * right) formulas of length 5 (e.g. 1, '+', 2, '=', 3) or length 7
- * (e.g. 42, '/', 7, '*', 2, '=', 12).  Every formula must contain a number
- * smaller than or equal to 20.
- *
- * Any vertically or horizontally directly adjacent numbers and symbols must
- * form part of a mathematically valid formula.  All formulas must be
- * transitively connected to all other formulas.  Intersections between
- * horizontal and vertical formulas must be on numbers, not symbols.
- * The structure of the formulas should be able to form circular loops.
- *
- * There are three constants that define optimal percentages.  These are targets
- * to aim for, not absolute requirements to hit:
- * * A constant of 0.9 determines the optimal percentage of length 5 formulas
- *   over length 7 formulas.
- * * A constant of 0.8 determines the optimal percentage of formulas with
- *   addition and/or subtraction, as opposed to formulas with multiplication
- *   and/or division.
- * * A constant of 0.5 determines the optimal fill percentage, the remaining
- *   values being null.
- *
- * If the algorithm gets stuck and cannot complete, it is acceptable to throw an
- * error.
- */
-
 /**
  * Generate a math crossword grid.
  *
@@ -59,14 +27,10 @@
  *   RATIO_ADDSUB = 0.8  → 80 % of formulas use only + / -.
  *   FILL_TARGET  = 0.5  → 50 % of cells are non-null.
  *
- * @param {number} size  Grid dimension (8–16).
+ * @param {number} size  Grid dimension (expected to be roughly 8 to 16).
  * @returns {!Array<!Array<number|string|null>>}  size × size grid.
  */
 function generateMathGrid(size) {
-  if (!Number.isInteger(size) || size < 8 || size > 16) {
-    throw new Error('size must be an integer between 8 and 16');
-  }
-
   // ── Constants ────────────────────────────────────────────────────────────
   const RATIO_SHORT  = 0.9;   // target fraction of length-5 formulas
   const RATIO_ADDSUB = 0.8;   // target fraction of add/sub formulas
@@ -503,19 +467,6 @@ function generateMathGrid(size) {
 }
 
 
-/*
- * Pompt to ChatGPT:
- * Write a function in JavaScript called 'shrinkGrid' that takes a parameter
- * called 'grid' that is a two-dimensional array.  The array may have entire
- * rows or columns that are null.  The array is guaranteed to have some non-null
- * content.  Crop off any leading or trailing rows or columns that are entirely
- * null.  Then add the minimum number of entirely null rows or columns to ensure
- * the array is square, and do so equally on both sides so that the content is
- * centered.  Favour an extra trailing null row or column, if the content cannot
- * be perfectly centered.  Either modify the original array in place, or return
- * the copy, whichever is simpler.
- */
-
 /**
  * Returns a square grid with the original non-null content centered.
  * The input `grid` is a 2‑D array (rows × columns) that may contain
@@ -593,22 +544,6 @@ function shrinkGrid(grid) {
   return result;
 }
 
-
-/*
- * Prompt for Gemini:
- * Write a function in JavaScript called 'hardFilter' that takes the output of
- * 'generateMathGrid' and removes the maximum number of integers, replacing them
- * with undefined, and returning a bag of the removed integers.  The resulting
- * grid must only have a single valid solution.
- *
- * Examples of valid solutions:
- * [[1, '+', 1, '=', 2]] ->
- *   [[undefined, '+', undefined, '=', undefined]] and a bag of [1, 1, 2]
- * [[1, '*', 2, '=', 2]] ->
- *   [[1, '*', undefined, '=', undefined]] and a bag of [2, 3]
- * [[1, '*', 2, '=', 2]] ->
- *   [[undefined, '*', 2, '=', undefined]] and a bag of [1, 3]
- */
 
 /**
  * Filter the output of generateMathGrid by removing the maximum number of
@@ -921,17 +856,6 @@ function hardFilter(grid) {
 }
 
 
-/*
- * Prompt for Gemini:
- * Write a function in JavaScript called 'easyFilter' that takes the output of
- * 'generateMathGrid' and removes the maximum number of integers, replacing them
- * with undefined, and returning a bag of the removed integers.  The resulting
- * grid must be structured so as to have at least one formula that has exactly
- * one unknown.  If that unknown were solved, then the grid must continue to
- * always have at least one formula that has exactly one unknown, until the
- * entire grid is known.
- */
-
 /**
  * Filter the output of generateMathGrid by removing the maximum number of
  * integers, replacing them with undefined, and returning a bag of the removed
@@ -1119,12 +1043,6 @@ function easyFilter(grid) {
   return bestBag;
 }
 
-
-/*
- * Prompt for Gemini:
- * Write a function in JavaScript called 'normalFilter' that removes fewer
- * integers than 'hardFilter', but more integers than 'easyFilter'.
- */
 
 /**
  * Filter the output of generateMathGrid for 'Normal' difficulty.

@@ -1,0 +1,72 @@
+A log of the prompts used to generate this game.
+
+Prompt for Claude:
+[It's hard, Gemini and ChatGPT failed at it.]
+
+We are generating a math crossword puzzle.  Write a function in JavaScript called 'generateMathGrid' that takes a positive integer 'size' parameter (expected range 8 through 16) and returns a two-dimensional array of that size.  The array is populated by positive integers not greater than 120, the string symbols '+', '-', '*', '/', '=', and null.  The function generates a matrix of intersecting vertical (top to bottom) and horizontal (left to right) formulas of length 5 (e.g. 1, '+', 2, '=', 3) or length 7 (e.g. 42, '/', 7, '*', 2, '=', 12).  Every formula must contain a number smaller than or equal to 20.
+
+Any vertically or horizontally directly adjacent numbers and symbols must form part of a mathematically valid formula.  All formulas must be transitively connected to all other formulas.  Intersections between horizontal and vertical formulas must be on numbers, not symbols.  The structure of the formulas should be able to form circular loops.
+
+There are three constants that define optimal percentages.  These are targets to aim for, not absolute requirements to hit:
+* A constant of 0.9 determines the optimal percentage of length 5 formulas over length 7 formulas.
+* A constant of 0.8 determines the optimal percentage of formulas with addition and/or subtraction, as opposed to formulas with multiplication and/or division.
+* A constant of 0.4 determines the optimal fill percentage, the remaining values being null.
+
+If the algorithm gets stuck and cannot complete, it is acceptable to throw an error.
+
+--
+
+Prompt for ChatGPT (it's easy):
+
+Write a function in JavaScript called 'shrinkGrid' that takes a parameter called 'grid' that is a two-dimensional array.  The array may have entire rows or columns that are null.  The array is guaranteed to have some non-null content.  Crop off any leading or trailing rows or columns that are entirely null.  Then add the minimum number of entirely null rows or columns to ensure the array is square, and do so equally on both sides so that the content is centered.  Favour an extra trailing null row or column, if the content cannot be perfectly centered.  Either modify the original array in place, or return the copy, whichever is simpler.
+
+--
+
+Prompt for Gemini:
+
+Write a function in JavaScript called 'hardFilter' that takes the output of 'generateMathGrid' and removes the maximum number of integers, replacing them with undefined, and returning a bag of the removed integers.  The resulting grid must only have a single valid solution.
+
+Examples of valid solutions:
+[[1, '+', 1, '=', 2]] -> [[undefined, '+', undefined, '=', undefined]] and a bag of [1, 1, 2]
+[[1, '*', 2, '=', 2]] -> [[1, '*', undefined, '=', undefined]] and a bag of [2, 3]
+[[1, '*', 2, '=', 2]] -> [[undefined, '*', 2, '=', undefined]] and a bag of [1, 3]
+
+--
+
+Prompt for Gemini:
+
+Write a function in JavaScript called 'easyFilter' that takes the output of 'generateMathGrid' and removes the maximum number of integers, replacing them with undefined, and returning a bag of the removed integers.  The resulting grid must be structured so as to have at least one formula that has exactly one unknown.  If that unknown were solved, then the grid must continue to always have at least one formula that has exactly one unknown, until the entire grid is known.
+
+--
+
+Prompt for Gemini:
+
+
+Write a function in JavaScript called 'normalFilter' that removes fewer integers than 'hardFilter', but more integers than 'easyFilter'.
+
+--
+
+Prompt for Gemini:
+[Gemini ignored the directive to animate the swaps.  Gemini also ignored the directive for undo to not swap numbers.]
+
+Modify the existing HTML (index.html), JavaScript (cross.js), and CSS stubs to create a math crossword puzzle.  A grid is generated with 'generateMathGrid'.  The difficulty selector chooses between 'hardFilter', 'normalFilter', and 'easyFilter'.  The resulting grid is rendered on screen, with the bag rendered below it.
+
+The user can drag any number from the bag to any undefined spot on the grid.  A number in an undefined spot on the grid may be dragged to another undefined spot on the grid.  A number in an undefined spot on the grid may be dragged back to the bag.  If a number is dragged from the bag to an undefined spot on the grid that already contains a number, then those numbers swap.  If a number is dragged from an undefined spot on the grid to another undefined spot on the grid that already contains a number, then those numbers swap.  Numbers forced to move as the result of a swap should animate quickly to their location.  Be aware of potential race conditions arising from the animation.
+
+In addition to dragging, the user should also be able to move the numbers by clicking on the source (which is indicated with a green border), then clicking on the destination.
+
+Numbers dragged from the bag leave a gap in the bag where the number was.  Numbers dragged back to the bag occupy gap where they came from, assuming the bag hasn't been resorted since they were dragged out.  There is a sort button which reorders the numbers in the bag, moving them into numerical order and closing any gaps.
+
+An undo button moves the previously placed (or moved, or swapped) number from the grid to the bag.  Undo may be repeatedly pressed until the grid is empty, at which point the button greys out.  The undo button does not swap numbers.
+
+If a formula has no unknowns and is invalid, all of its numbers in undefined spots are highlight in red.  Note that more than one formula might be invalid.  The red highlighting is removed if the user corrects the formula or creates an unknown.  A visible counter keeps track of the number of mistakes.  After three mistakes, the game ends with the fail sound.
+
+If the entire grid is solved and is valid, then the winning sound is played.
+
+When the game ends, a button appears offering to restart with a newly-generated grid.
+
+A reset button moves all placed numbers from the grid back to the bag, clears the mistake counter, and restarts the same game.
+
+Changing the difficulty selector abandons the current game, reloads the page, and starts a new game.
+
+
