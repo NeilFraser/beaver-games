@@ -20,9 +20,17 @@
         user-select: none;
         display: flex;
         flex-direction: row-reverse;
+        width: 100%;
+      }
+      #gridDiv {
+        flex: 1 0 auto;
+      }
+      #bagArea {
+        flex: 1 1 0;
+        min-width: 0;
       }
 
-      @media (orientation: portrait) {
+      @media (max-width: 1000px) {
         #gameArea {
           display: block;
         }
@@ -31,10 +39,11 @@
       #gridTable {
         border-collapse: collapse;
         margin: 0 auto 24px;
+        width: max-content;
       }
       #gridTable td {
-        width: 2.4em;
-        height: 2.4em;
+        width: 45px;
+        height: 45px;
         text-align: center;
         vertical-align: middle;
         padding: 0;
@@ -111,6 +120,7 @@
       #bagArea {
         margin: 2em auto 0;
         font-size: 1.2em;
+        min-width: 0;
       }
       #bag {
         display: flex;
@@ -201,7 +211,9 @@
 
     <!-- Game area -->
     <div id="gameArea">
-      <table id="gridTable"></table>
+      <div id="gridDiv">
+        <table id="gridTable"></table>
+      </div>
 
       <div id="bagArea">
         <div id="bag"></div>
