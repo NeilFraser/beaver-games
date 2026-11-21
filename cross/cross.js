@@ -96,9 +96,9 @@ function startGame() {
   sortCount = 0;
   bagAreaDragCount = 0;
 
-  // Grid size scales with difficulty: 8 (Easy), 10 (Normal), 12 (Hard).
-  const sizes = [8, 10, 12];
-  const size = sizes[difficultyLevel] || 8;
+  // Grid size scales with difficulty: 10 (Easy), 12 (Normal), 14 (Hard).
+  const sizes = [10, 12, 14];
+  const size = sizes[difficultyLevel] || 10;
 
   currentGrid = generateMathGrid(size);
 
@@ -199,6 +199,7 @@ function renderBag() {
     }
     bagDiv.appendChild(slotDiv);
   }
+  updateSortButton();
 }
 
 // Refresh a single bag slot without full re-render.
@@ -216,6 +217,7 @@ function refreshBagSlot(index) {
   if (slot) {
     slotDiv.appendChild(makeChip(slot.value, 'bag', index));
   }
+  updateSortButton();
 }
 
 // ── Chip creation ─────────────────────────────────────────────────────────────
@@ -583,14 +585,13 @@ function doUndo() {
 
 function updateUndoButton() {
   document.getElementById('undoBtn').disabled =
-    (placedCells.size === 0 || gameOver);
+      (placedCells.size === 0 || gameOver);
 }
 
 // ── Reset ─────────────────────────────────────────────────────────────────────
 
 function doReset() {
-  if (gameOver) return;
-
+  gameOver = false;
   // Move all placed chips back to their original bag slots.
   for (const [key, { value, bagSlotIndex, sortCount: chipSortCount }] of placedCells) {
     if (chipSortCount === sortCount && bagSlotIndex !== null && bagSlotIndex !== undefined && !bagSlots[bagSlotIndex]) {
@@ -630,6 +631,21 @@ function doSort() {
   values.sort((a, b) => a - b);
   bagSlots = values.map((v, i) => ({ value: v, originalIndex: i }));
   renderBag();
+}
+
+// Determine if the bag has null slots or is out of order.
+// If so, enable the sort button.
+function updateSortButton() {
+  let sorted = true;
+  let lastValue = 0;
+  for (const slot of bagSlots) {
+    if (!slot || lastValue > slot.value) {
+      sorted = false;
+      break;
+    }
+    lastValue = slot.value;
+  }
+  document.getElementById('sortBtn').disabled = sorted;
 }
 
 // ── Mistake counting & formula highlighting ───────────────────────────────────
@@ -797,7 +813,6 @@ function checkWin() {
   end();
   document.body.className = 'game-over';
   document.getElementById('win').play();
-  document.getElementById('restartArea').style.display = '';
 }
 
 // End game, show start button.
@@ -805,7 +820,7 @@ function fail() {
   end();
   document.body.className = 'shake game-over';
   document.getElementById('crash').play();
-  document.getElementById('restartArea').style.display = '';
+  document.getElementById('restartArea').style.display = 'block';
 }
 
 // Common actions when a game ends, win or lose.
