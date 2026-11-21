@@ -820,7 +820,6 @@ function fail() {
   end();
   document.body.className = 'shake game-over';
   document.getElementById('crash').play();
-  document.getElementById('restartArea').style.display = 'block';
 }
 
 // Common actions when a game ends, win or lose.
@@ -831,4 +830,5 @@ function end() {
   document.querySelectorAll('.chip').forEach(chip => {
     chip.draggable = false;
   });
+  document.getElementById('restartArea').style.display = 'block';
 }
