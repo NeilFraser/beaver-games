@@ -165,32 +165,32 @@ function generateMathGrid(size) {
 
   // ── Formula selection ─────────────────────────────────────────────────────
   /**
-   * Return a fresh copy of a formula chosen from the pool that best matches
-   * the current ratio targets.
+   * Return a fresh copy of a formula chosen from the pool that matches
+   * the ratio targets probabilistically.
    *
-   * @param {number}  nShort       Length-5 formulas placed so far.
-   * @param {number}  nLong        Length-7 formulas placed so far.
-   * @param {number}  nAS          Add/sub formulas placed so far.
-   * @param {number}  nTotal       Total formulas placed so far.
    * @param {?number} mustContain  If non-null, formula must contain this value.
    * @returns {!Array}
    */
-  function chooseFormula(nShort, nLong, nAS, nTotal, mustContain) {
-    const totalF    = nShort + nLong;
-    const wantShort = totalF === 0 || (nShort / totalF) < RATIO_SHORT;
-    const wantAS    = nTotal === 0 || (nAS / nTotal)    < RATIO_ADDSUB;
-
-    // Priority order of bin IDs
+  function chooseFormula(mustContain) {
     const BIN_SHORT_AS = 0, BIN_SHORT_MD = 1, BIN_LONG_AS = 2, BIN_LONG_MD = 3;
     const { shortAddSub, shortMulDiv, longAddSub, longMulDiv, byValueBin } = bins;
     const allBins = [shortAddSub, shortMulDiv, longAddSub, longMulDiv];
+
+    // Roll independently for length (90% short) and operator type (80% add/sub).
+    const wantShort = Math.random() < RATIO_SHORT;
+    const wantAS    = Math.random() < RATIO_ADDSUB;
+
+    const primaryBin = wantShort
+      ? (wantAS ? BIN_SHORT_AS : BIN_SHORT_MD)
+      : (wantAS ? BIN_LONG_AS  : BIN_LONG_MD);
+
+    // Fallback order: try same length first, then other length.
     const binOrder = [
-      wantShort &&  wantAS ? BIN_SHORT_AS : -1,
-      wantShort && !wantAS ? BIN_SHORT_MD : -1,
-      !wantShort &&  wantAS ? BIN_LONG_AS : -1,
-      !wantShort && !wantAS ? BIN_LONG_MD : -1,
-      BIN_SHORT_AS, BIN_SHORT_MD, BIN_LONG_AS, BIN_LONG_MD,  // fallbacks
-    ].filter(b => b >= 0);
+      primaryBin,
+      wantShort ? (wantAS ? BIN_SHORT_MD : BIN_SHORT_AS) : (wantAS ? BIN_LONG_MD : BIN_LONG_AS),
+      wantShort ? (wantAS ? BIN_LONG_AS  : BIN_LONG_MD)  : (wantAS ? BIN_SHORT_AS : BIN_SHORT_MD),
+      wantShort ? (wantAS ? BIN_LONG_MD  : BIN_LONG_AS)  : (wantAS ? BIN_SHORT_MD : BIN_SHORT_AS)
+    ];
 
     if (mustContain != null) {
       // Use per-bin byValue maps for O(1) lookup.
@@ -352,14 +352,13 @@ function generateMathGrid(size) {
     const grid    = emptyGrid();
     const cellDir = new Map();
     const placed  = [];
-    let nShort = 0, nLong = 0, nAS = 0;
 
     // Target formula count ~ size² × FILL_TARGET / 6 (avg formula length ≈ 6)
     const targetFormulas = Math.max(4, Math.round(size * size * FILL_TARGET / 6));
 
     // ── Place first formula freely ────────────────────────────────────────
     {
-      const formula = chooseFormula(0, 0, 0, 0, null);
+      const formula = chooseFormula(null);
       const len     = formula.length;
       const dir     = Math.random() < 0.5 ? 'H' : 'V';
       const maxR = dir === 'H' ? size - 1 : size - len;
@@ -374,8 +373,6 @@ function generateMathGrid(size) {
         if (canPlace(grid, formula, r, c, dir, cellDir)) {
           placeFormula(grid, formula, r, c, dir, cellDir);
           placed.push({ formula, r, c, dir });
-          if (len === 5) nShort++; else nLong++;
-          if (formula.includes('+') || formula.includes('-')) nAS++;
           ok = true;
           break;
         }
@@ -407,7 +404,7 @@ function generateMathGrid(size) {
 
       tryValues:
       for (const anchorVal of valueList) {
-        const formula = chooseFormula(nShort, nLong, nAS, placed.length, anchorVal);
+        const formula = chooseFormula(anchorVal);
         const len     = formula.length;
 
         // Find positions in formula where the anchor value appears (even indices).
@@ -435,8 +432,6 @@ function generateMathGrid(size) {
               if (canPlace(grid, formula, startR, startC, dir, cellDir)) {
                 placeFormula(grid, formula, startR, startC, dir, cellDir);
                 placed.push({ formula, r: startR, c: startC, dir });
-                if (len === 5) nShort++; else nLong++;
-                if (formula.includes('+') || formula.includes('-')) nAS++;
                 success = true;
                 break tryValues;
               }
