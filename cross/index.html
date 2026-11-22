@@ -78,13 +78,31 @@
         border: 1px solid #888;
       }
       td.cell-slot.drag-over {
-        background: #fffacd;
-        border-color: #000;
+        border-color: #22aa22;
+        box-shadow: inset 0 0 0 2px #22aa22;
+        z-index: 10;
+      }
+
+      /* 2x invisible drag target */
+      .drag-target {
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0);
+        box-sizing: border-box;
+      }
+      .game-over .drag-target {
+        display: none;
       }
 
       /* Chip: a draggable number tile */
       .chip {
         display: inline-block;
+        position: relative;
+        z-index: 2;
         width: 2em;
         height: 2em;
         line-height: 2em;

@@ -44,6 +44,9 @@ let selectedSource = null;
 // Guard against interactions while an animation is in flight.
 let animating = false;
 
+// The chip currently being dragged, { type: 'bag'|'grid', key: bagSlotIndex|"r,c" } or null.
+let draggedSource = null;
+
 // Count of sort operations, used to determine if the bag was resorted.
 let sortCount = 0;
 
@@ -93,6 +96,7 @@ function startGame() {
   gameOver = false;
   selectedSource = null;
   animating = false;
+  draggedSource = null;
   sortCount = 0;
   bagAreaDragCount = 0;
 
@@ -145,6 +149,11 @@ function renderGrid() {
         // Player slot.
         td.className = 'cell-slot';
         td.dataset.key = key;
+
+        const dragTarget = document.createElement('div');
+        dragTarget.className = 'drag-target';
+        td.appendChild(dragTarget);
+
         // If the player has already placed something here, render a chip.
         if (placedCells.has(key)) {
           const { value } = placedCells.get(key);
@@ -236,6 +245,7 @@ function makeChip(value, srcType, srcKey) {
 
   chip.addEventListener('dragstart', (e) => {
     if (gameOver || animating) { e.preventDefault(); return; }
+    draggedSource = { type: srcType, key: srcKey };
     e.dataTransfer.setData('srcType', srcType);
     e.dataTransfer.setData('srcKey', String(srcKey));
     e.dataTransfer.setData('value', String(value));
@@ -244,12 +254,16 @@ function makeChip(value, srcType, srcKey) {
     chip.style.opacity = '0.5';
   });
   chip.addEventListener('dragend', () => {
+    draggedSource = null;
     chip.style.opacity = '';
     bagAreaDragCount = 0;
     const bagArea = document.getElementById('bagArea');
     if (bagArea) {
       bagArea.classList.remove('drag-over');
     }
+    document.querySelectorAll('#gridTable td.cell-slot').forEach(slot => {
+      slot.classList.remove('drag-over');
+    });
   });
 
   chip.addEventListener('click', (e) => {
@@ -303,19 +317,42 @@ function clearSelection() {
 // ── Slot events (grid) ────────────────────────────────────────────────────────
 
 function setupSlotEvents(td) {
-  // Drag-over: highlight.
+  let dragCount = 0;
+
+  td.addEventListener('dragenter', (e) => {
+    if (gameOver || animating) return;
+    if (draggedSource && draggedSource.type === 'grid' && String(draggedSource.key) === String(td.dataset.key)) {
+      return;
+    }
+    dragCount++;
+    td.classList.add('drag-over');
+  });
+
   td.addEventListener('dragover', (e) => {
     if (gameOver || animating) return;
+    if (draggedSource && draggedSource.type === 'grid' && String(draggedSource.key) === String(td.dataset.key)) {
+      return;
+    }
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     td.classList.add('drag-over');
   });
+
   td.addEventListener('dragleave', () => {
-    td.classList.remove('drag-over');
+    if (draggedSource && draggedSource.type === 'grid' && String(draggedSource.key) === String(td.dataset.key)) {
+      return;
+    }
+    dragCount--;
+    if (dragCount <= 0) {
+      dragCount = 0;
+      td.classList.remove('drag-over');
+    }
   });
+
   td.addEventListener('drop', (e) => {
     if (gameOver || animating) return;
     e.preventDefault();
+    dragCount = 0;
     td.classList.remove('drag-over');
     const srcType = e.dataTransfer.getData('srcType');
     const srcKey = e.dataTransfer.getData('srcKey');
@@ -329,13 +366,20 @@ function setupSlotEvents(td) {
   // Click: destination for selected chip.
   td.addEventListener('click', () => {
     if (gameOver || animating) return;
-    if (!selectedSource) return;
     const destKey = td.dataset.key;
-    // If clicking on a slot that has a chip in it, handleChipClick takes over
-    // (the chip's click event will fire first via stopPropagation); but if the
-    // slot is empty we come here.
-    if (placedCells.has(destKey)) return; // chip click handled it
-    executeMove(selectedSource, { type: 'grid', key: destKey });
+    if (selectedSource) {
+      if (selectedSource.type === 'grid' && String(selectedSource.key) === String(destKey)) {
+        clearSelection();
+        return;
+      }
+      executeMove(selectedSource, { type: 'grid', key: destKey });
+    } else if (placedCells.has(destKey)) {
+      const chipEl = td.querySelector('.chip');
+      if (chipEl) {
+        const { value } = placedCells.get(destKey);
+        handleChipClick('grid', destKey, value, chipEl);
+      }
+    }
   });
 }
 
@@ -610,6 +654,7 @@ function doReset() {
   mistakes = 0;
   lastInvalidFormulas = new Set();
   gameOver = false;
+  draggedSource = null;
   sortCount = 0;
   bagAreaDragCount = 0;
   document.body.className = '';
