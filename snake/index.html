@@ -142,6 +142,30 @@
       #options {
         float: right;
       }
+      #lengths {
+        font-family: monospace;
+        font-size: min(18pt, calc(5vw - 45px));
+        left: 10px;
+        max-width: calc(50vw - 460px);
+        overflow: hidden;
+        position: absolute;
+        top: 80px;
+        white-space: nowrap;
+      }
+      #lengths div {
+        margin-bottom: 0.5em;
+      }
+      #player1lengthRow {
+        color: #b8860b;
+      }
+      #player2lengthRow {
+        color: #1e5fad;
+      }
+      @media (max-width: 1080px) {
+        #lengths {
+          display: none;
+        }
+      }
     </style>
   </head>
 
@@ -159,6 +183,10 @@
       </select>
     </div>
     <h1><a href="../">Beaver Games</a> : Snake</h1>
+    <div id="lengths">
+      <div id="player1lengthRow">Player 1: <span id="player1length">3</span></div>
+      <div id="player2lengthRow">Player 2: <span id="player2length">3</span></div>
+    </div>
     <div id="startDiv">
       <button id="start">
         <div>Start</div>

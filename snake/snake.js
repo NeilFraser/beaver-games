@@ -87,6 +87,9 @@ function init() {
   registerOptions('players', 'difficulty');
   document.getElementById('player2keys').style.display =
       (player2 && !player2AI ? 'block' : 'none');
+  document.getElementById('player2lengthRow').style.display =
+      (player2 ? 'block' : 'none');
+  updateLengths();
 
   injectTable();
   initBorders();
@@ -142,6 +145,16 @@ function clearCell(td) {
   td.classList.remove(...classNames);
 }
 
+// Update the live score/length display for all snakes.
+function updateLengths() {
+  for (let i = 0; i < snakes.length; i++) {
+    const el = document.getElementById('player' + (i + 1) + 'length');
+    if (el) {
+      el.textContent = snakes[i].coordinates.length;
+    }
+  }
+}
+
 // Clear any existing data, and configure a new game.
 function resetGame() {
   for (let y = 0; y < HEIGHT; y++) {
@@ -170,6 +183,7 @@ function resetGame() {
   // Start with two foods on the board.
   addFood();
   addFood();
+  updateLengths();
 }
 
 // Human pressed space or enter to start game.
@@ -408,6 +422,7 @@ Snake.prototype.step = function(initialGrow) {
   } else if (result == moveResult.FOOD) {
     playEatSound();
     addFood();
+    updateLengths();
   } else if (result == moveResult.FREE && !initialGrow) {
     this.shrink();
   }
