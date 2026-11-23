@@ -59,6 +59,9 @@ let isRunning = false;
 // Is there a second player?
 let player2 = false;
 
+// Is player 2 an AI?
+let player2AI = false;
+
 // On page load, initialize the event handlers and show the start button.
 function init() {
   fixLinks();
@@ -71,14 +74,19 @@ function init() {
   // Normal - Food is never in the wrap doors.
   // Hard - Food is anywhere.
   foodMargin = [2, 1, 0][difficultyIndex];
-  m = document.cookie.match(/players=([12])/);
-  if (m && m[1] === '2') {
-    player2 = true;
+  m = document.cookie.match(/players=([123])/);
+  if (m) {
+    if (m[1] === '2' || m[1] === '3') {
+      player2 = true;
+    }
+    if (m[1] === '3') {
+      player2AI = true;
+    }
   }
-  document.getElementById('players').selectedIndex = player2 ? 1 : 0;
+  document.getElementById('players').value = player2 ? (player2AI ? 3 : 2) : 1;
   registerOptions('players', 'difficulty');
   document.getElementById('player2keys').style.display =
-    (player2 ? 'block' : 'none');
+      (player2 && !player2AI ? 'block' : 'none');
 
   injectTable();
   initBorders();
@@ -196,6 +204,9 @@ function step() {
   if (snakeIndex >= snakes.length) {
     snakeIndex = 0;
   }
+  if (player2AI && snakeIndex === 1) {
+    computeMove(1);
+  }
   snakes[snakeIndex].step();
 }
 
@@ -284,7 +295,7 @@ function keydown(e) {
       break;
     case 'a':
     case 'A':
-      if (player2) {
+      if (player2 && !player2AI) {
         snakes[1].pushDirection(directions.LEFT);
       }
       break;
@@ -292,7 +303,7 @@ function keydown(e) {
     case 'D':
     case 'e': // Dvorak
     case 'E':
-      if (player2) {
+      if (player2 && !player2AI) {
         snakes[1].pushDirection(directions.RIGHT);
       }
       break;
@@ -300,7 +311,7 @@ function keydown(e) {
     case 'W':
     case ',': // Dvorak
     case '<':
-      if (player2) {
+      if (player2 && !player2AI) {
         snakes[1].pushDirection(directions.UP);
       }
       break;
@@ -308,7 +319,7 @@ function keydown(e) {
     case 'S':
     case 'o': // Dvorak
     case 'O':
-      if (player2) {
+      if (player2 && !player2AI) {
         snakes[1].pushDirection(directions.DOWN);
       }
       break;

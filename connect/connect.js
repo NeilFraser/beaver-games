@@ -370,7 +370,7 @@ function shuffle(arr) {
  * @param {number} h Hue value in [0, 360].
  * @param {number} s Saturation value in [0, 1].
  * @param {number} v Brightness in [0, 255].
- * @return {string} Hex representation of the colour.
+ * @returns {string} Hex representation of the colour.
  * Copied from Blockly.utils.colour.hsvToHex and Blockly.utils.colour.rgbToHex
  */
 function hsvToHex(h, s, v) {

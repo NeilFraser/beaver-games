@@ -477,7 +477,7 @@ function generateMathGrid(size) {
  *
  * @param {Array<Array<any>>} grid Two‑dimensional array possibly
  * containing `null` values.
- * @return {Array<Array<any>>} New square array with content centered.
+ * @returns {Array<Array<any>>} New square array with content centered.
  */
 function shrinkGrid(grid) {
   // Helper to check if a row/col is all null.
